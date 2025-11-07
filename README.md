@@ -1,14 +1,27 @@
 # Edonis LMS
 
-A modern Learning Management System built with AdonisJS, React, and PostgreSQL.
+A modern, open-source Learning Management System built with AdonisJS, React, and PostgreSQL.
 
-## Tech Stack
+**Edonis LMS** combines modern architecture, mobile-first design, and native AI integration to deliver a superior learning experience for educational institutions. Built with TypeScript and featuring comprehensive educational standards compliance (SCORM, xAPI, LTI 1.3, QTI 2.1).
 
-- **Backend**: AdonisJS 6 (MVC Framework)
-- **Frontend**: React 19 + Inertia.js
-- **Database**: PostgreSQL
-- **Styling**: Tailwind CSS
-- **Package Manager**: Bun
+## ✨ Key Features
+
+- 🎓 **Complete LMS Functionality**: Course management, assignments, gradebook, and assessments
+- 🤖 **AI-Powered Learning**: Content generation, personalized paths, automated grading
+- 📱 **Mobile-First PWA**: Offline support, touch-optimized, cross-platform
+- 🔌 **Extensible Plugin System**: WordPress-inspired but type-safe
+- 📊 **Learning Analytics**: xAPI/SCORM compliance for detailed insights
+- 🔒 **Enterprise-Ready**: Multi-tenancy, SSO, role-based access control
+- 🌐 **Standards Compliant**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1
+
+## 🛠️ Tech Stack
+
+- **Backend**: AdonisJS 6 (TypeScript, MVC Framework)
+- **Frontend**: React 19 + Inertia.js + shadcn/ui
+- **Database**: PostgreSQL (with Supabase optional)
+- **Styling**: Tailwind CSS v4
+- **Package Manager**: Bun (preferred) / pnpm / npm
+- **Real-time**: WebSocket + SSE for live collaboration
 
 ## Getting Started
 
@@ -220,6 +233,90 @@ node ace migration:run --force
 
 ---
 
-## License
+## 🤝 Contributing
 
-MIT
+We welcome contributions! Please see our [CLAUDE.md](CLAUDE.md) for architecture details and development guidelines.
+
+### Quick Start for Contributors
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes following our coding standards
+4. Run tests: `bun test`
+5. Commit with conventional commits: `git commit -m "feat: add amazing feature"`
+6. Push and create a Pull Request
+
+## 📄 License
+
+**Apache License 2.0**
+
+Copyright 2025 argile agency
+
+Licensed under the Apache License, Version 2.0 (the "License"). You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+This project uses Apache 2.0 for:
+- 🛡️ Patent protection for users and contributors
+- 🏢 Enterprise-friendly adoption
+- 🔒 Trademark protection for the "Edonis" brand
+- ⚖️ Clear contribution terms
+
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details.
+
+## 🌟 Why Edonis?
+
+Compared to existing LMS solutions:
+
+| Feature | Edonis | Moodle | Canvas | Blackboard |
+|---------|--------|--------|--------|------------|
+| **Modern Stack** | ✅ TypeScript/React | ❌ PHP | ❌ Ruby | ❌ Java |
+| **AI Integration** | ✅ Native | ⚠️ Plugins | ⚠️ Limited | ⚠️ Limited |
+| **Mobile-First** | ✅ PWA | ❌ | ⚠️ | ⚠️ |
+| **License** | Apache 2.0 | GPL | AGPL | Proprietary |
+| **Developer Experience** | ✅ Excellent | ❌ | ⚠️ | ❌ |
+| **Plugin System** | ✅ Type-safe | ✅ | ⚠️ | ❌ |
+
+## 🗺️ Roadmap
+
+See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
+
+### Phase 1 (MVP) - Q1 2025
+- ✅ User management with RBAC
+- ✅ Authentication & authorization
+- 🚧 Course management system
+- 🚧 Assignment workflow
+- 🚧 Gradebook
+- 🚧 Communication tools
+
+### Phase 2 (AI & Mobile) - Q2 2025
+- 🔮 AI content generation
+- 🔮 Personalized learning paths
+- 🔮 Automated assessment
+- 🔮 PWA with offline support
+- 🔮 Mobile optimization
+
+### Phase 3 (Advanced) - Q3 2025
+- 🔮 Plugin marketplace
+- 🔮 Advanced analytics
+- 🔮 Video conferencing integration
+- 🔮 Gamification features
+
+## 💬 Support
+
+- **Documentation**: [CLAUDE.md](CLAUDE.md)
+- **Issues**: [GitHub Issues](https://github.com/your-org/edonis/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/edonis/discussions)
+
+## 🙏 Acknowledgments
+
+Built with amazing open-source projects:
+- [AdonisJS](https://adonisjs.com) - The TypeScript framework
+- [React](https://react.dev) - UI library
+- [Inertia.js](https://inertiajs.com) - Modern monolith approach
+- [shadcn/ui](https://ui.shadcn.com) - Beautiful UI components
+- [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS
+
+---
+
+Made with ❤️ by [argile agency](https://argile.agency) | [Website](https://edonis.dev) | [Documentation](./CLAUDE.md)
