@@ -42,13 +42,13 @@ test.group('Authentication', () => {
     const page = await visit('/login')
 
     // Click link and wait for navigation
-    await Promise.all([
-      page.waitForURL('**/register', { timeout: 5000 }),
-      page.locator('a[href="/register"]').click(),
-    ])
+    const link = page.locator('a[href="/register"]')
+    await link.click()
+    await page.waitForURL('**/register', { timeout: 5000 })
 
     await page.assertPath('/register')
-    await page.assertTextContains('h2', 'Inscription')
+    // Check for CardTitle which renders as h3
+    await page.assertExists('h3:has-text("Inscription")')
   })
 
   test('can logout successfully', async ({ visit }) => {
@@ -62,11 +62,10 @@ test.group('Authentication', () => {
       page.locator('button[type="submit"]').click(),
     ])
 
-    // Then logout
-    await Promise.all([
-      page.waitForURL('**/login', { timeout: 5000 }),
-      page.locator('button:has-text("Déconnexion")').click(),
-    ])
+    // Then logout - use .first() since there might be multiple logout buttons
+    const logoutButton = page.locator('button:has-text("Déconnexion")').first()
+    await logoutButton.click()
+    await page.waitForURL('**/login', { timeout: 5000 })
 
     await page.assertPath('/login')
   })
