@@ -1022,7 +1022,99 @@ async index({ auth }: HttpContext) {
 
 ## Testing
 
-Tests use Japa framework:
+### Testing Framework: Japa
+
+The project uses Japa as its testing framework with multiple test suites:
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test suite
+node ace test functional    # API/Integration tests
+node ace test browser       # E2E browser tests
+node ace test unit          # Unit tests
+```
+
+### Browser Testing (E2E)
+
+Browser tests use **@japa/browser-client**, which provides a Playwright-based testing solution officially integrated with AdonisJS.
+
+**Configuration**: Located in `tests/bootstrap.ts`:
+
+```typescript
+import { browserClient } from '@japa/browser-client'
+
+export const plugins: Config['plugins'] = [
+  assert(),
+  pluginAdonisJS(app),
+  browserClient({
+    runInSuites: ['browser'],
+    contextOptions: {
+      baseURL: 'http://localhost:3333',
+    },
+  }),
+]
+```
+
+**Browser Test Example**:
+
+```typescript
+import { test } from '@japa/runner'
+
+test.group('Authentication', () => {
+  test('user can login with valid credentials', async ({ browser, visit }) => {
+    const page = await visit('/login')
+    
+    await page.locator('input[name="email"]').fill('student@example.com')
+    await page.locator('input[name="password"]').fill('password')
+    await page.locator('button[type="submit"]').click()
+    
+    await page.waitForURL('/dashboard')
+    await page.locator('text=Welcome back').isVisible()
+  })
+})
+```
+
+**Available Browser Tests**:
+- `tests/browser/auth.spec.ts` - Authentication flows (login, register, logout)
+- `tests/browser/user_management.spec.ts` - Admin user management operations
+- `tests/browser/navigation.spec.ts` - Navigation and access control
+
+**Browser Test Features**:
+- Full Playwright API access
+- Automatic server startup/shutdown
+- Screenshot capture on failure
+- Video recording support
+- Mobile device emulation
+- Network interception
+
+**Running Browser Tests**:
+
+```bash
+# Run all browser tests
+node ace test browser
+
+# Run specific test file
+node ace test browser tests/browser/auth.spec.ts
+
+# Run with headed browser (visible UI)
+HEADLESS=false node ace test browser
+
+# Run with specific browser
+BROWSER=firefox node ace test browser  # chromium (default), firefox, webkit
+```
+
+**Best Practices**:
+- Test critical user journeys end-to-end
+- Use data-testid attributes for stable selectors
+- Clean up test data in afterEach hooks
+- Keep tests isolated and independent
+- Use page objects for complex pages
+
+### API/Integration Testing
+
+Functional tests use Japa's HTTP client:
 
 ```typescript
 test('can login with valid credentials', async ({ client }) => {
@@ -1032,8 +1124,21 @@ test('can login with valid credentials', async ({ client }) => {
   })
 
   response.assertStatus(200)
+  response.assertBodyContains({ success: true })
 })
 ```
+
+### Unit Testing
+
+Unit tests for models, services, and utilities:
+
+```typescript
+test('user can check if they have a role', async ({ assert }) => {
+  const user = await User.find(1)
+  const hasRole = await user.hasRole('admin')
+  
+  assert.isTrue(hasRole)
+})
 
 ## Common Development Patterns
 
