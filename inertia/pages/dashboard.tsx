@@ -54,9 +54,11 @@ export default function Dashboard({ user }: Props) {
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
-              <Link href="/logout" method="post" as="button">
-                <Button variant="destructive">Déconnexion</Button>
-              </Link>
+              <Button variant="destructive" asChild>
+                <Link href="/logout" method="post">
+                  Déconnexion
+                </Link>
+              </Button>
             </div>
           </div>
         </header>

@@ -53,9 +53,11 @@ export default function Home({ auth }: Props) {
               <Link href="/dashboard">
                 <Button>Dashboard</Button>
               </Link>
-              <Link href="/logout" method="post" as="button">
-                <Button variant="outline">Déconnexion</Button>
-              </Link>
+              <Button variant="outline" asChild>
+                <Link href="/logout" method="post">
+                  Déconnexion
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
