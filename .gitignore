@@ -1,9 +1,11 @@
 # dependencies (bun install)
 node_modules
+package-lock.json
 
 # output
 out
 dist
+build
 *.tgz
 
 # code coverage
