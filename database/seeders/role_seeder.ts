@@ -89,25 +89,18 @@ export default class extends BaseSeeder {
       },
     ]
 
-    // Utiliser updateOrCreate pour éviter les doublons
+    // Créer ou mettre à jour les rôles
     for (const roleData of roles) {
-      const existing = await Role.findBy('slug', roleData.slug)
-
-      if (existing) {
-        existing.name = roleData.name
-        existing.description = roleData.description
-        existing.permissions = roleData.permissions
-        existing.isSystem = roleData.isSystem
-        await existing.save()
-      } else {
-        await Role.create({
+      await Role.updateOrCreate(
+        { slug: roleData.slug },
+        {
           name: roleData.name,
           slug: roleData.slug,
           description: roleData.description,
           isSystem: roleData.isSystem,
           permissions: roleData.permissions,
-        })
-      }
+        }
+      )
     }
   }
 }

@@ -6,11 +6,11 @@ export default class extends BaseSeeder {
   async run() {
     // Créer un administrateur
     const admin = await User.updateOrCreate(
-      { email: 'admin@edonis.com' },
+      { email: 'admin@edonis.test' },
       {
         fullName: 'Administrateur Principal',
-        email: 'admin@edonis.com',
-        password: 'Admin123!',
+        email: 'admin@edonis.test',
+        password: 'password',
         isActive: true,
       }
     )
@@ -18,11 +18,11 @@ export default class extends BaseSeeder {
 
     // Créer un manager
     const manager = await User.updateOrCreate(
-      { email: 'manager@edonis.com' },
+      { email: 'manager@edonis.test' },
       {
         fullName: 'Manager LMS',
-        email: 'manager@edonis.com',
-        password: 'Manager123!',
+        email: 'manager@edonis.test',
+        password: 'password',
         isActive: true,
       }
     )
@@ -30,11 +30,11 @@ export default class extends BaseSeeder {
 
     // Créer un enseignant
     const teacher = await User.updateOrCreate(
-      { email: 'teacher@edonis.com' },
+      { email: 'teacher@edonis.test' },
       {
         fullName: 'Professeur Martin',
-        email: 'teacher@edonis.com',
-        password: 'Teacher123!',
+        email: 'teacher@edonis.test',
+        password: 'password',
         department: 'Informatique',
         isActive: true,
       }
@@ -43,11 +43,11 @@ export default class extends BaseSeeder {
 
     // Créer un étudiant
     const student = await User.updateOrCreate(
-      { email: 'student@edonis.com' },
+      { email: 'student@edonis.test' },
       {
         fullName: 'Étudiant Dupont',
-        email: 'student@edonis.com',
-        password: 'Student123!',
+        email: 'student@edonis.test',
+        password: 'password',
         studentId: 'STU-2024-001',
         department: 'Informatique',
         isActive: true,
@@ -59,10 +59,10 @@ export default class extends BaseSeeder {
     console.log('')
     console.log('👤 Comptes disponibles:')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔴 Admin:    admin@edonis.com / Admin123!')
-    console.log('🟡 Manager:  manager@edonis.com / Manager123!')
-    console.log('🟢 Teacher:  teacher@edonis.com / Teacher123!')
-    console.log('🔵 Student:  student@edonis.com / Student123!')
+    console.log('🔴 Admin:    admin@edonis.test / password')
+    console.log('🟡 Manager:  manager@edonis.test / password')
+    console.log('🟢 Teacher:  teacher@edonis.test / password')
+    console.log('🔵 Student:  student@edonis.test / password')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }
 }

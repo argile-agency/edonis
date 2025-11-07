@@ -27,7 +27,7 @@ test.group('Navigation', () => {
     const page = await visit('/dashboard')
 
     // Should redirect to login
-    await page.waitForURL('/login')
+    await page.waitForURL('**/login', { timeout: 5000 })
     await page.assertPath('/login')
   })
 
@@ -36,8 +36,11 @@ test.group('Navigation', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Should see dashboard content
     await page.assertTextContains('h1', 'Bienvenue')
@@ -49,8 +52,11 @@ test.group('Navigation', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Admin should see user management link
     await page.assertExists('a[href="/admin/users"]')
