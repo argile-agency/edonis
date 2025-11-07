@@ -1,4 +1,9 @@
 import { Head, Link } from '@inertiajs/react'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Badge } from '~/components/ui/badge'
+import { Avatar, AvatarFallback } from '~/components/ui/avatar'
+import { Users, BookOpen, ClipboardList, Award, Info } from 'lucide-react'
 
 interface Role {
   id: number
@@ -31,29 +36,26 @@ export default function Dashboard({ user }: Props) {
     <>
       <Head title="Dashboard" />
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="bg-white shadow">
+        <header className="border-b bg-card">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl font-semibold">
-                  {user.fullName?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase()}
-                </div>
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                    {user.fullName?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-bold">
                     Bienvenue, {user.fullName || 'Utilisateur'}
                   </h1>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
-              <Link
-                href="/logout"
-                method="post"
-                as="button"
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-              >
-                Déconnexion
+              <Link href="/logout" method="post" as="button">
+                <Button variant="destructive">Déconnexion</Button>
               </Link>
             </div>
           </div>
@@ -62,191 +64,128 @@ export default function Dashboard({ user }: Props) {
         {/* Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Rôles */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Vos rôles</h2>
-            <div className="flex flex-wrap gap-2">
-              {user.roles.map((role) => (
-                <span
-                  key={role.id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                >
-                  {role.name}
-                </span>
-              ))}
-            </div>
-          </div>
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Vos rôles</CardTitle>
+              <CardDescription>Les rôles associés à votre compte</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {user.roles.map((role) => (
+                  <Badge key={role.id} variant="default">
+                    {role.name}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Quick Actions */}
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h2>
+            <h2 className="text-lg font-semibold mb-4">Actions rapides</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Admin & Manager */}
               {(isAdmin || isManager) && (
-                <Link
-                  href="/admin/users"
-                  className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition">
-                      <svg
-                        className="h-6 w-6 text-blue-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Gérer les utilisateurs</h3>
-                      <p className="text-sm text-gray-600">CRUD complet des utilisateurs</p>
-                    </div>
-                  </div>
+                <Link href="/admin/users">
+                  <Card className="hover:shadow-md transition cursor-pointer h-full">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <Users className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">Gérer les utilisateurs</CardTitle>
+                          <CardDescription>CRUD complet des utilisateurs</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
                 </Link>
               )}
 
               {/* Teacher */}
               {isTeacher && (
                 <>
-                  <div className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
-                        <svg
-                          className="h-6 w-6 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
+                  <Card className="hover:shadow-md transition cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">Mes cours</CardTitle>
+                          <CardDescription>Gérer mes cours (à venir)</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Mes cours</h3>
-                        <p className="text-sm text-gray-600">Gérer mes cours (à venir)</p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardHeader>
+                  </Card>
 
-                  <div className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition">
-                        <svg
-                          className="h-6 w-6 text-purple-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                          />
-                        </svg>
+                  <Card className="hover:shadow-md transition cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                          <ClipboardList className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">Évaluations</CardTitle>
+                          <CardDescription>Corriger les devoirs (à venir)</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Évaluations</h3>
-                        <p className="text-sm text-gray-600">Corriger les devoirs (à venir)</p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardHeader>
+                  </Card>
                 </>
               )}
 
               {/* Student */}
               {isStudent && (
                 <>
-                  <div className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition">
-                        <svg
-                          className="h-6 w-6 text-indigo-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
+                  <Card className="hover:shadow-md transition cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">Mes cours</CardTitle>
+                          <CardDescription>Accéder à mes cours (à venir)</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Mes cours</h3>
-                        <p className="text-sm text-gray-600">Accéder à mes cours (à venir)</p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardHeader>
+                  </Card>
 
-                  <div className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition group cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center group-hover:bg-yellow-200 transition">
-                        <svg
-                          className="h-6 w-6 text-yellow-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                          />
-                        </svg>
+                  <Card className="hover:shadow-md transition cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                          <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">Mes notes</CardTitle>
+                          <CardDescription>Consulter mes résultats (à venir)</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Mes notes</h3>
-                        <p className="text-sm text-gray-600">Consulter mes résultats (à venir)</p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardHeader>
+                  </Card>
                 </>
               )}
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader>
+              <div className="flex items-start gap-4">
+                <Info className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <CardTitle className="text-base mb-2">Bienvenue sur Edonis LMS !</CardTitle>
+                  <CardDescription>
+                    Ce tableau de bord sera enrichi au fur et à mesure du développement. Les modules
+                    de cours, évaluations et contenus pédagogiques seront bientôt disponibles.
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-blue-900 mb-1">
-                  Bienvenue sur Edonis LMS !
-                </h3>
-                <p className="text-sm text-blue-800">
-                  Ce tableau de bord sera enrichi au fur et à mesure du développement. Les modules
-                  de cours, évaluations et contenus pédagogiques seront bientôt disponibles.
-                </p>
-              </div>
-            </div>
-          </div>
+            </CardHeader>
+          </Card>
         </main>
       </div>
     </>

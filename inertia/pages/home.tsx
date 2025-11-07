@@ -1,4 +1,17 @@
 import { Head, Link } from '@inertiajs/react'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Badge } from '~/components/ui/badge'
+import {
+  BookOpen,
+  Video,
+  Package,
+  Compass,
+  Database,
+  Shield,
+  Code,
+  FlaskConical,
+} from 'lucide-react'
 
 interface Role {
   id: number
@@ -31,38 +44,26 @@ export default function Home({ auth }: Props) {
         <div className="absolute top-4 right-8 z-10">
           {auth.user ? (
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-muted-foreground">
                 Bonjour,{' '}
-                <span className="font-semibold">{auth.user.fullName || auth.user.email}</span>
+                <span className="font-semibold text-foreground">
+                  {auth.user.fullName || auth.user.email}
+                </span>
               </span>
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium"
-              >
-                Dashboard
+              <Link href="/dashboard">
+                <Button>Dashboard</Button>
               </Link>
-              <Link
-                href="/logout"
-                method="post"
-                as="button"
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition text-sm font-medium"
-              >
-                Déconnexion
+              <Link href="/logout" method="post" as="button">
+                <Button variant="outline">Déconnexion</Button>
               </Link>
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm font-medium"
-              >
-                Connexion
+              <Link href="/login">
+                <Button variant="outline">Connexion</Button>
               </Link>
-              <Link
-                href="/register"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium"
-              >
-                Inscription
+              <Link href="/register">
+                <Button>Inscription</Button>
               </Link>
             </div>
           )}
@@ -83,8 +84,8 @@ export default function Home({ auth }: Props) {
 
         {/* Bento with documentation, Adocasts, packages and Discord */}
         <div className="isolate mt-10 max-w-screen-xl mx-auto px-16 xl:px-8 grid grid-cols-1 xl:grid-cols-2 xl:grid-rows-3 gap-8">
-          <article className="row-span-3 relative p-6 shadow-sm hover:shadow border border-sand-7 hover:border-sand-8 rounded-2xl transition ease-in-out duration-700 group flex flex-col gap-8">
-            <div className="relative opacity-80">
+          <Card className="row-span-3 transition ease-in-out duration-700 group flex flex-col">
+            <div className="relative opacity-80 p-6">
               <svg fill="none" viewBox="0 0 240 105">
                 <path fill="#F9F9F8" d="M0 4a4 4 0 0 1 4-4h232a4 4 0 0 1 4 4v101H0V4Z" />
                 <g fill="#000" fillRule="evenodd" clipPath="url(#a)" clipRule="evenodd">
@@ -121,278 +122,189 @@ export default function Home({ auth }: Props) {
                 </defs>
               </svg>
 
-              <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-b from-white/0 to-white"></div>
+              <div className="absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-b from-white/0 to-white dark:from-black/0 dark:to-black"></div>
             </div>
 
-            <div className="flex flex-row gap-4">
+            <CardContent className="flex flex-row gap-4 flex-grow">
               <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
-                <svg className="h-6 w-6 fill-primary" viewBox="0 0 256 256">
-                  <path
-                    fill="currentColor"
-                    d="M208 24H72a32 32 0 0 0-32 32v168a8 8 0 0 0 8 8h144a8 8 0 0 0 0-16H56a16 16 0 0 1 16-16h136a8 8 0 0 0 8-8V32a8 8 0 0 0-8-8m-88 16h48v72l-19.21-14.4a8 8 0 0 0-9.6 0L120 112Zm80 144H72a31.8 31.8 0 0 0-16 4.29V56a16 16 0 0 1 16-16h32v88a8 8 0 0 0 12.8 6.4L144 114l27.21 20.4A8 8 0 0 0 176 136a8 8 0 0 0 8-8V40h16Z"
-                  />
-                </svg>
+                <BookOpen className="h-6 w-6 text-primary" />
               </div>
 
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold">
-                  <a href="https://docs.adonisjs.com" target="_blank">
-                    <span>Documentation</span>
-                    <span className="absolute inset-0"></span>
+                  <a
+                    href="https://docs.adonisjs.com"
+                    target="_blank"
+                    className="hover:text-primary"
+                  >
+                    Documentation
                   </a>
                 </h2>
 
-                <p className="text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-700">
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-700">
                   Dive into the official documentation to learn AdonisJS. Read carefully to discover
                   an unmatched set of features, best practices and developer experience. Through
                   examples, guides and API references, you'll find everything you need to build your
                   next project. From installation to deployment, we've got you covered.
                 </p>
               </div>
-            </div>
-          </article>
+            </CardContent>
+          </Card>
 
-          <article className="relative p-6 shadow-sm hover:shadow border border-sand-7 hover:border-sand-8 rounded-2xl transition ease-in-out duration-700 group flex flex-row gap-4">
-            <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
-              <svg className="h-6 w-6 fill-primary" viewBox="0 0 256 256">
-                <path
-                  fill="currentColor"
-                  d="m164.44 105.34-48-32A8 8 0 0 0 104 80v64a8 8 0 0 0 12.44 6.66l48-32a8 8 0 0 0 0-13.32M120 129.05V95l25.58 17ZM216 40H40a16 16 0 0 0-16 16v112a16 16 0 0 0 16 16h176a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16m0 128H40V56h176zm16 40a8 8 0 0 1-8 8H32a8 8 0 0 1 0-16h192a8 8 0 0 1 8 8"
-                />
-              </svg>
-            </div>
+          <Card className="transition ease-in-out duration-700 group">
+            <CardContent className="flex flex-row gap-4 p-6">
+              <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
+                <Video className="h-6 w-6 text-primary" />
+              </div>
 
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">
-                <a href="https://adocasts.com" target="_blank">
-                  <span>Adocasts</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">
+                  <a href="https://adocasts.com" target="_blank" className="hover:text-primary">
+                    Adocasts
+                  </a>
+                </h2>
 
-              <p className="text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-700">
-                Level up your development and Adonis skills with hours of video content, from
-                beginner to advanced, through databases, testing, and more.
-              </p>
-            </div>
-          </article>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-700">
+                  Level up your development and Adonis skills with hours of video content, from
+                  beginner to advanced, through databases, testing, and more.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <article className="relative p-6 shadow-sm hover:shadow border border-sand-7 hover:border-sand-8 rounded-2xl transition ease-in-out duration-700 group flex flex-row gap-4">
-            <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
-              <svg className="h-6 w-6 fill-primary" viewBox="0 0 256 256">
-                <path
-                  fill="currentColor"
-                  d="M208 96a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16h-32a16 16 0 0 0-16 16v8H96v-8a16 16 0 0 0-16-16H48a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h8v64h-8a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16v-8h64v8a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16h-8V96Zm-32-48h32v32h-32ZM48 48h32v15.9a.5.5 0 0 0 0 .2V80H48Zm32 160H48v-32h32v15.9a.5.5 0 0 0 0 .2zm128 0h-32v-32h32Zm-24-48h-8a16 16 0 0 0-16 16v8H96v-8a16 16 0 0 0-16-16h-8V96h8a16 16 0 0 0 16-16v-8h64v8a16 16 0 0 0 16 16h8Z"
-                />
-              </svg>
-            </div>
+          <Card className="transition ease-in-out duration-700 group">
+            <CardContent className="flex flex-row gap-4 p-6">
+              <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
+                <Package className="h-6 w-6 text-primary" />
+              </div>
 
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">
-                <a href="https://packages.adonisjs.com" target="_blank">
-                  <span>Packages</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">
+                  <a
+                    href="https://packages.adonisjs.com"
+                    target="_blank"
+                    className="hover:text-primary"
+                  >
+                    Packages
+                  </a>
+                </h2>
 
-              <p className="text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-700">
-                Supercharge your AdonisJS application with packages built and maintained by both the
-                core team and the community.
-              </p>
-            </div>
-          </article>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-700">
+                  Supercharge your AdonisJS application with packages built and maintained by both
+                  the core team and the community.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          <article className="relative p-6 shadow-sm hover:shadow border border-sand-7 hover:border-sand-8 rounded-2xl transition ease-in-out duration-700 group flex flex-row gap-4">
-            <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
-              <svg className="h-6 w-6 fill-primary" viewBox="0 0 256 256">
-                <path
-                  fill="currentColor"
-                  d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88m44.42-143.16-64 32a8.05 8.05 0 0 0-3.58 3.58l-32 64A8 8 0 0 0 80 184a8.1 8.1 0 0 0 3.58-.84l64-32a8.05 8.05 0 0 0 3.58-3.58l32-64a8 8 0 0 0-10.74-10.74M138 138l-40.11 20.11L118 118l40.15-20.07Z"
-                />
-              </svg>
-            </div>
+          <Card className="transition ease-in-out duration-700 group">
+            <CardContent className="flex flex-row gap-4 p-6">
+              <div className="shrink-0 w-10 h-10 bg-primary/20 rounded-md flex justify-center items-center">
+                <Compass className="h-6 w-6 text-primary" />
+              </div>
 
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">
-                <a href="https://discord.gg/vDcEjq6" target="_blank">
-                  <span>Discord</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">
+                  <a
+                    href="https://discord.gg/vDcEjq6"
+                    target="_blank"
+                    className="hover:text-primary"
+                  >
+                    Discord
+                  </a>
+                </h2>
 
-              <p className="text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-700">
-                Never get lost again, ask questions, and share your knowledge or projects with a
-                growing and supportive community. Join us.
-              </p>
-            </div>
-          </article>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-700">
+                  Never get lost again, ask questions, and share your knowledge or projects with a
+                  growing and supportive community. Join us.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Features */}
         <div className="grow mt-10 mb-8 px-16 xl:px-8 max-w-screen-xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <article className="relative py-4 px-5 bg-white border border-transparent rounded-lg hover:border-sand-8 hover:shadow-sm transition duration-100 ease-in-out group">
-              <h2 className="font-semibold text-sand-12">
-                <a
-                  href="https://lucid.adonisjs.com"
-                  target="_blank"
-                  className="flex flex-row gap-2"
-                >
+            <Card className="transition duration-100 ease-in-out group">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <span className="bg-[#D5EAE7] h-6 w-6 flex justify-center items-center rounded">
-                    <svg className="h-4 w-4 fill-[#0E766E]" viewBox="0 0 24 24">
-                      <g
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      >
-                        <path d="M4 6a8 3 0 1 0 16 0A8 3 0 1 0 4 6" />
-                        <path d="M4 6v6a8 3 0 0 0 16 0V6" />
-                        <path d="M4 12v6a8 3 0 0 0 16 0v-6" />
-                      </g>
-                    </svg>
+                    <Database className="h-4 w-4 text-[#0E766E]" />
                   </span>
-                  <span>Lucid</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+                  <a
+                    href="https://lucid.adonisjs.com"
+                    target="_blank"
+                    className="hover:text-primary"
+                  >
+                    Lucid
+                  </a>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-100">
+                  A SQL ORM with a powerful query builder, active record, migrations, and model
+                  factories. Everything you need to work with databases.
+                </p>
+              </CardContent>
+            </Card>
 
-              <p className="mt-4 text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-100">
-                A SQL ORM with a powerful query builder, active record, migrations, and model
-                factories. Everything you need to work with databases.
-              </p>
-
-              <svg
-                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 text-sand-9 w-4 h-4 transition ease-in-out duration-100"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6m-7 1 9-9m-5 0h5v5"
-                />
-              </svg>
-            </article>
-
-            <article className="relative py-4 px-5 bg-white border border-transparent rounded-lg hover:border-sand-8 hover:shadow-sm transition duration-100 ease-in-out group">
-              <h2 className="font-semibold text-sand-12">
-                <a href="https://vinejs.dev/" target="_blank" className="flex flex-row gap-2">
+            <Card className="transition duration-100 ease-in-out group">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <span className="bg-[#F3DBFC] h-6 w-6 flex justify-center items-center rounded">
-                    <svg className="h-4 w-4 fill-[#CA5AF2]" viewBox="0 0 24 24">
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"
-                      />
-                    </svg>
+                    <Shield className="h-4 w-4 text-[#CA5AF2]" />
                   </span>
-                  <span>Vine</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+                  <a href="https://vinejs.dev/" target="_blank" className="hover:text-primary">
+                    Vine
+                  </a>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-100">
+                  A yet simple but feature rich and type-safe form data validation. It comes with
+                  50+ built-in rules and an expressive API to define custom rules.
+                </p>
+              </CardContent>
+            </Card>
 
-              <p className="mt-4 text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-100">
-                A yet simple but feature rich and type-safe form data validation. It comes with 50+
-                built-in rules and an expressive API to define custom rules.
-              </p>
-
-              <svg
-                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 text-sand-9 w-4 h-4 transition ease-in-out duration-100"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6m-7 1 9-9m-5 0h5v5"
-                />
-              </svg>
-            </article>
-
-            <article className="relative py-4 px-5 bg-white border border-transparent rounded-lg hover:border-sand-8 hover:shadow-sm transition duration-100 ease-in-out group">
-              <h2 className="font-semibold text-sand-12">
-                <a href="https://inertiajs.com/" target="_blank" className="flex flex-row gap-2">
+            <Card className="transition duration-100 ease-in-out group">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <span className="bg-[#B8EAE0] h-6 w-6 flex justify-center items-center rounded">
-                    <svg className="h-4 w-4 fill-[#4BBBA5]" viewBox="0 0 24 24">
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m12.5 8l4 4l-4 4H17l4-4l-4-4zm-9 0l4 4l-4 4H8l4-4l-4-4z"
-                      />
-                    </svg>
+                    <Code className="h-4 w-4 text-[#4BBBA5]" />
                   </span>
-                  <span>InertiaJS</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
+                  <a href="https://inertiajs.com/" target="_blank" className="hover:text-primary">
+                    InertiaJS
+                  </a>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-100">
+                  The modern monolithic application architecture. It allows you to build single-page
+                  applications without building an API.
+                </p>
+              </CardContent>
+            </Card>
 
-              <p className="mt-4 text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-100">
-                The modern monolithic application architecture. It allows you to build single-page
-                applications without building an API.
-              </p>
-
-              <svg
-                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 text-sand-9 w-4 h-4 transition ease-in-out duration-100"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6m-7 1 9-9m-5 0h5v5"
-                />
-              </svg>
-            </article>
-
-            <article className="relative py-4 px-5 bg-white border border-transparent rounded-lg hover:border-sand-8 hover:shadow-sm transition duration-100 ease-in-out group">
-              <h2 className="font-semibold text-sand-12">
-                <a href="https://japa.dev" target="_blank" className="flex flex-row gap-2">
+            <Card className="transition duration-100 ease-in-out group">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <span className="bg-[#FACDDC] h-6 w-6 flex justify-center items-center rounded">
-                    <svg className="h-4 w-4 fill-[#DD3074]" viewBox="0 0 256 256">
-                      <path
-                        fill="currentColor"
-                        d="m240.49 83.51-60-60a12 12 0 0 0-17 0L34.28 152.75a48.77 48.77 0 0 0 69 69l111.2-111.26 21.31-7.11a12 12 0 0 0 4.7-19.87M86.28 204.75a24.77 24.77 0 0 1-35-35l28.13-28.13c7.73-2.41 19.58-3 35.06 5a84 84 0 0 0 21.95 8ZM204.2 88.62a12.15 12.15 0 0 0-4.69 2.89l-38.89 38.9c-7.73 2.41-19.58 3-35.06-5a84 84 0 0 0-21.94-8L172 49l37.79 37.79Z"
-                      />
-                    </svg>
+                    <FlaskConical className="h-4 w-4 text-[#DD3074]" />
                   </span>
-                  <span>Japa</span>
-                  <span className="absolute inset-0"></span>
-                </a>
-              </h2>
-
-              <p className="mt-4 text-sm text-sand-11 group-hover:text-sand-12 transition ease-in-out duration-100">
-                From JSON API tests using Open API schema to browser tests with Playwrighht, it
-                comes with everything you need to test your application.
-              </p>
-
-              <svg
-                className="absolute top-4 right-5 opacity-0 group-hover:opacity-100 text-sand-9 w-4 h-4 transition ease-in-out duration-100"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6m-7 1 9-9m-5 0h5v5"
-                />
-              </svg>
-            </article>
+                  <a href="https://japa.dev" target="_blank" className="hover:text-primary">
+                    Japa
+                  </a>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground group-hover:text-foreground transition ease-in-out duration-100">
+                  From JSON API tests using Open API schema to browser tests with Playwright, it
+                  comes with everything you need to test your application.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
