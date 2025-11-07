@@ -1,4 +1,9 @@
 import { Head, Link } from '@inertiajs/react'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Badge } from '~/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { ArrowLeft, Edit, UserX, UserCheck } from 'lucide-react'
 
 interface Role {
   id: number
@@ -44,50 +49,41 @@ export default function UsersShow({ user, userRoles }: Props) {
     <>
       <Head title={`${user.fullName || user.email}`} />
 
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <Link
-              href="/admin/users"
-              className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
-            >
-              ← Retour à la liste
+            <Link href="/admin/users">
+              <Button variant="ghost" className="mb-4 gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Retour à la liste
+              </Button>
             </Link>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.fullName || user.email}
-                    className="h-20 w-20 rounded-full"
-                  />
-                ) : (
-                  <div className="h-20 w-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-2xl font-semibold">
+                <Avatar className="h-20 w-20">
+                  {user.avatarUrl && (
+                    <AvatarImage src={user.avatarUrl} alt={user.fullName || user.email} />
+                  )}
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {user.fullName?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {user.fullName || 'Utilisateur sans nom'}
-                  </h1>
-                  <p className="text-gray-600">{user.email}</p>
+                  <h1 className="text-3xl font-bold">{user.fullName || 'Utilisateur sans nom'}</h1>
+                  <p className="text-muted-foreground">{user.email}</p>
                   <div className="mt-2">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
+                    <Badge variant={user.isActive ? 'default' : 'destructive'}>
                       {user.isActive ? 'Actif' : 'Inactif'}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               </div>
-              <Link
-                href={`/admin/users/${user.id}/edit`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-              >
-                Éditer
+              <Link href={`/admin/users/${user.id}/edit`}>
+                <Button className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  Éditer
+                </Button>
               </Link>
             </div>
           </div>
@@ -96,184 +92,213 @@ export default function UsersShow({ user, userRoles }: Props) {
             {/* Colonne principale */}
             <div className="lg:col-span-2 space-y-6">
               {/* Informations personnelles */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Informations personnelles
-                </h2>
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Nom complet</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.fullName || 'N/A'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Email</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Téléphone</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.phone || 'N/A'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Matricule</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.studentId || 'N/A'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Département</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.department || 'N/A'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Organisation</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.organization || 'N/A'}</dd>
-                  </div>
-                  <div className="md:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500">Biographie</dt>
-                    <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
-                      {user.bio || 'Aucune biographie'}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informations personnelles</CardTitle>
+                  <CardDescription>Détails du profil utilisateur</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Nom complet</dt>
+                      <dd className="mt-1 text-sm">{user.fullName || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Email</dt>
+                      <dd className="mt-1 text-sm">{user.email}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Téléphone</dt>
+                      <dd className="mt-1 text-sm">{user.phone || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Matricule</dt>
+                      <dd className="mt-1 text-sm">{user.studentId || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Département</dt>
+                      <dd className="mt-1 text-sm">{user.department || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Organisation</dt>
+                      <dd className="mt-1 text-sm">{user.organization || 'N/A'}</dd>
+                    </div>
+                    <div className="md:col-span-2">
+                      <dt className="text-sm font-medium text-muted-foreground">Biographie</dt>
+                      <dd className="mt-1 text-sm whitespace-pre-wrap">
+                        {user.bio || 'Aucune biographie'}
+                      </dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
 
               {/* Préférences */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Préférences</h2>
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Langue</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user.locale === 'fr' ? 'Français' : 'English'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Fuseau horaire</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.timezone}</dd>
-                  </div>
-                </dl>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Préférences</CardTitle>
+                  <CardDescription>Paramètres de langue et fuseau horaire</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Langue</dt>
+                      <dd className="mt-1 text-sm">
+                        {user.locale === 'fr' ? 'Français' : 'English'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">Fuseau horaire</dt>
+                      <dd className="mt-1 text-sm">{user.timezone}</dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
 
               {/* Activité */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Activité</h2>
-                <dl className="space-y-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Dernière connexion</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleString('fr-FR')
-                        : 'Jamais connecté'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Date de création</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {new Date(user.createdAt).toLocaleString('fr-FR')}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Dernière modification</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {new Date(user.updatedAt).toLocaleString('fr-FR')}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Activité</CardTitle>
+                  <CardDescription>Historique de connexion et modifications</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">
+                        Dernière connexion
+                      </dt>
+                      <dd className="mt-1 text-sm">
+                        {user.lastLoginAt
+                          ? new Date(user.lastLoginAt).toLocaleString('fr-FR')
+                          : 'Jamais connecté'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">
+                        Date de création
+                      </dt>
+                      <dd className="mt-1 text-sm">
+                        {new Date(user.createdAt).toLocaleString('fr-FR')}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-muted-foreground">
+                        Dernière modification
+                      </dt>
+                      <dd className="mt-1 text-sm">
+                        {new Date(user.updatedAt).toLocaleString('fr-FR')}
+                      </dd>
+                    </div>
+                  </dl>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Colonne latérale */}
             <div className="space-y-6">
               {/* Rôles globaux */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Rôles globaux</h2>
-                <div className="space-y-2">
-                  {userRoles.filter((ur) => !ur.courseId).length > 0 ? (
-                    userRoles
-                      .filter((ur) => !ur.courseId)
-                      .map((userRole) => (
-                        <div
-                          key={userRole.id}
-                          className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {userRole.role.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Assigné le {new Date(userRole.createdAt).toLocaleDateString('fr-FR')}
-                            </p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rôles globaux</CardTitle>
+                  <CardDescription>Rôles système de l'utilisateur</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {userRoles.filter((ur) => !ur.courseId).length > 0 ? (
+                      userRoles
+                        .filter((ur) => !ur.courseId)
+                        .map((userRole) => (
+                          <div
+                            key={userRole.id}
+                            className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">{userRole.role.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Assigné le{' '}
+                                {new Date(userRole.createdAt).toLocaleDateString('fr-FR')}
+                              </p>
+                            </div>
+                            <Badge variant="secondary">{userRole.role.slug}</Badge>
                           </div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {userRole.role.slug}
-                          </span>
-                        </div>
-                      ))
-                  ) : (
-                    <p className="text-sm text-gray-500">Aucun rôle global assigné</p>
-                  )}
-                </div>
-              </div>
+                        ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Aucun rôle global assigné</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Rôles contextuels (par cours) */}
               {userRoles.filter((ur) => ur.courseId).length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Rôles par cours</h2>
-                  <div className="space-y-2">
-                    {userRoles
-                      .filter((ur) => ur.courseId)
-                      .map((userRole) => (
-                        <div
-                          key={userRole.id}
-                          className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {userRole.role.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Cours ID: {userRole.courseId}
-                            </p>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Rôles par cours</CardTitle>
+                    <CardDescription>Rôles spécifiques à certains cours</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {userRoles
+                        .filter((ur) => ur.courseId)
+                        .map((userRole) => (
+                          <div
+                            key={userRole.id}
+                            className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">{userRole.role.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Cours ID: {userRole.courseId}
+                              </p>
+                            </div>
+                            <Badge variant="secondary">{userRole.role.slug}</Badge>
                           </div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {userRole.role.slug}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Actions rapides */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
-                <div className="space-y-2">
-                  <Link
-                    href={`/admin/users/${user.id}/edit`}
-                    className="block w-full px-4 py-2 text-center text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                  >
-                    Éditer l'utilisateur
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                  <CardDescription>Gérer le compte utilisateur</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Link href={`/admin/users/${user.id}/edit`}>
+                    <Button className="w-full gap-2" variant="default">
+                      <Edit className="h-4 w-4" />
+                      Éditer l'utilisateur
+                    </Button>
                   </Link>
                   {user.isActive ? (
-                    <button
+                    <Button
+                      variant="destructive"
+                      className="w-full gap-2"
                       onClick={() => {
                         if (confirm('Êtes-vous sûr de vouloir désactiver cet utilisateur ?')) {
                           // Handle deactivation
                         }
                       }}
-                      className="block w-full px-4 py-2 text-center text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
                     >
+                      <UserX className="h-4 w-4" />
                       Désactiver le compte
-                    </button>
+                    </Button>
                   ) : (
-                    <button
+                    <Button
+                      variant="default"
+                      className="w-full gap-2"
                       onClick={() => {
                         // Handle activation
                       }}
-                      className="block w-full px-4 py-2 text-center text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
                     >
+                      <UserCheck className="h-4 w-4" />
                       Activer le compte
-                    </button>
+                    </Button>
                   )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
