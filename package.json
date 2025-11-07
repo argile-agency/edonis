@@ -43,7 +43,7 @@
     "@swc/core": "1.11.24",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/luxon": "^3.7.1",
-    "@types/node": "^22.15.18",
+    "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.4",
