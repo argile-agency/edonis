@@ -21,8 +21,16 @@ export default class Role extends BaseModel {
   declare description: string | null
 
   @column({
-    prepare: (value: RolePermissions | null) => (value ? JSON.stringify(value) : null),
-    consume: (value: string | null) => (value ? JSON.parse(value) : null),
+    prepare: (value: RolePermissions | null) => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'string') return value
+      return JSON.stringify(value)
+    },
+    consume: (value: string | null) => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare permissions: RolePermissions | null
 

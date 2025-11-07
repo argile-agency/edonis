@@ -14,9 +14,13 @@ test.group('Authentication', () => {
 
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    // Click submit and wait for navigation with shorter timeout
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
+
     await page.assertPath('/dashboard')
   })
 
@@ -27,6 +31,9 @@ test.group('Authentication', () => {
     await page.locator('input[type="password"]').fill('wrongpassword')
     await page.locator('button[type="submit"]').click()
 
+    // Wait a bit for any potential error messages
+    await page.waitForTimeout(1000)
+
     // Should stay on login page
     await page.assertPath('/login')
   })
@@ -34,8 +41,12 @@ test.group('Authentication', () => {
   test('can navigate to register page', async ({ visit }) => {
     const page = await visit('/login')
 
-    await page.locator('a[href="/register"]').click()
-    await page.waitForURL('/register')
+    // Click link and wait for navigation
+    await Promise.all([
+      page.waitForURL('**/register', { timeout: 5000 }),
+      page.locator('a[href="/register"]').click(),
+    ])
+
     await page.assertPath('/register')
     await page.assertTextContains('h2', 'Inscription')
   })
@@ -45,12 +56,18 @@ test.group('Authentication', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Then logout
-    await page.locator('button:has-text("Déconnexion")').click()
-    await page.waitForURL('/login')
+    await Promise.all([
+      page.waitForURL('**/login', { timeout: 5000 }),
+      page.locator('button:has-text("Déconnexion")').click(),
+    ])
+
     await page.assertPath('/login')
   })
 })

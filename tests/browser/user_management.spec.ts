@@ -6,12 +6,17 @@ test.group('User Management', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Navigate to users
-    await page.locator('a[href="/admin/users"]').click()
-    await page.waitForURL('/admin/users')
+    await Promise.all([
+      page.waitForURL('**/admin/users', { timeout: 5000 }),
+      page.locator('a[href="/admin/users"]').click(),
+    ])
 
     await page.assertTextContains('h1', 'Gestion des utilisateurs')
     await page.assertExists('table')
@@ -22,15 +27,20 @@ test.group('User Management', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Navigate to users
     await page.goto('/admin/users')
+    await page.waitForLoadState('networkidle')
 
     // Search for a user
     await page.locator('input[placeholder*="Nom, email"]').fill('admin')
     await page.locator('button:has-text("Filtrer")').click()
+    await page.waitForTimeout(500)
 
     // Should show filtered results
     await page.assertExists('table tbody tr')
@@ -41,15 +51,20 @@ test.group('User Management', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Navigate to users
     await page.goto('/admin/users')
+    await page.waitForLoadState('networkidle')
 
     // Filter by role
     await page.locator('select#role').selectOption('admin')
     await page.locator('button:has-text("Filtrer")').click()
+    await page.waitForTimeout(500)
 
     // Should show filtered results
     await page.assertExists('table tbody tr')
@@ -60,15 +75,21 @@ test.group('User Management', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Navigate to users
     await page.goto('/admin/users')
+    await page.waitForLoadState('networkidle')
 
     // Click create user button
-    await page.locator('a[href="/admin/users/create"]').click()
-    await page.waitForURL('/admin/users/create')
+    await Promise.all([
+      page.waitForURL('**/admin/users/create', { timeout: 5000 }),
+      page.locator('a[href="/admin/users/create"]').click(),
+    ])
 
     await page.assertTextContains('h1', 'Créer un utilisateur')
     await page.assertExists('input#fullName')
@@ -80,14 +101,19 @@ test.group('User Management', () => {
     const page = await visit('/login')
     await page.locator('input[type="email"]').fill('admin@edonis.test')
     await page.locator('input[type="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-    await page.waitForURL('/dashboard')
+
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
 
     // Navigate to users
     await page.goto('/admin/users')
+    await page.waitForLoadState('networkidle')
 
-    // Click first "Voir" button
+    // Click first "Voir" button and wait for navigation
     await page.locator('a:has-text("Voir")').first().click()
+    await page.waitForTimeout(1000)
 
     // Should be on user detail page
     await page.assertUrlContains('/admin/users/')
