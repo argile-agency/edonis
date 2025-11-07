@@ -1,6 +1,25 @@
-import { Head } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 
-export default function Home() {
+interface Role {
+  id: number
+  name: string
+  slug: string
+}
+
+interface User {
+  id: number
+  fullName: string | null
+  email: string
+  roles: Role[]
+}
+
+interface Props {
+  auth: {
+    user: User | null
+  }
+}
+
+export default function Home({ auth }: Props) {
   return (
     <>
       <Head title="Homepage" />
@@ -8,6 +27,47 @@ export default function Home() {
       <div className="fixed xl:absolute left-8 right-8 top-0 bottom-0 xl:inset-0 max-w-screen-xl mx-auto before:content-[''] before:[background:repeating-linear-gradient(0deg,var(--sand-5)_0_4px,transparent_0_8px)] before:absolute before:top-0 before:left-0 before:h-full before:w-px after:content-[''] after:[background:repeating-linear-gradient(0deg,var(--sand-5)_0_4px,transparent_0_8px)] after:absolute after:top-0 after:right-0 after:h-full after:w-px"></div>
 
       <div className="pt-4 h-full flex flex-col">
+        {/* Auth Buttons / User Menu */}
+        <div className="absolute top-4 right-8 z-10">
+          {auth.user ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-700">
+                Bonjour,{' '}
+                <span className="font-semibold">{auth.user.fullName || auth.user.email}</span>
+              </span>
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/logout"
+                method="post"
+                as="button"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition text-sm font-medium"
+              >
+                Déconnexion
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm font-medium"
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/register"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium"
+              >
+                Inscription
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Header */}
         <div className="grow pb-4 bg-gradient-to-b from-sand-1 to-sand-2 flex justify-center items-center">
           <a href="https://adonisjs.com" target="_blank" className="isolate">
