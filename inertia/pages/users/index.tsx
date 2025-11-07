@@ -124,12 +124,15 @@ export default function UsersIndex({ users }: Props) {
                 {/* Filtre par rôle */}
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="role">Rôle</Label>
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <Select
+                    value={roleFilter || 'all'}
+                    onValueChange={(value) => setRoleFilter(value === 'all' ? '' : value)}
+                  >
                     <SelectTrigger id="role">
                       <SelectValue placeholder="Tous les rôles" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les rôles</SelectItem>
+                      <SelectItem value="all">Tous les rôles</SelectItem>
                       <SelectItem value="admin">Administrateur</SelectItem>
                       <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="teacher">Enseignant</SelectItem>
@@ -142,12 +145,15 @@ export default function UsersIndex({ users }: Props) {
                 {/* Filtre par statut */}
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="status">Statut</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <Select
+                    value={statusFilter || 'all'}
+                    onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}
+                  >
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Tous" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous</SelectItem>
+                      <SelectItem value="all">Tous</SelectItem>
                       <SelectItem value="active">Actif</SelectItem>
                       <SelectItem value="inactive">Inactif</SelectItem>
                     </SelectContent>
