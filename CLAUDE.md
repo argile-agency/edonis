@@ -41,6 +41,99 @@ bun test              # Run all tests
 node ace test         # Alternative test command
 ```
 
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment.
+
+### Available Workflows
+
+**1. CI Pipeline** (`.github/workflows/ci.yml`)
+- **Triggers**: Push and Pull Requests to main/develop
+- **Jobs**:
+  - **Lint & Type Check**: ESLint and TypeScript validation
+  - **Build**: Production build verification
+  - **Security Audit**: Dependency vulnerability scanning
+  - **Unit Tests**: Runs functional tests with PostgreSQL
+- **Status**: Required checks for PR merges
+
+**2. E2E Browser Tests** (`.github/workflows/e2e.yml`)
+- **Triggers**: Pull Requests, nightly schedule (2 AM UTC), manual dispatch
+- **Jobs**:
+  - **Browser Tests**: Runs Playwright tests with Chromium
+  - **Multi-Browser Matrix**: Tests on Chromium, Firefox, and Webkit (nightly/manual only)
+- **Artifacts**: Screenshots, videos, and test reports on failure
+- **Timeout**: 20 minutes (single), 30 minutes (matrix)
+
+**3. Code Quality** (`.github/workflows/code-quality.yml`)
+- **Triggers**: Push and Pull Requests to main/develop
+- **Jobs**:
+  - **CodeQL**: Security vulnerability scanning
+  - **Dependency Review**: Checks for vulnerable/problematic dependencies
+  - **Prettier Check**: Code formatting validation
+  - **Commit Lint**: Validates conventional commit messages
+  - **Code Metrics**: Lines of code and bundle size reporting
+
+**4. Dependabot** (`.github/dependabot.yml`)
+- **Schedule**: Weekly updates on Mondays at 9 AM
+- **Scope**: npm dependencies and GitHub Actions
+- **Configuration**:
+  - Groups minor/patch updates together
+  - Separate groups for dev and production dependencies
+  - Auto-assigns to @delwwwinc
+  - Uses conventional commit format
+
+### Workflow Status Badges
+
+Add these to your README.md to show CI status:
+
+```markdown
+![CI](https://github.com/delwwwinc/edonis/workflows/CI/badge.svg)
+![E2E](https://github.com/delwwwinc/edonis/workflows/E2E%20Browser%20Tests/badge.svg)
+![Code Quality](https://github.com/delwwwinc/edonis/workflows/Code%20Quality/badge.svg)
+```
+
+### Running Workflows Locally
+
+To simulate CI checks before pushing:
+
+```bash
+# Run all CI checks locally
+bun run lint && bun run typecheck && bun run build && node ace test
+
+# Run browser tests locally
+node ace db:seed && node ace test browser
+
+# Check code formatting
+bun run format --check
+```
+
+### Environment Variables for CI
+
+The following environment variables are configured in GitHub Actions:
+
+- `NODE_ENV`: Set to `test`
+- `APP_KEY`: Test-only encryption key
+- `DB_*`: PostgreSQL connection details (from service container)
+- `PORT` / `HOST`: Server configuration
+
+**Note**: Never commit real credentials. Use GitHub Secrets for production deployments.
+
+### Conventional Commit Format
+
+All commits must follow the conventional commits specification:
+
+```
+type(scope): description
+
+Examples:
+feat(auth): add SSO login with SAML 2.0
+fix(users): resolve hydration error in user list
+docs(readme): update installation instructions
+chore(deps): update dependencies
+```
+
+Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
+
 ## Product Vision & Strategy
 
 ### Market Positioning
