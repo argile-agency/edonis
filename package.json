@@ -53,7 +53,7 @@
     "playwright": "^1.56.1",
     "prettier": "^3.5.3",
     "ts-node-maintained": "^10.9.5",
-    "typescript": "~5.8.3",
+    "typescript": "~5.9.3",
     "vite": "^6.3.5"
   },
   "dependencies": {
