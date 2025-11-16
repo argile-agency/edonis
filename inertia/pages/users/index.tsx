@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
-import { Search, UserPlus } from 'lucide-react'
+import { Search, UserPlus, ArrowLeft } from 'lucide-react'
 
 interface Role {
   id: number
@@ -89,6 +89,15 @@ export default function UsersIndex({ users }: Props) {
 
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Back Button */}
+          <Link
+            href="/dashboard"
+            className="text-sm text-muted-foreground hover:underline flex items-center gap-2 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au tableau de bord
+          </Link>
+
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Gestion des utilisateurs</h1>
