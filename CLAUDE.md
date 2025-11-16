@@ -41,6 +41,37 @@ bun test              # Run all tests
 node ace test         # Alternative test command
 ```
 
+## Development Best Practices
+
+### Demo Data & Seeders
+
+**IMPORTANT**: When developing features that require demo data, ALWAYS use existing seeders instead of creating new ones.
+
+**Existing Seeders**:
+- `user_seeder.ts` - Creates test users (admin, manager, teacher, student)
+- `course_seeder.ts` - Creates sample courses with various statuses
+- `course_category_seeder.ts` - Creates course categories
+- `enrollment_method_seeder.ts` - Creates enrollment methods
+- `cohort_seeder.ts` - Creates student cohorts
+- `student_enrollment_seeder.ts` - Enrolls test student in courses
+- `app_setting_seeder.ts` - App branding and settings
+- `menu_seeder.ts` - Navigation menus (header, footer, user menu)
+
+**Seeder Guidelines**:
+1. Run `node ace db:seed` to populate all demo data
+2. Reuse existing data models instead of creating duplicates
+3. Check for existing records with `findBy()` or `updateOrCreate()` 
+4. Keep demo data realistic but minimal to avoid bloat during development
+5. Document any new seeders in this file
+
+**Test Accounts** (after running seeders):
+```
+Admin:    admin@edonis.test / password
+Manager:  manager@edonis.test / password  
+Teacher:  teacher@edonis.test / password
+Student:  student@edonis.test / password
+```
+
 ## CI/CD Pipeline
 
 The project uses GitHub Actions for continuous integration and deployment.
