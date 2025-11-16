@@ -146,33 +146,37 @@ export default function Dashboard({ user, auth, appSettings, menus }: Props) {
               {/* Teacher */}
               {isTeacher && (
                 <>
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                          <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <Link href="/courses">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Mes cours</CardTitle>
+                            <CardDescription>Gérer mes cours</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">Mes cours</CardTitle>
-                          <CardDescription>Gérer mes cours (à venir)</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                      </CardHeader>
+                    </Card>
+                  </Link>
 
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                          <ClipboardList className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <Link href="/evaluations">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                            <ClipboardList className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Évaluations</CardTitle>
+                            <CardDescription>Corriger les devoirs</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">Évaluations</CardTitle>
-                          <CardDescription>Corriger les devoirs (à venir)</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                      </CardHeader>
+                    </Card>
+                  </Link>
                 </>
               )}
 

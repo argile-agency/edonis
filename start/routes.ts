@@ -17,6 +17,7 @@ const HomeController = () => import('#controllers/home_controller')
 const CoursesController = () => import('#controllers/courses_controller')
 const EnrollmentsController = () => import('#controllers/enrollments_controller')
 const CategoriesController = () => import('#controllers/categories_controller')
+const EvaluationsController = () => import('#controllers/evaluations_controller')
 
 router.get('/', [HomeController, 'index']).as('home')
 
@@ -80,6 +81,18 @@ router
   .prefix('/admin')
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager'] }))
+
+/*
+|--------------------------------------------------------------------------
+| Routes des évaluations
+|--------------------------------------------------------------------------
+| Routes pour gérer les évaluations à corriger (instructeurs)
+*/
+router
+  .group(() => {
+    router.get('/evaluations', [EvaluationsController, 'index']).as('evaluations.index')
+  })
+  .use(middleware.auth())
 
 /*
 |--------------------------------------------------------------------------
