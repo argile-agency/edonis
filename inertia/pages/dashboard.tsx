@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import { Badge } from '~/components/ui/badge'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Users, BookOpen, ClipboardList, Award, Info } from 'lucide-react'
+import AppHeader from '~/components/layout/app-header'
 
 interface Role {
   id: number
@@ -21,11 +22,34 @@ interface User {
   roles: Role[]
 }
 
-interface Props {
-  user: User
+interface AppSettings {
+  appName: string
+  appLogoUrl: string | null
+  primaryColor: string
 }
 
-export default function Dashboard({ user }: Props) {
+interface MenuItem {
+  id: number
+  label: string
+  url: string
+  icon: string | null
+  children: MenuItem[]
+}
+
+interface Props {
+  user: User
+  auth: {
+    user: User | null
+  }
+  appSettings: AppSettings | null
+  menus: {
+    header: MenuItem[]
+    footer: MenuItem[]
+    userMenu: MenuItem[]
+  }
+}
+
+export default function Dashboard({ user, auth, appSettings, menus }: Props) {
   const hasRole = (slug: string) => user.roles.some((role) => role.slug === slug)
   const isAdmin = hasRole('admin')
   const isManager = hasRole('manager')
@@ -38,30 +62,24 @@ export default function Dashboard({ user }: Props) {
 
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b bg-card">
+        <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
+
+        {/* User Info Section */}
+        <div className="border-b bg-card">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    {user.fullName?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h1 className="text-2xl font-bold">
-                    Bienvenue, {user.fullName || 'Utilisateur'}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                  {user.fullName?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-2xl font-bold">Bienvenue, {user.fullName || 'Utilisateur'}</h1>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
-              <Button variant="destructive" asChild>
-                <Link href="/logout" method="post">
-                  Déconnexion
-                </Link>
-              </Button>
             </div>
           </div>
-        </header>
+        </div>
 
         {/* Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -88,21 +106,41 @@ export default function Dashboard({ user }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Admin & Manager */}
               {(isAdmin || isManager) && (
-                <Link href="/admin/users">
-                  <Card className="hover:shadow-md transition cursor-pointer h-full">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Users className="h-6 w-6 text-primary" />
+                <>
+                  <Link href="/admin/users">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <Users className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Gérer les utilisateurs</CardTitle>
+                            <CardDescription>CRUD complet des utilisateurs</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">Gérer les utilisateurs</CardTitle>
-                          <CardDescription>CRUD complet des utilisateurs</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+
+                  <Link href="/admin/courses">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Gérer les cours</CardTitle>
+                            <CardDescription>
+                              Administration des cours et catégories
+                            </CardDescription>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                </Link>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                </>
               )}
 
               {/* Teacher */}
@@ -141,33 +179,37 @@ export default function Dashboard({ user }: Props) {
               {/* Student */}
               {isStudent && (
                 <>
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                          <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  <Link href="/courses">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Mes cours</CardTitle>
+                            <CardDescription>Accéder à mes cours (à venir)</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">Mes cours</CardTitle>
-                          <CardDescription>Accéder à mes cours (à venir)</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                      </CardHeader>
+                    </Card>
+                  </Link>
 
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                          <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                  <Link href="/grades">
+                    <Card className="hover:shadow-md transition cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                            <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">Mes notes</CardTitle>
+                            <CardDescription>Consulter mes résultats (à venir)</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base">Mes notes</CardTitle>
-                          <CardDescription>Consulter mes résultats (à venir)</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                      </CardHeader>
+                    </Card>
+                  </Link>
                 </>
               )}
             </div>
