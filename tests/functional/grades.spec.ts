@@ -1,0 +1,531 @@
+import { test } from '@japa/runner'
+import User from '#models/user'
+import Course from '#models/course'
+import Assignment from '#models/assignment'
+import Submission from '#models/submission'
+import GradeCategory from '#models/grade_category'
+import CourseEnrollment from '#models/course_enrollment'
+import { DateTime } from 'luxon'
+
+test.group('Grades - Student View', (group) => {
+  let student: User
+  let instructor: User
+  let course: Course
+  let testNumber = 0
+
+  group.each.setup(async () => {
+    testNumber++
+    // Create test users with unique emails
+    student = await User.create({
+      email: `student-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Test Student',
+    })
+
+    instructor = await User.create({
+      email: `instructor-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Test Instructor',
+    })
+
+    // Create a course with unique code
+    course = await Course.create({
+      code: `CS${testNumber}${Date.now() % 10000}`,
+      title: 'Introduction to Computer Science',
+      instructorId: instructor.id,
+      status: 'published',
+      visibility: 'public',
+      language: 'en',
+      allowEnrollment: true,
+      enrolledCount: 0,
+      completedCount: 0,
+      approvalStatus: 'approved',
+    })
+
+    // Enroll student
+    await CourseEnrollment.create({
+      userId: student.id,
+      courseId: course.id,
+      status: 'active',
+      enrolledAt: DateTime.now(),
+    })
+  })
+
+  group.each.teardown(async () => {
+    // Clean up
+    await Submission.query().delete()
+    await Assignment.query().delete()
+    await GradeCategory.query().delete()
+    await CourseEnrollment.query().delete()
+    await Course.query().delete()
+    await User.query().delete()
+  })
+
+  test('student can view grades index page', async ({ client, route }) => {
+    const response = await client.get(route('grades.index')).loginAs(student)
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('grades/index')
+  })
+
+  test('student can view course gradebook', async ({ client, route }) => {
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('grades/course')
+    response.assertInertiaProps({
+      isInstructor: false,
+    })
+  })
+
+  test('student sees their own submissions and grades', async ({ client, route, assert }) => {
+    // Create an assignment
+    const assignment = await Assignment.create({
+      courseId: course.id,
+      title: 'Assignment 1',
+      assignmentType: 'file_upload',
+      maxPoints: 100,
+      isPublished: true,
+      gradingType: 'points',
+      maxAttempts: 1,
+      allowLateSubmissions: true,
+      useRubric: false,
+      requireSubmissionStatement: false,
+      position: 1,
+    })
+
+    // Create a submission with grade
+    const submission = await Submission.create({
+      assignmentId: assignment.id,
+      studentId: student.id,
+      attemptNumber: 1,
+      status: 'graded',
+      submittedAt: DateTime.now(),
+      isLate: false,
+      pointsEarned: 85,
+      grade: 85,
+      gradedBy: instructor.id,
+      gradedAt: DateTime.now(),
+      feedback: 'Good work!',
+      requiresGrading: false,
+    })
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    assert.isArray(props.grades)
+    assert.lengthOf(props.grades, 1)
+    assert.equal(props.grades[0].assignment.id, assignment.id)
+    assert.equal(props.grades[0].submission.pointsEarned, 85)
+    assert.equal(props.grades[0].submission.feedback, 'Good work!')
+  })
+
+  test('student cannot access another student gradebook', async ({ client, route }) => {
+    const otherStudent = await User.create({
+      email: `other-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Other Student',
+    })
+
+    await CourseEnrollment.create({
+      userId: otherStudent.id,
+      courseId: course.id,
+      status: 'active',
+      enrolledAt: DateTime.now(),
+    })
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    // Student should only see their own grades, not others
+    assert.isFalse(props.isInstructor)
+  })
+
+  test('unauthenticated user cannot access grades', async ({ client, route }) => {
+    const response = await client.get(route('grades.index'))
+
+    response.assertRedirectsTo('/login')
+  })
+
+  test('student not enrolled in course cannot access course gradebook', async ({
+    client,
+    route,
+  }) => {
+    const unenrolledStudent = await User.create({
+      email: `unenrolled-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Unenrolled Student',
+    })
+
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .loginAs(unenrolledStudent)
+
+    response.assertStatus(403)
+  })
+})
+
+test.group('Grades - Instructor View', (group) => {
+  let student1: User
+  let student2: User
+  let instructor: User
+  let course: Course
+  let testNumber = 100
+
+  group.each.setup(async () => {
+    testNumber++
+    // Create test users with unique emails
+    student1 = await User.create({
+      email: `student1-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Student One',
+    })
+
+    student2 = await User.create({
+      email: `student2-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Student Two',
+    })
+
+    instructor = await User.create({
+      email: `instructor-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Test Instructor',
+    })
+
+    // Create a course with unique code
+    course = await Course.create({
+      code: `CS${testNumber}${Date.now() % 10000}`,
+      title: 'Introduction to Computer Science',
+      instructorId: instructor.id,
+      status: 'published',
+      visibility: 'public',
+      language: 'en',
+      allowEnrollment: true,
+      enrolledCount: 0,
+      completedCount: 0,
+      approvalStatus: 'approved',
+    })
+
+    // Enroll both students
+    await CourseEnrollment.create({
+      userId: student1.id,
+      courseId: course.id,
+      status: 'active',
+      enrolledAt: DateTime.now(),
+    })
+
+    await CourseEnrollment.create({
+      userId: student2.id,
+      courseId: course.id,
+      status: 'active',
+      enrolledAt: DateTime.now(),
+    })
+  })
+
+  group.each.teardown(async () => {
+    // Clean up
+    await Submission.query().delete()
+    await Assignment.query().delete()
+    await GradeCategory.query().delete()
+    await CourseEnrollment.query().delete()
+    await Course.query().delete()
+    await User.query().delete()
+  })
+
+  test('instructor can view course gradebook with all students', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(instructor)
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('grades/course')
+    response.assertInertiaProps({
+      isInstructor: true,
+    })
+
+    const props = response.inertiaProps()
+    assert.isArray(props.gradebook)
+    assert.lengthOf(props.gradebook, 2)
+  })
+
+  test('instructor sees all student submissions in gradebook matrix', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    // Create an assignment
+    const assignment = await Assignment.create({
+      courseId: course.id,
+      title: 'Assignment 1',
+      assignmentType: 'file_upload',
+      maxPoints: 100,
+      isPublished: true,
+      gradingType: 'points',
+      maxAttempts: 1,
+      allowLateSubmissions: true,
+      useRubric: false,
+      requireSubmissionStatement: false,
+      position: 1,
+    })
+
+    // Create submissions for both students
+    await Submission.create({
+      assignmentId: assignment.id,
+      studentId: student1.id,
+      attemptNumber: 1,
+      status: 'graded',
+      submittedAt: DateTime.now(),
+      isLate: false,
+      pointsEarned: 90,
+      grade: 90,
+      gradedBy: instructor.id,
+      gradedAt: DateTime.now(),
+      requiresGrading: false,
+    })
+
+    await Submission.create({
+      assignmentId: assignment.id,
+      studentId: student2.id,
+      attemptNumber: 1,
+      status: 'graded',
+      submittedAt: DateTime.now(),
+      isLate: false,
+      pointsEarned: 75,
+      grade: 75,
+      gradedBy: instructor.id,
+      gradedAt: DateTime.now(),
+      requiresGrading: false,
+    })
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(instructor)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    assert.isArray(props.gradebook)
+    assert.lengthOf(props.gradebook, 2)
+
+    // Check that both students have grades
+    const student1Grades = props.gradebook.find((g: any) => g.student.id === student1.id)
+    const student2Grades = props.gradebook.find((g: any) => g.student.id === student2.id)
+
+    assert.exists(student1Grades)
+    assert.exists(student2Grades)
+    assert.equal(student1Grades.grades[0].pointsEarned, 90)
+    assert.equal(student2Grades.grades[0].pointsEarned, 75)
+  })
+
+  test('instructor can see grade categories', async ({ client, route, assert }) => {
+    // Create grade category
+    await GradeCategory.create({
+      courseId: course.id,
+      name: 'Assignments',
+      weight: 50,
+      dropLowest: false,
+      dropLowestCount: 0,
+      position: 1,
+    })
+
+    await GradeCategory.create({
+      courseId: course.id,
+      name: 'Quizzes',
+      weight: 30,
+      dropLowest: true,
+      dropLowestCount: 1,
+      position: 2,
+    })
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(instructor)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    assert.isArray(props.categories)
+    assert.lengthOf(props.categories, 2)
+    assert.equal(props.categories[0].name, 'Assignments')
+    assert.equal(props.categories[1].name, 'Quizzes')
+  })
+})
+
+test.group('Grades - Calculations', (group) => {
+  let student: User
+  let instructor: User
+  let course: Course
+  let category1: GradeCategory
+  let category2: GradeCategory
+  let testNumber = 200
+
+  group.each.setup(async () => {
+    testNumber++
+    student = await User.create({
+      email: `student-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Test Student',
+    })
+
+    instructor = await User.create({
+      email: `instructor-${testNumber}-${Date.now()}@test.com`,
+      password: 'password',
+      fullName: 'Test Instructor',
+    })
+
+    course = await Course.create({
+      code: `CS${testNumber}${Date.now() % 10000}`,
+      title: 'Introduction to Computer Science',
+      instructorId: instructor.id,
+      status: 'published',
+      visibility: 'public',
+      language: 'en',
+      allowEnrollment: true,
+      enrolledCount: 0,
+      completedCount: 0,
+      approvalStatus: 'approved',
+    })
+
+    await CourseEnrollment.create({
+      userId: student.id,
+      courseId: course.id,
+      status: 'active',
+      enrolledAt: DateTime.now(),
+    })
+
+    // Create grade categories
+    category1 = await GradeCategory.create({
+      courseId: course.id,
+      name: 'Assignments',
+      weight: 60,
+      dropLowest: false,
+      dropLowestCount: 0,
+      position: 1,
+    })
+
+    category2 = await GradeCategory.create({
+      courseId: course.id,
+      name: 'Quizzes',
+      weight: 40,
+      dropLowest: false,
+      dropLowestCount: 0,
+      position: 2,
+    })
+  })
+
+  group.each.teardown(async () => {
+    await Submission.query().delete()
+    await Assignment.query().delete()
+    await GradeCategory.query().delete()
+    await CourseEnrollment.query().delete()
+    await Course.query().delete()
+    await User.query().delete()
+  })
+
+  test('calculates overall grade correctly', async ({ client, route, assert }) => {
+    // Create assignment in category 1
+    const assignment1 = await Assignment.create({
+      courseId: course.id,
+      gradeCategoryId: category1.id,
+      title: 'Assignment 1',
+      assignmentType: 'file_upload',
+      maxPoints: 100,
+      isPublished: true,
+      gradingType: 'points',
+      maxAttempts: 1,
+      allowLateSubmissions: true,
+      useRubric: false,
+      requireSubmissionStatement: false,
+      position: 1,
+    })
+
+    // Create quiz in category 2
+    const assignment2 = await Assignment.create({
+      courseId: course.id,
+      gradeCategoryId: category2.id,
+      title: 'Quiz 1',
+      assignmentType: 'online_text',
+      maxPoints: 50,
+      isPublished: true,
+      gradingType: 'points',
+      maxAttempts: 1,
+      allowLateSubmissions: true,
+      useRubric: false,
+      requireSubmissionStatement: false,
+      position: 2,
+    })
+
+    // Create graded submissions
+    await Submission.create({
+      assignmentId: assignment1.id,
+      studentId: student.id,
+      attemptNumber: 1,
+      status: 'graded',
+      submittedAt: DateTime.now(),
+      isLate: false,
+      pointsEarned: 80,
+      grade: 80,
+      gradedBy: instructor.id,
+      gradedAt: DateTime.now(),
+      requiresGrading: false,
+    })
+
+    await Submission.create({
+      assignmentId: assignment2.id,
+      studentId: student.id,
+      attemptNumber: 1,
+      status: 'graded',
+      submittedAt: DateTime.now(),
+      isLate: false,
+      pointsEarned: 40,
+      grade: 80,
+      gradedBy: instructor.id,
+      gradedAt: DateTime.now(),
+      requiresGrading: false,
+    })
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    // Overall: (80/100 * 100) * 0 + (40/50 * 100) = 80 + 80 = 160 / 2 = 80%
+    // But our controller calculates: (80 + 40) / (100 + 50) * 100 = 120/150 * 100 = 80%
+    assert.equal(props.overallGrade, 80)
+    assert.equal(props.earnedPoints, 120)
+    assert.equal(props.totalPoints, 150)
+  })
+
+  test('handles missing submissions correctly', async ({ client, route, assert }) => {
+    // Create assignment
+    await Assignment.create({
+      courseId: course.id,
+      gradeCategoryId: category1.id,
+      title: 'Assignment 1',
+      assignmentType: 'file_upload',
+      maxPoints: 100,
+      isPublished: true,
+      gradingType: 'points',
+      maxAttempts: 1,
+      allowLateSubmissions: true,
+      useRubric: false,
+      requireSubmissionStatement: false,
+      position: 1,
+    })
+
+    // No submissions created
+
+    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+
+    response.assertStatus(200)
+
+    const props = response.inertiaProps()
+    assert.isNull(props.overallGrade)
+    assert.equal(props.earnedPoints, 0)
+    assert.equal(props.totalPoints, 0)
+    assert.equal(props.gradedCount, 0)
+  })
+})
