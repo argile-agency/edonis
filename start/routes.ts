@@ -93,7 +93,7 @@ router
   })
   .prefix('/admin')
   .use(middleware.auth())
-  .use(middleware.role({ roles: ['admin', 'manager'] }))
+  .use(middleware.role({ roles: ['admin'] }))
 
 /*
 |--------------------------------------------------------------------------
@@ -130,6 +130,15 @@ router
 | Routes pour les cours (CRUD + permissions)
 */
 
+// Course creation (must come before /courses/:id to avoid route conflict)
+router
+  .group(() => {
+    router.get('/courses/create', [CoursesController, 'create']).as('courses.create')
+    router.post('/courses', [CoursesController, 'store']).as('courses.store')
+  })
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
+
 // Public course browsing (authenticated users)
 router
   .group(() => {
@@ -138,11 +147,9 @@ router
   })
   .use(middleware.auth())
 
-// Course creation and management (instructors and admins)
+// Course management (managers, teachers and admins)
 router
   .group(() => {
-    router.get('/courses/create', [CoursesController, 'create']).as('courses.create')
-    router.post('/courses', [CoursesController, 'store']).as('courses.store')
     router.get('/courses/:id/edit', [CoursesController, 'edit']).as('courses.edit')
     router.put('/courses/:id', [CoursesController, 'update']).as('courses.update')
     router.patch('/courses/:id', [CoursesController, 'update'])
@@ -164,7 +171,7 @@ router
       .as('courses.permissions.remove')
   })
   .use(middleware.auth())
-  .use(middleware.role({ roles: ['admin', 'instructor'] }))
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
 
 /*
 |--------------------------------------------------------------------------
@@ -226,7 +233,7 @@ router
       .as('modules.contents.reorder')
   })
   .use(middleware.auth())
-  .use(middleware.role({ roles: ['admin', 'instructor'] }))
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
 
 /*
 |--------------------------------------------------------------------------
@@ -257,7 +264,7 @@ router
   })
   .use(middleware.auth())
 
-// Inscription manuelle (instructeurs/admin)
+// Inscription manuelle (managers/teachers/admin)
 router
   .group(() => {
     router
@@ -265,7 +272,7 @@ router
       .as('enrollments.enroll-manual')
   })
   .use(middleware.auth())
-  .use(middleware.role({ roles: ['admin', 'instructor'] }))
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
 
 /*
 |--------------------------------------------------------------------------
@@ -307,7 +314,7 @@ router
       .as('courses.groups.create')
   })
   .use(middleware.auth())
-  .use(middleware.role({ roles: ['admin', 'instructor'] }))
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
 
 /*
 |--------------------------------------------------------------------------

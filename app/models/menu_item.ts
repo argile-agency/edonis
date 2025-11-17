@@ -60,9 +60,11 @@ export default class MenuItem extends BaseModel {
       case 'admin':
         return user?.roles?.some((r: any) => r.slug === 'admin')
       case 'instructor':
-        return user?.roles?.some((r: any) => ['admin', 'instructor'].includes(r.slug))
+        return user?.roles?.some((r: any) => ['admin', 'manager', 'teacher'].includes(r.slug))
       case 'student':
-        return user?.roles?.some((r: any) => ['admin', 'instructor', 'student'].includes(r.slug))
+        return user?.roles?.some((r: any) =>
+          ['admin', 'manager', 'teacher', 'student'].includes(r.slug)
+        )
       default:
         return false
     }

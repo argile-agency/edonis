@@ -73,8 +73,15 @@ interface MenuItem {
   children: MenuItem[]
 }
 
+interface Category {
+  id: number
+  name: string
+  slug: string
+}
+
 interface Props {
   courses: PaginatedCourses
+  categories: Category[]
   filters: {
     status?: string
     category?: string
@@ -91,7 +98,14 @@ interface Props {
   }
 }
 
-export default function CoursesIndex({ courses, filters, auth, appSettings, menus }: Props) {
+export default function CoursesIndex({
+  courses,
+  categories,
+  filters,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const [search, setSearch] = useState(filters.search || '')
   const [status, setStatus] = useState(filters.status || '')
   const [category, setCategory] = useState(filters.category || '')
@@ -129,7 +143,7 @@ export default function CoursesIndex({ courses, filters, auth, appSettings, menu
   }
 
   const canCreateCourse = auth.user.roles.some((role) =>
-    ['admin', 'instructor'].includes(role.slug)
+    ['admin', 'manager', 'teacher'].includes(role.slug)
   )
 
   return (
@@ -182,19 +196,21 @@ export default function CoursesIndex({ courses, filters, auth, appSettings, menu
                 </SelectContent>
               </Select>
               <Select
-                value={category}
-                onValueChange={(value) => handleFilterChange('category', value)}
+                value={category || 'all'}
+                onValueChange={(value) =>
+                  handleFilterChange('category', value === 'all' ? '' : value)
+                }
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Catégorie" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes les catégories</SelectItem>
-                  <SelectItem value="Computer Science">Informatique</SelectItem>
-                  <SelectItem value="Mathematics">Mathématiques</SelectItem>
-                  <SelectItem value="Science">Sciences</SelectItem>
-                  <SelectItem value="Language">Langues</SelectItem>
-                  <SelectItem value="Business">Commerce</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button type="submit">Rechercher</Button>
