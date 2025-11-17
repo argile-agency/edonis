@@ -112,6 +112,19 @@ export default class CoursesController {
       .preload('permissions', (query) => {
         query.preload('user')
       })
+      .preload('modules', (moduleQuery) => {
+        moduleQuery
+          .whereNull('parent_id')
+          .orderBy('order', 'asc')
+          .preload('children', (childQuery) => {
+            childQuery.orderBy('order', 'asc').preload('contents', (contentQuery) => {
+              contentQuery.orderBy('order', 'asc')
+            })
+          })
+          .preload('contents', (contentQuery) => {
+            contentQuery.orderBy('order', 'asc')
+          })
+      })
       .firstOrFail()
 
     const isAdmin = await user.hasRole('admin')
@@ -124,12 +137,20 @@ export default class CoursesController {
     const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
     const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
 
+    // Check if user is enrolled
+    const enrollment = await CourseEnrollment.query()
+      .where('course_id', course.id)
+      .where('user_id', user.id)
+      .first()
+
     return inertia.render('courses/show', {
       course: course.serialize(),
+      modules: course.modules.map((m) => m.serialize()),
       permissions: {
         canEdit,
         canManage,
       },
+      isEnrolled: !!enrollment,
     })
   }
 
