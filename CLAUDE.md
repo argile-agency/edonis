@@ -532,23 +532,33 @@ export class PluginRegistry {
 - [ ] Parent/guardian portal access
 
 **Course Management Module**:
-- [ ] Drag-and-drop course builder
-- [ ] Content organization (modules, lessons, activities)
-- [ ] Enrollment systems (self-enroll, manual, bulk)
+- ✅ Drag-and-drop course builder (content builder with modules)
+- ✅ Content organization (modules, lessons, activities)
+- ✅ Enrollment systems (self-enroll, manual, bulk, key-based, request-based)
+- ✅ Course categories and hierarchical organization
+- ✅ Course approval workflow
+- ✅ Course permissions and sharing
+- ✅ Course groups and groupings
 - [ ] Course templates and cloning
-- [ ] Course categories and tags
 
 **Assessment Engine Module**:
-- [ ] Multiple question types (MCQ, essay, file upload, etc.)
+- ✅ Assignment creation and management
+- ✅ Multiple assignment types (essay, file_upload, online_text, offline)
+- ✅ Rubric support and grading criteria
+- ✅ Multiple grading types (points, percentage, letter, pass/fail)
+- ✅ Late submission policies and penalties
+- ✅ Multiple attempts per assignment
 - [ ] Quiz builder with question banks
-- [ ] Assignment workflow (submission, grading, feedback)
-- [ ] Rubric-based grading
+- [ ] Multiple question types (MCQ, essay, file upload, etc.)
 - [ ] Peer assessment capabilities
 
 **Gradebook Module**:
-- [ ] Category-based grading system
-- [ ] Weighted score calculations
-- [ ] Progress tracking dashboards
+- ✅ Category-based grading system
+- ✅ Weighted score calculations
+- ✅ Progress tracking dashboards (student and instructor views)
+- ✅ Grade overview across all courses
+- ✅ Assignment submission tracking
+- ✅ Feedback system with grader attribution
 - [ ] Grade export (CSV, PDF)
 - [ ] Parent portal access to grades
 
