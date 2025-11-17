@@ -30,14 +30,16 @@ export default function Login() {
     <>
       <Head title="Connexion" />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           {/* Logo et titre */}
           <div className="text-center">
             <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center">
               <BookOpen className="h-10 w-10 text-primary-foreground" />
             </div>
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Edonis LMS</h2>
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-200">
+              Edonis LMS
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Connectez-vous à votre compte pour continuer
             </p>
