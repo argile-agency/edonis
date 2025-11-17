@@ -121,7 +121,7 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
 
   // Déterminer le rôle principal de l'utilisateur
   const isStudent = user?.roles?.some((r) => r.slug === 'student')
-  const isInstructor = user?.roles?.some((r) => ['instructor', 'teacher'].includes(r.slug))
+  const isInstructor = user?.roles?.some((r) => ['manager', 'teacher'].includes(r.slug))
   const isAdmin = user?.roles?.some((r) => r.slug === 'admin')
 
   return (
@@ -262,10 +262,10 @@ function StudentHomePage({ user, data }: { user: User; data?: DashboardData }) {
             <CardDescription>Continuez là où vous vous êtes arrêté</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {courses.length > 0 ? (
                 courses.slice(0, 3).map((course) => (
-                  <Link key={course.id} href={`/courses/${course.id}`}>
+                  <Link key={course.id} href={`/courses/${course.id}`} className="block">
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer">
                       <div>
                         <h3 className="font-semibold">{course.title}</h3>
@@ -289,7 +289,7 @@ function StudentHomePage({ user, data }: { user: User; data?: DashboardData }) {
                 </p>
               )}
               <Link href="/courses">
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full my-2">
                   {courses.length > 0 ? 'Voir tous mes cours' : 'Découvrir les cours'}
                 </Button>
               </Link>
@@ -407,25 +407,8 @@ function InstructorHomePage({ user, data }: { user: User; data?: DashboardData }
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Actions rapides */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Actions rapides</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button className="w-full justify-start" variant="outline">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Créer un cours
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Créer un devoir
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Mes cours */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
@@ -433,10 +416,10 @@ function InstructorHomePage({ user, data }: { user: User; data?: DashboardData }
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {myCourses.length > 0 ? (
                 myCourses.map((course) => (
-                  <Link key={course.id} href={`/courses/${course.id}`}>
+                  <Link key={course.id} href={`/courses/${course.id}`} className="block">
                     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition cursor-pointer">
                       <div>
                         <h3 className="font-semibold">{course.title}</h3>

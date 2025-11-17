@@ -27,14 +27,15 @@ export default class CoursesController {
     const search = request.input('search')
 
     const isAdmin = await user.hasRole('admin')
-    const isInstructor = await user.hasRole('instructor')
+    const isManager = await user.hasRole('manager')
+    const isTeacher = await user.hasRole('teacher')
 
     let query = Course.query().preload('instructor')
 
     // Filter based on user role
     if (!isAdmin) {
-      if (isInstructor) {
-        // Instructors see their courses and courses they have permissions for
+      if (isManager || isTeacher) {
+        // Managers/Teachers see their courses and courses they have permissions for
         query = query.where((builder) => {
           builder.where('instructor_id', user.id).orWhereHas('permissions', (permQuery) => {
             permQuery.where('user_id', user.id)
@@ -47,12 +48,12 @@ export default class CoursesController {
     }
 
     // Apply filters
-    if (status) {
+    if (status && status !== 'all') {
       query = query.where('status', status)
     }
 
-    if (category) {
-      query = query.where('category', category)
+    if (category && category !== '' && category !== 'all') {
+      query = query.where('category_id', Number(category))
     }
 
     if (search) {
@@ -66,8 +67,12 @@ export default class CoursesController {
 
     const courses = await query.orderBy('created_at', 'desc').paginate(page, perPage)
 
+    // Get all categories for filter dropdown
+    const categories = await CourseCategory.query().orderBy('name', 'asc')
+
     return inertia.render('courses/index', {
       courses: courses.serialize(),
+      categories: categories.map((cat) => cat.serialize()),
       filters: {
         status,
         category,

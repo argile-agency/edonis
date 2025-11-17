@@ -20,7 +20,7 @@ export default class HomeController {
     // Déterminer le rôle de l'utilisateur
     const roles = user.roles.map((r) => r.slug)
     const isStudent = roles.includes('student')
-    const isInstructor = roles.includes('instructor') || roles.includes('teacher')
+    const isInstructor = roles.includes('manager') || roles.includes('teacher')
 
     let dashboardData = {}
 

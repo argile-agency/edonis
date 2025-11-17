@@ -5,15 +5,15 @@ import { DateTime } from 'luxon'
 
 export default class extends BaseSeeder {
   async run() {
-    // Get instructor/teacher users
+    // Get manager/teacher users
     const instructors = await User.query()
       .whereHas('roles', (query) => {
-        query.whereIn('slug', ['instructor', 'teacher'])
+        query.whereIn('slug', ['manager', 'teacher'])
       })
       .limit(3)
 
     if (instructors.length === 0) {
-      console.log('No instructors or teachers found. Please seed users first.')
+      console.log('No managers or teachers found. Please seed users first.')
       return
     }
 

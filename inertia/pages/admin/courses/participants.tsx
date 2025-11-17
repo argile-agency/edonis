@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
-import { UserPlus, Trash2, Search, ArrowLeft, Mail } from 'lucide-react'
+import { UserPlus, Trash2, Search, ArrowLeft, Mail, Pencil } from 'lucide-react'
 
 interface Enrollment {
   id: number
@@ -49,6 +49,8 @@ interface Enrollment {
   status: 'active' | 'suspended' | 'completed' | 'dropped'
   progressPercentage: number
   enrolledAt: string
+  lastAccessAt: string | null
+  groups: string[] | null
   user: {
     id: number
     fullName: string
@@ -85,10 +87,17 @@ export default function CourseParticipants({ course, enrollments, availableUsers
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingEnrollment, setEditingEnrollment] = useState<Enrollment | null>(null)
 
   const addForm = useForm({
     userId: '',
     courseRole: 'student',
+  })
+
+  const editForm = useForm({
+    courseRole: '',
+    status: '',
   })
 
   const filteredEnrollments = enrollments.filter((enrollment) => {
@@ -112,6 +121,28 @@ export default function CourseParticipants({ course, enrollments, availableUsers
     })
   }
 
+  const handleEditEnrollment = (enrollment: Enrollment) => {
+    setEditingEnrollment(enrollment)
+    editForm.setData({
+      courseRole: enrollment.courseRole,
+      status: enrollment.status,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateEnrollment = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingEnrollment) return
+
+    editForm.put(`/admin/courses/${course.id}/participants/${editingEnrollment.id}`, {
+      onSuccess: () => {
+        setIsEditDialogOpen(false)
+        setEditingEnrollment(null)
+        editForm.reset()
+      },
+    })
+  }
+
   const handleRemoveParticipant = (enrollmentId: number) => {
     router.delete(`/admin/courses/${course.id}/participants/${enrollmentId}`)
   }
@@ -129,6 +160,8 @@ export default function CourseParticipants({ course, enrollments, availableUsers
   const getRoleLabel = (role: string) => {
     const roles: Record<string, string> = {
       instructor: 'Instructeur',
+      teacher: 'Professeur',
+      manager: 'Gestionnaire',
       teaching_assistant: 'Assistant',
       non_editing_teacher: 'Enseignant (lecture)',
       student: 'Étudiant',
@@ -167,7 +200,7 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                   Ajouter un participant
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[90vw] sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
                 <form onSubmit={handleAddParticipant}>
                   <DialogHeader>
                     <DialogTitle>Ajouter un participant</DialogTitle>
@@ -185,7 +218,7 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner un utilisateur" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="z-[100]">
                           {availableUsers.map((user) => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.fullName} ({user.email})
@@ -206,9 +239,16 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="z-[100]">
+                          <SelectItem value="teacher">Professeur (éditeur)</SelectItem>
+                          <SelectItem value="manager">Gestionnaire (supervision)</SelectItem>
+                          <SelectItem value="teaching_assistant">
+                            Assistant d'enseignement
+                          </SelectItem>
+                          <SelectItem value="non_editing_teacher">
+                            Enseignant (lecture seule)
+                          </SelectItem>
                           <SelectItem value="student">Étudiant</SelectItem>
-                          <SelectItem value="teaching_assistant">Assistant d'enseignement</SelectItem>
                           <SelectItem value="observer">Observateur</SelectItem>
                           <SelectItem value="guest">Invité</SelectItem>
                         </SelectContent>
@@ -225,6 +265,78 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                     </Button>
                     <Button type="submit" disabled={addForm.processing}>
                       {addForm.processing ? 'Ajout...' : 'Ajouter'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Enrollment Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-[90vw] sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+                <form onSubmit={handleUpdateEnrollment}>
+                  <DialogHeader>
+                    <DialogTitle>Modifier l'inscription</DialogTitle>
+                    <DialogDescription>
+                      Modifiez le rôle ou le statut de {editingEnrollment?.user.fullName}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="editCourseRole">Rôle dans le cours</Label>
+                      <Select
+                        value={editForm.data.courseRole}
+                        onValueChange={(value) => editForm.setData('courseRole', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="z-[100]">
+                          <SelectItem value="teacher">Professeur (éditeur)</SelectItem>
+                          <SelectItem value="manager">Gestionnaire (supervision)</SelectItem>
+                          <SelectItem value="teaching_assistant">
+                            Assistant d'enseignement
+                          </SelectItem>
+                          <SelectItem value="non_editing_teacher">
+                            Enseignant (lecture seule)
+                          </SelectItem>
+                          <SelectItem value="student">Étudiant</SelectItem>
+                          <SelectItem value="observer">Observateur</SelectItem>
+                          <SelectItem value="guest">Invité</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="editStatus">Statut</Label>
+                      <Select
+                        value={editForm.data.status}
+                        onValueChange={(value) => editForm.setData('status', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="z-[100]">
+                          <SelectItem value="active">Actif</SelectItem>
+                          <SelectItem value="suspended">Suspendu</SelectItem>
+                          <SelectItem value="completed">Terminé</SelectItem>
+                          <SelectItem value="dropped">Abandonné</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditDialogOpen(false)
+                        setEditingEnrollment(null)
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                    <Button type="submit" disabled={editForm.processing}>
+                      {editForm.processing ? 'Mise à jour...' : 'Mettre à jour'}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -294,9 +406,14 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les rôles</SelectItem>
-                  <SelectItem value="student">Étudiant</SelectItem>
+                  <SelectItem value="instructor">Instructeur</SelectItem>
+                  <SelectItem value="teacher">Professeur</SelectItem>
+                  <SelectItem value="manager">Gestionnaire</SelectItem>
                   <SelectItem value="teaching_assistant">Assistant</SelectItem>
+                  <SelectItem value="non_editing_teacher">Enseignant (lecture)</SelectItem>
+                  <SelectItem value="student">Étudiant</SelectItem>
                   <SelectItem value="observer">Observateur</SelectItem>
+                  <SelectItem value="guest">Invité</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -322,17 +439,16 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                     <TableHead>Email</TableHead>
                     <TableHead>Rôle</TableHead>
                     <TableHead>Statut</TableHead>
+                    <TableHead>Groupes</TableHead>
                     <TableHead>Progression</TableHead>
-                    <TableHead>Date d'inscription</TableHead>
+                    <TableHead>Dernier accès</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEnrollments.map((enrollment) => (
                     <TableRow key={enrollment.id}>
-                      <TableCell className="font-medium">
-                        {enrollment.user.fullName}
-                      </TableCell>
+                      <TableCell className="font-medium">{enrollment.user.fullName}</TableCell>
                       <TableCell>
                         <a
                           href={`mailto:${enrollment.user.email}`}
@@ -347,47 +463,82 @@ export default function CourseParticipants({ course, enrollments, availableUsers
                       </TableCell>
                       <TableCell>{getStatusBadge(enrollment.status)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-secondary rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${enrollment.progressPercentage}%` }}
-                            />
+                        {enrollment.groups && enrollment.groups.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {enrollment.groups.map((group, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {group}
+                              </Badge>
+                            ))}
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {enrollment.progressPercentage}%
-                          </span>
-                        </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {enrollment.courseRole === 'student' ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-secondary rounded-full h-2">
+                              <div
+                                className="bg-primary h-2 rounded-full"
+                                style={{ width: `${enrollment.progressPercentage}%` }}
+                              />
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {enrollment.progressPercentage}%
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(enrollment.enrolledAt).toLocaleDateString('fr-FR')}
+                        {enrollment.lastAccessAt
+                          ? new Date(enrollment.lastAccessAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Retirer le participant</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir retirer {enrollment.user.fullName} de ce
-                                cours ?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleRemoveParticipant(enrollment.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Retirer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditEnrollment(enrollment)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Retirer le participant</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Êtes-vous sûr de vouloir retirer {enrollment.user.fullName} de ce
+                                  cours ? Cette action peut être annulée et le participant pourra
+                                  être restauré ultérieurement.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemoveParticipant(enrollment.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Retirer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

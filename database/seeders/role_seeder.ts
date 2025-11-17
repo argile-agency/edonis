@@ -35,16 +35,15 @@ export default class extends BaseSeeder {
       {
         name: 'Manager',
         slug: 'manager',
-        description: 'Peut gérer les cours et les utilisateurs, mais pas la configuration système.',
+        description:
+          'Supervise une filière de cours et les évaluations. Ne peut pas gérer les utilisateurs.',
         isSystem: true,
         permissions: {
-          'users.create': true,
-          'users.read': true,
-          'users.update': true,
-          'courses.create': true,
           'courses.read': true,
-          'courses.update': true,
-          'courses.delete': true,
+          'courses.supervise': true,
+          'groups.manage': true,
+          'grades.view': true,
+          'grades.supervise': true,
           'reports.view': true,
         },
       },
