@@ -8,6 +8,7 @@ import CourseGrouping from '#models/course_grouping'
 import CourseGroup from '#models/course_group'
 import CourseEnrollmentMethod from '#models/course_enrollment_method'
 import CourseEnrollment from '#models/course_enrollment'
+import CourseModule from '#models/course_module'
 
 export default class Course extends BaseModel {
   @column({ isPrimary: true })
@@ -157,6 +158,11 @@ export default class Course extends BaseModel {
     foreignKey: 'courseId',
   })
   declare enrollments: HasMany<typeof CourseEnrollment>
+
+  @hasMany(() => CourseModule, {
+    foreignKey: 'courseId',
+  })
+  declare modules: HasMany<typeof CourseModule>
 
   // Helper methods
   public async isInstructor(userId: number): Promise<boolean> {

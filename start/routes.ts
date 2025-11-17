@@ -18,8 +18,21 @@ const CoursesController = () => import('#controllers/courses_controller')
 const EnrollmentsController = () => import('#controllers/enrollments_controller')
 const CategoriesController = () => import('#controllers/categories_controller')
 const EvaluationsController = () => import('#controllers/evaluations_controller')
+const CourseContentsController = () => import('#controllers/course_contents_controller')
+const PagesController = () => import('#controllers/pages_controller')
+const GradesController = () => import('#controllers/grades_controller')
 
 router.get('/', [HomeController, 'index']).as('home')
+
+/*
+|--------------------------------------------------------------------------
+| Routes des pages statiques
+|--------------------------------------------------------------------------
+| Pages publiques : About, Contact, Privacy
+*/
+router.get('/about', [PagesController, 'about']).as('about')
+router.get('/contact', [PagesController, 'contact']).as('contact')
+router.get('/privacy', [PagesController, 'privacy']).as('privacy')
 
 /*
 |--------------------------------------------------------------------------
@@ -96,6 +109,22 @@ router
 
 /*
 |--------------------------------------------------------------------------
+| Routes des notes (Grades/Gradebook)
+|--------------------------------------------------------------------------
+| Routes pour consulter les notes et carnets de notes
+*/
+router
+  .group(() => {
+    // Vue d'ensemble des notes pour l'étudiant
+    router.get('/grades', [GradesController, 'index']).as('grades.index')
+
+    // Carnet de notes d'un cours spécifique
+    router.get('/grades/courses/:id', [GradesController, 'course']).as('grades.course')
+  })
+  .use(middleware.auth())
+
+/*
+|--------------------------------------------------------------------------
 | Routes de gestion des cours
 |--------------------------------------------------------------------------
 | Routes pour les cours (CRUD + permissions)
@@ -133,6 +162,68 @@ router
         'removePermission',
       ])
       .as('courses.permissions.remove')
+  })
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin', 'instructor'] }))
+
+/*
+|--------------------------------------------------------------------------
+| Routes de gestion du contenu des cours
+|--------------------------------------------------------------------------
+| Routes pour gérer les modules et le contenu (instructeurs et admins)
+*/
+
+// Course content viewing (students)
+router
+  .group(() => {
+    router.get('/courses/:id/learn', [CourseContentsController, 'learn']).as('courses.learn')
+    router.get('/courses/:id/outline', [CourseContentsController, 'outline']).as('courses.outline')
+    router
+      .get('/courses/:id/progress', [CourseContentsController, 'getCourseProgress'])
+      .as('courses.progress')
+
+    // Progress tracking
+    router
+      .post('/contents/:contentId/progress', [CourseContentsController, 'updateProgress'])
+      .as('contents.progress.update')
+    router
+      .post('/contents/:contentId/complete', [CourseContentsController, 'markComplete'])
+      .as('contents.complete')
+  })
+  .use(middleware.auth())
+
+// Course content builder (instructors and admins)
+router
+  .group(() => {
+    router.get('/courses/:id/builder', [CourseContentsController, 'builder']).as('courses.builder')
+
+    // Module management
+    router
+      .post('/courses/:id/modules', [CourseContentsController, 'createModule'])
+      .as('courses.modules.create')
+    router
+      .put('/modules/:moduleId', [CourseContentsController, 'updateModule'])
+      .as('modules.update')
+    router
+      .delete('/modules/:moduleId', [CourseContentsController, 'deleteModule'])
+      .as('modules.delete')
+    router
+      .post('/courses/:id/modules/reorder', [CourseContentsController, 'reorderModules'])
+      .as('courses.modules.reorder')
+
+    // Content management
+    router
+      .post('/modules/:moduleId/contents', [CourseContentsController, 'createContent'])
+      .as('modules.contents.create')
+    router
+      .put('/contents/:contentId', [CourseContentsController, 'updateContent'])
+      .as('contents.update')
+    router
+      .delete('/contents/:contentId', [CourseContentsController, 'deleteContent'])
+      .as('contents.delete')
+    router
+      .post('/modules/:moduleId/contents/reorder', [CourseContentsController, 'reorderContents'])
+      .as('modules.contents.reorder')
   })
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'instructor'] }))
