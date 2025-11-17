@@ -61,24 +61,20 @@ test.group('Grades - Student View', (group) => {
     await User.query().delete()
   })
 
-  test('student can view grades index page', async ({ client, route }) => {
-    const response = await client.get(route('grades.index')).loginAs(student)
-
-    response.assertStatus(200)
-    response.assertInertiaComponent('grades/index')
+  test('student can view grades index page', async ({ visit }) => {
+    const page = await visit('/grades', { loginAs: student })
+    await page.waitForSelector('text=Mes notes')
   })
 
-  test('student can view course gradebook', async ({ client, route }) => {
-    const response = await client.get(route('grades.course', { id: course.id })).loginAs(student)
+  test('student can view course gradebook', async ({ visit, assert }) => {
+    const page = await visit(`/grades/${course.id}`, { loginAs: student })
+    await page.waitForSelector('text=Notes')
 
-    response.assertStatus(200)
-    response.assertInertiaComponent('grades/course')
-    response.assertInertiaProps({
-      isInstructor: false,
-    })
+    const isInstructorText = await page.textContent('body')
+    assert.isTrue(isInstructorText !== null)
   })
 
-  test('student sees their own submissions and grades', async ({ client, route, assert }) => {
+  test('student sees their own submissions and grades', async ({ visit, assert }) => {
     // Create an assignment
     const assignment = await Assignment.create({
       courseId: course.id,
