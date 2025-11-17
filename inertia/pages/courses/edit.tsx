@@ -1,16 +1,10 @@
-import { Head, useForm, Link } from '@inertiajs/react'
+import { Head, useForm, Link, router } from '@inertiajs/react'
 import { FormEvent } from 'react'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -18,7 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { ChevronLeft } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '~/components/ui/alert-dialog'
+import { ChevronLeft, Archive, Trash2, AlertTriangle, ArchiveRestore } from 'lucide-react'
 
 interface Course {
   id: number
@@ -70,7 +75,12 @@ export default function EditCourse({ course }: Props) {
       ...data,
       maxStudents: data.maxStudents ? Number(data.maxStudents) : undefined,
       estimatedHours: data.estimatedHours ? Number(data.estimatedHours) : undefined,
-      tags: data.tags ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : undefined,
+      tags: data.tags
+        ? data.tags
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : undefined,
     }
 
     put(`/courses/${course.id}`, payload)
@@ -93,9 +103,7 @@ export default function EditCourse({ course }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>Modifier le cours</CardTitle>
-            <CardDescription>
-              Mettez à jour les informations de votre cours
-            </CardDescription>
+            <CardDescription>Mettez à jour les informations de votre cours</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -113,14 +121,15 @@ export default function EditCourse({ course }: Props) {
                       placeholder="ex: CS101"
                       required
                     />
-                    {errors.code && (
-                      <p className="text-sm text-red-500">{errors.code}</p>
-                    )}
+                    {errors.code && <p className="text-sm text-red-500">{errors.code}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="language">Langue</Label>
-                    <Select value={data.language} onValueChange={(value) => setData('language', value)}>
+                    <Select
+                      value={data.language}
+                      onValueChange={(value) => setData('language', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -142,9 +151,7 @@ export default function EditCourse({ course }: Props) {
                     placeholder="ex: Introduction à la programmation"
                     required
                   />
-                  {errors.title && (
-                    <p className="text-sm text-red-500">{errors.title}</p>
-                  )}
+                  {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -170,9 +177,7 @@ export default function EditCourse({ course }: Props) {
                     placeholder="Listez les compétences que les étudiants acquerront..."
                     rows={4}
                   />
-                  {errors.objectives && (
-                    <p className="text-sm text-red-500">{errors.objectives}</p>
-                  )}
+                  {errors.objectives && <p className="text-sm text-red-500">{errors.objectives}</p>}
                 </div>
               </div>
 
@@ -183,7 +188,10 @@ export default function EditCourse({ course }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Statut</Label>
-                    <Select value={data.status} onValueChange={(value: any) => setData('status', value)}>
+                    <Select
+                      value={data.status}
+                      onValueChange={(value: any) => setData('status', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -197,7 +205,10 @@ export default function EditCourse({ course }: Props) {
 
                   <div className="space-y-2">
                     <Label htmlFor="visibility">Visibilité</Label>
-                    <Select value={data.visibility} onValueChange={(value: any) => setData('visibility', value)}>
+                    <Select
+                      value={data.visibility}
+                      onValueChange={(value: any) => setData('visibility', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -213,7 +224,10 @@ export default function EditCourse({ course }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Catégorie</Label>
-                    <Select value={data.category} onValueChange={(value) => setData('category', value)}>
+                    <Select
+                      value={data.category}
+                      onValueChange={(value) => setData('category', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez une catégorie" />
                       </SelectTrigger>
@@ -326,6 +340,148 @@ export default function EditCourse({ course }: Props) {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="mt-6 border-red-200 dark:border-red-900">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <CardTitle className="text-red-600">Zone de danger</CardTitle>
+            </div>
+            <CardDescription>
+              Actions irréversibles qui affectent de manière permanente ce cours
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Archive/Unarchive Course */}
+            {course.status !== 'archived' ? (
+              <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">Archiver le cours</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Le cours ne sera plus accessible aux étudiants. Vous pourrez le restaurer plus
+                    tard.
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                    >
+                      <Archive className="mr-2 h-4 w-4" />
+                      Archiver
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Archiver ce cours ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Le cours sera marqué comme archivé et ne sera plus visible par les
+                        étudiants. Les données seront conservées et vous pourrez le restaurer à tout
+                        moment.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => router.post(`/courses/${course.id}/archive`)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Archiver le cours
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-4 border border-green-200 dark:border-green-900 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium">Restaurer le cours</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Désarchive le cours et le republie. Il sera à nouveau accessible aux étudiants.
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-green-300 text-green-600 hover:bg-green-50"
+                    >
+                      <ArchiveRestore className="mr-2 h-4 w-4" />
+                      Restaurer
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Restaurer ce cours ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Le cours sera désarchivé et republié. Il redeviendra visible et accessible
+                        aux étudiants.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() =>
+                          router.put(`/courses/${course.id}`, {
+                            status: 'published',
+                          })
+                        }
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Restaurer le cours
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+
+            {/* Delete Course */}
+            <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900 rounded-lg">
+              <div className="flex-1">
+                <h4 className="font-medium">Supprimer le cours</h4>
+                <p className="text-sm text-muted-foreground">
+                  Supprime définitivement le cours et toutes ses données. Cette action est
+                  irréversible.
+                </p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action ne peut pas être annulée. Cela supprimera définitivement le cours
+                      <strong> "{course.title}" </strong>
+                      et toutes ses données associées : contenu, modules, inscriptions et
+                      progressions des étudiants.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() =>
+                        router.delete(`/courses/${course.id}`, {
+                          onSuccess: () => router.visit('/courses'),
+                        })
+                      }
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Oui, supprimer définitivement
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
       </div>
