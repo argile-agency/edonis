@@ -24,6 +24,13 @@ const GradesController = () => import('#controllers/grades_controller')
 
 router.get('/', [HomeController, 'index']).as('home')
 
+// Component Showcase (development)
+router
+  .get('/showcase', async ({ inertia }) => {
+    return inertia.render('showcase')
+  })
+  .as('showcase')
+
 /*
 |--------------------------------------------------------------------------
 | Routes des pages statiques
