@@ -1,64 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2a8a7a" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#3ba897" media="(prefers-color-scheme: dark)">
 
-  <title inertia>AdonisJS x Inertia x React</title>
+  <title inertia>Edonis LMS</title>
 
+  {{-- Typography: Source Serif Pro for headings, Inter for body --}}
   <link rel="preconnect" href="https://fonts.bunny.net">
-  <link href="https://fonts.bunny.net/css?family=instrument-sans:400,400i,500,500i,600,600i,700,700i" rel="stylesheet" />
+  <link href="https://fonts.bunny.net/css?family=source-serif-4:400,500,600,700|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --sand-1: #fdfdfc;
-      --sand-2: #f9f9f8;
-      --sand-3: #f1f0ef;
-      --sand-4: #e9e8e6;
-      --sand-5: #e2e1de;
-      --sand-6: #dad9d6;
-      --sand-7: #cfceca;
-      --sand-8: #bcbbb5;
-      --sand-9: #8d8d86;
-      --sand-10: #82827c;
-      --sand-11: #63635e;
-      --sand-12: #21201c;
+      --font-heading: 'Source Serif 4', Georgia, serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+    }
+
+    h1, h2, h3, h4, h5, h6,
+    .font-heading {
+      font-family: var(--font-heading);
+    }
+
+    /* Prevent FOUT */
+    .fonts-loading {
+      opacity: 0;
+    }
+
+    .fonts-loaded {
+      opacity: 1;
+      transition: opacity 0.2s ease;
     }
   </style>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Instrument Sans', 'sans-serif'],
-          },
-          colors: {
-            primary: {
-              DEFAULT: '#5A45FF',
-            },
-            sand: {
-              1: 'var(--sand-1)',
-              2: 'var(--sand-2)',
-              3: 'var(--sand-3)',
-              4: 'var(--sand-4)',
-              5: 'var(--sand-5)',
-              6: 'var(--sand-6)',
-              7: 'var(--sand-7)',
-              8: 'var(--sand-8)',
-              9: 'v and import it herear(--sand-9)',
-              10: 'var(--sand-10)',
-              11: 'var(--sand-11)',
-              12: 'var(--sand-12)',
-            },
-          },
-        },
-      },
-    }
-  </script>
 
   @stack('dumper')
   @viteReactRefresh()
@@ -66,8 +45,22 @@
   @vite(['inertia/app/app.tsx', `inertia/pages/${page.component}.tsx`])
 </head>
 
-<body class="font-sans">
+<body class="font-sans antialiased">
   @inertia()
+
+  <script>
+    // Font loading detection
+    if ('fonts' in document) {
+      document.body.classList.add('fonts-loading');
+      Promise.all([
+        document.fonts.load('400 1em Inter'),
+        document.fonts.load('400 1em "Source Serif 4"')
+      ]).then(() => {
+        document.body.classList.remove('fonts-loading');
+        document.body.classList.add('fonts-loaded');
+      });
+    }
+  </script>
 </body>
 
 </html>
