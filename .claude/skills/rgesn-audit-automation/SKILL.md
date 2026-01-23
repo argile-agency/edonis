@@ -16,16 +16,16 @@ Audit automatisé RGESN (Référentiel Général d'Écoconception de Services Nu
 
 Le RGESN comprend 79 critères répartis en 8 thématiques:
 
-| Thématique | Critères | Poids |
-|------------|----------|-------|
-| Stratégie | 1-10 | 15% |
-| Spécifications | 11-20 | 12% |
-| Architecture | 21-30 | 15% |
-| UX/UI | 31-40 | 12% |
-| Contenus | 41-50 | 10% |
-| Frontend | 51-60 | 15% |
-| Backend | 61-70 | 12% |
-| Hébergement | 71-79 | 9% |
+| Thématique     | Critères | Poids |
+| -------------- | -------- | ----- |
+| Stratégie      | 1-10     | 15%   |
+| Spécifications | 11-20    | 12%   |
+| Architecture   | 21-30    | 15%   |
+| UX/UI          | 31-40    | 12%   |
+| Contenus       | 41-50    | 10%   |
+| Frontend       | 51-60    | 15%   |
+| Backend        | 61-70    | 12%   |
+| Hébergement    | 71-79    | 9%    |
 
 ## Audit Workflow
 
@@ -48,7 +48,7 @@ interface RGESNAuditConfig {
   language: 'fr' | 'en'
 }
 
-type AuditScope = 
+type AuditScope =
   | 'strategie'
   | 'specifications'
   | 'architecture'
@@ -72,20 +72,20 @@ const defaultConfig: RGESNAuditConfig = {
 ```typescript
 // types/rgesn.ts
 interface RGESNCriterion {
-  id: string           // e.g., "RGESN-5.1"
+  id: string // e.g., "RGESN-5.1"
   thematique: string
   titre: string
   description: string
   objectif: string
-  controle: string     // How to verify
+  controle: string // How to verify
   niveau: 'A' | 'AA' | 'AAA'
 }
 
 interface CriterionEvaluation {
   criterionId: string
   status: 'conforme' | 'non_conforme' | 'partiellement_conforme' | 'non_applicable'
-  score: number        // 0-100
-  evidence: string[]   // URLs, screenshots, code snippets
+  score: number // 0-100
+  evidence: string[] // URLs, screenshots, code snippets
   recommendations: string[]
   priority: 'critical' | 'major' | 'minor'
 }
@@ -126,17 +126,18 @@ async function analyzePageForRGESN(
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8192,
-    messages: [{
-      role: 'user',
-      content: [
-        // Include screenshots
-        ...screenshots.map(img => ({
-          type: 'image' as const,
-          source: { type: 'base64' as const, media_type: 'image/png' as const, data: img }
-        })),
-        {
-          type: 'text',
-          text: `Analyse cette page web selon les critères RGESN suivants.
+    messages: [
+      {
+        role: 'user',
+        content: [
+          // Include screenshots
+          ...screenshots.map((img) => ({
+            type: 'image' as const,
+            source: { type: 'base64' as const, media_type: 'image/png' as const, data: img },
+          })),
+          {
+            type: 'text',
+            text: `Analyse cette page web selon les critères RGESN suivants.
           
 Page HTML:
 ${pageContent}
@@ -151,12 +152,13 @@ Pour chaque critère, évalue:
 4. Recommandations d'amélioration
 5. Priorité: critical | major | minor
 
-Réponds en JSON structuré.`
-        }
-      ]
-    }]
+Réponds en JSON structuré.`,
+          },
+        ],
+      },
+    ],
   })
-  
+
   return JSON.parse(response.content[0].text)
 }
 ```
@@ -170,7 +172,7 @@ interface ScoringWeights {
   specifications: 0.12
   architecture: 0.15
   ux_ui: 0.12
-  contenus: 0.10
+  contenus: 0.1
   frontend: 0.15
   backend: 0.12
   hebergement: 0.09
@@ -178,25 +180,25 @@ interface ScoringWeights {
 
 function calculateGlobalScore(evaluations: CriterionEvaluation[]): number {
   const byThematique = groupByThematique(evaluations)
-  
+
   let weightedSum = 0
   let totalWeight = 0
-  
+
   for (const [thematique, evals] of Object.entries(byThematique)) {
     const weight = WEIGHTS[thematique] || 0.1
     const thematiqueScore = calculateThematiqueScore(evals)
-    
+
     weightedSum += thematiqueScore * weight
     totalWeight += weight
   }
-  
+
   return Math.round((weightedSum / totalWeight) * 100) / 100
 }
 
 function calculateThematiqueScore(evaluations: CriterionEvaluation[]): number {
-  const applicable = evaluations.filter(e => e.status !== 'non_applicable')
+  const applicable = evaluations.filter((e) => e.status !== 'non_applicable')
   if (applicable.length === 0) return 100
-  
+
   const totalScore = applicable.reduce((sum, e) => sum + e.score, 0)
   return totalScore / applicable.length
 }

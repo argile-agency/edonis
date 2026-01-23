@@ -2,13 +2,16 @@
 
 ## 🎯 Résumé des problèmes et solutions
 
-### 1. ❌ "Cannot GET:/login" 
+### 1. ❌ "Cannot GET:/login"
+
 **✅ RÉSOLU** : Système d'authentification complet créé
 
 ### 2. ❌ "Vous n'avez pas les permissions nécessaires"
+
 **✅ RÉSOLU** : Redirection vers `/dashboard` au lieu de `/admin/users`
 
 ### 3. ❌ Pas d'utilisateurs de test
+
 **✅ RÉSOLU** : Script REPL fourni pour créer 4 utilisateurs de test
 
 ---
@@ -44,14 +47,27 @@ await UserRole.assignRole(manager.id, 'manager')
 // Teacher
 const teacher = await User.firstOrCreate(
   { email: 'teacher@edonis.com' },
-  { fullName: 'Professeur Martin', email: 'teacher@edonis.com', password: 'Teacher123!', department: 'Informatique', isActive: true }
+  {
+    fullName: 'Professeur Martin',
+    email: 'teacher@edonis.com',
+    password: 'Teacher123!',
+    department: 'Informatique',
+    isActive: true,
+  }
 )
 await UserRole.assignRole(teacher.id, 'teacher')
 
 // Student
 const student = await User.firstOrCreate(
   { email: 'student@edonis.com' },
-  { fullName: 'Étudiant Dupont', email: 'student@edonis.com', password: 'Student123!', studentId: 'STU-2024-001', department: 'Informatique', isActive: true }
+  {
+    fullName: 'Étudiant Dupont',
+    email: 'student@edonis.com',
+    password: 'Student123!',
+    studentId: 'STU-2024-001',
+    department: 'Informatique',
+    isActive: true,
+  }
 )
 await UserRole.assignRole(student.id, 'student')
 
@@ -75,6 +91,7 @@ npm run dev
 Allez sur **http://localhost:3333/login**
 
 Utilisez l'un des comptes créés, par exemple :
+
 - Email : `admin@edonis.com`
 - Password : `Admin123!`
 
@@ -95,17 +112,20 @@ Utilisez l'un des comptes créés, par exemple :
 ## 🎨 Ce qui a été créé
 
 ### Backend
+
 - ✅ `AuthController` (login, register, logout)
 - ✅ `DashboardController` (tableau de bord)
 - ✅ Routes d'authentification
 - ✅ Redirection intelligente après connexion
 
 ### Frontend
+
 - ✅ Page `/login` (design moderne)
 - ✅ Page `/register` (inscription complète)
 - ✅ Page `/dashboard` (personnalisé par rôle)
 
 ### Fonctionnalités
+
 - ✅ Login/Logout fonctionnel
 - ✅ Inscription avec rôle "Student" automatique
 - ✅ Protection des routes par rôle
@@ -116,14 +136,17 @@ Utilisez l'un des comptes créés, par exemple :
 ## 🎭 Différences par rôle dans le dashboard
 
 ### 🔴 Admin & 🟡 Manager
+
 - Carte "Gérer les utilisateurs" → `/admin/users`
 - Accès complet au CRUD des utilisateurs
 
 ### 🟢 Teacher
+
 - Carte "Mes cours" (à venir)
 - Carte "Évaluations" (à venir)
 
 ### 🔵 Student
+
 - Carte "Mes cours" (à venir)
 - Carte "Mes notes" (à venir)
 
@@ -131,13 +154,13 @@ Utilisez l'un des comptes créés, par exemple :
 
 ## 📁 Structure des URLs
 
-| URL | Accès | Description |
-|-----|-------|-------------|
-| `/` | Public | Page d'accueil |
-| `/login` | Public | Connexion |
-| `/register` | Public | Inscription |
-| `/logout` | Auth | Déconnexion |
-| `/dashboard` | Auth | Tableau de bord |
+| URL            | Accès         | Description          |
+| -------------- | ------------- | -------------------- |
+| `/`            | Public        | Page d'accueil       |
+| `/login`       | Public        | Connexion            |
+| `/register`    | Public        | Inscription          |
+| `/logout`      | Auth          | Déconnexion          |
+| `/dashboard`   | Auth          | Tableau de bord      |
 | `/admin/users` | Admin/Manager | Gestion utilisateurs |
 
 ---
@@ -145,6 +168,7 @@ Utilisez l'un des comptes créés, par exemple :
 ## 🧪 Tester les différents rôles
 
 ### Test Admin
+
 ```
 Email: admin@edonis.com
 Password: Admin123!
@@ -153,6 +177,7 @@ Password: Admin123!
 ```
 
 ### Test Student
+
 ```
 Email: student@edonis.com
 Password: Student123!
@@ -165,21 +190,26 @@ Password: Student123!
 ## 🐛 Problèmes connus et solutions
 
 ### "Email already exists"
+
 ➡️ **Solution** : L'email est déjà utilisé, utilisez un autre email ou connectez-vous
 
 ### Les rôles ne fonctionnent pas
+
 ➡️ **Solution** : Vérifiez que les rôles ont été créés
+
 ```bash
 node ace repl
 ```
+
 ```javascript
 const { default: Role } = await import('./app/models/role.js')
 const roles = await Role.all()
-console.log(roles.map(r => r.slug))
+console.log(roles.map((r) => r.slug))
 // Devrait afficher: ['admin', 'manager', 'teacher', 'student', 'guest']
 ```
 
 ### "Cannot GET:/dashboard"
+
 ➡️ **Solution** : Le serveur n'est pas démarré, lancez `npm run dev`
 
 ---
@@ -198,6 +228,7 @@ console.log(roles.map(r => r.slug))
 Vous avez maintenant un **LMS pleinement fonctionnel** avec :
 
 ### ✅ Fonctionnalités opérationnelles
+
 1. Système d'authentification complet
 2. Gestion des utilisateurs avec 5 rôles
 3. Dashboard personnalisé par rôle
@@ -206,6 +237,7 @@ Vous avez maintenant un **LMS pleinement fonctionnel** avec :
 6. 4 utilisateurs de test
 
 ### 🚧 Prochaines fonctionnalités à développer
+
 1. Module Cours (création, édition, suppression)
 2. Inscriptions aux cours
 3. Contenu pédagogique (modules, ressources)
@@ -217,9 +249,10 @@ Vous avez maintenant un **LMS pleinement fonctionnel** avec :
 
 ## 🎉 Félicitations !
 
-**Tous les problèmes ont été résolus !** 
+**Tous les problèmes ont été résolus !**
 
 Votre LMS Edonis est maintenant :
+
 - ✅ Accessible via `/login`
 - ✅ Sécurisé avec authentification
 - ✅ Avec dashboard adaptatif

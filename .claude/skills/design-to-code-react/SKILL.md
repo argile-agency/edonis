@@ -76,29 +76,32 @@ interface DesignAnalysis {
 async function designToComponent(imagePath: string): Promise<string> {
   const client = new Anthropic()
   const imageData = fs.readFileSync(imagePath).toString('base64')
-  
+
   // Step 1: Analyze design
   const analysis = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: imageData } },
-        { type: 'text', text: analyzeDesignPrompt }
-      ]
-    }]
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/png', data: imageData } },
+          { type: 'text', text: analyzeDesignPrompt },
+        ],
+      },
+    ],
   })
-  
+
   const design: DesignAnalysis = JSON.parse(analysis.content[0].text)
-  
+
   // Step 2: Generate component
   const component = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: `Generate a React component with TypeScript and TailwindCSS based on this analysis:
+    messages: [
+      {
+        role: 'user',
+        content: `Generate a React component with TypeScript and TailwindCSS based on this analysis:
       
 ${JSON.stringify(design, null, 2)}
 
@@ -110,10 +113,11 @@ Requirements:
 - Add proper TypeScript props interface
 - Include JSDoc comments
 - Make it responsive (mobile-first)
-- Add accessibility attributes`
-    }]
+- Add accessibility attributes`,
+      },
+    ],
   })
-  
+
   return component.content[0].text
 }
 ```
@@ -188,10 +192,10 @@ import { FigmaAPI } from 'figma-api'
 
 async function extractFigmaTokens(fileKey: string, nodeId: string) {
   const figma = new FigmaAPI({ personalAccessToken: process.env.FIGMA_TOKEN })
-  
+
   const file = await figma.getFile(fileKey)
   const node = findNode(file.document, nodeId)
-  
+
   return {
     colors: extractColors(node),
     typography: extractTypography(node),
@@ -202,7 +206,7 @@ async function extractFigmaTokens(fileKey: string, nodeId: string) {
 
 function extractColors(node: any): Record<string, string> {
   const colors: Record<string, string> = {}
-  
+
   if (node.fills) {
     node.fills.forEach((fill: any, i: number) => {
       if (fill.type === 'SOLID') {
@@ -211,7 +215,7 @@ function extractColors(node: any): Record<string, string> {
       }
     })
   }
-  
+
   return colors
 }
 ```
@@ -232,7 +236,7 @@ const meta: Meta<typeof ${componentName}> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [${variants.map(v => `'${v.name}'`).join(', ')}],
+      options: [${variants.map((v) => `'${v.name}'`).join(', ')}],
     },
   },
 }
@@ -246,14 +250,18 @@ export const Default: Story = {
   },
 }
 
-${variants.map(v => `
+${variants
+  .map(
+    (v) => `
 export const ${capitalize(v.name)}: Story = {
   args: {
     variant: '${v.name}',
     children: '${v.name} variant',
   },
 }
-`).join('')}
+`
+  )
+  .join('')}
 `
 }
 ```

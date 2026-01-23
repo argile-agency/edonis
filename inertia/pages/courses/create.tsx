@@ -4,13 +4,7 @@ import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -47,7 +41,12 @@ export default function CreateCourse() {
       ...data,
       maxStudents: data.maxStudents ? Number(data.maxStudents) : undefined,
       estimatedHours: data.estimatedHours ? Number(data.estimatedHours) : undefined,
-      tags: data.tags ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : undefined,
+      tags: data.tags
+        ? data.tags
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : undefined,
     }
 
     post('/courses', payload)
@@ -70,9 +69,7 @@ export default function CreateCourse() {
         <Card>
           <CardHeader>
             <CardTitle>Créer un nouveau cours</CardTitle>
-            <CardDescription>
-              Remplissez les informations pour créer votre cours
-            </CardDescription>
+            <CardDescription>Remplissez les informations pour créer votre cours</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -90,14 +87,15 @@ export default function CreateCourse() {
                       placeholder="ex: CS101"
                       required
                     />
-                    {errors.code && (
-                      <p className="text-sm text-red-500">{errors.code}</p>
-                    )}
+                    {errors.code && <p className="text-sm text-red-500">{errors.code}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="language">Langue</Label>
-                    <Select value={data.language} onValueChange={(value) => setData('language', value)}>
+                    <Select
+                      value={data.language}
+                      onValueChange={(value) => setData('language', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -119,9 +117,7 @@ export default function CreateCourse() {
                     placeholder="ex: Introduction à la programmation"
                     required
                   />
-                  {errors.title && (
-                    <p className="text-sm text-red-500">{errors.title}</p>
-                  )}
+                  {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -147,9 +143,7 @@ export default function CreateCourse() {
                     placeholder="Listez les compétences que les étudiants acquerront..."
                     rows={4}
                   />
-                  {errors.objectives && (
-                    <p className="text-sm text-red-500">{errors.objectives}</p>
-                  )}
+                  {errors.objectives && <p className="text-sm text-red-500">{errors.objectives}</p>}
                 </div>
               </div>
 
@@ -160,7 +154,10 @@ export default function CreateCourse() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">Statut</Label>
-                    <Select value={data.status} onValueChange={(value: any) => setData('status', value)}>
+                    <Select
+                      value={data.status}
+                      onValueChange={(value: any) => setData('status', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -174,7 +171,10 @@ export default function CreateCourse() {
 
                   <div className="space-y-2">
                     <Label htmlFor="visibility">Visibilité</Label>
-                    <Select value={data.visibility} onValueChange={(value: any) => setData('visibility', value)}>
+                    <Select
+                      value={data.visibility}
+                      onValueChange={(value: any) => setData('visibility', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -190,7 +190,10 @@ export default function CreateCourse() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Catégorie</Label>
-                    <Select value={data.category} onValueChange={(value) => setData('category', value)}>
+                    <Select
+                      value={data.category}
+                      onValueChange={(value) => setData('category', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez une catégorie" />
                       </SelectTrigger>

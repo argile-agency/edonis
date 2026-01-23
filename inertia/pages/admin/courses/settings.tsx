@@ -119,9 +119,7 @@ export default function CourseSettings({ course, categories }: Props) {
               <Card>
                 <CardHeader>
                   <CardTitle>Informations générales</CardTitle>
-                  <CardDescription>
-                    Informations de base sur le cours
-                  </CardDescription>
+                  <CardDescription>Informations de base sur le cours</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
@@ -304,9 +302,7 @@ export default function CourseSettings({ course, categories }: Props) {
               <Card>
                 <CardHeader>
                   <CardTitle>Paramètres d'inscription</CardTitle>
-                  <CardDescription>
-                    Gérer les inscriptions au cours
-                  </CardDescription>
+                  <CardDescription>Gérer les inscriptions au cours</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center space-x-2">
@@ -335,8 +331,8 @@ export default function CourseSettings({ course, categories }: Props) {
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-sm font-medium mb-2">Méthodes d'inscription</p>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Pour configurer les méthodes d'inscription (auto-inscription, clé, approbation),
-                      utilisez la page dédiée.
+                      Pour configurer les méthodes d'inscription (auto-inscription, clé,
+                      approbation), utilisez la page dédiée.
                     </p>
                     <Link href={`/courses/${course.id}/enrollment-methods`}>
                       <Button variant="outline" size="sm">
@@ -353,9 +349,7 @@ export default function CourseSettings({ course, categories }: Props) {
               <Card>
                 <CardHeader>
                   <CardTitle>Planning du cours</CardTitle>
-                  <CardDescription>
-                    Dates de début et de fin du cours
-                  </CardDescription>
+                  <CardDescription>Dates de début et de fin du cours</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">

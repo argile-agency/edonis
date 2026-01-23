@@ -5,21 +5,22 @@
 ```typescript
 async function testKeyboardNavigation(page: Page): Promise<KeyboardTestResult> {
   const issues: KeyboardIssue[] = []
-  
+
   // Get all focusable elements
   const focusable = await page.$$eval(
     'a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    els => els.map(el => ({
-      tag: el.tagName,
-      text: el.textContent?.trim(),
-      tabindex: el.getAttribute('tabindex'),
-    }))
+    (els) =>
+      els.map((el) => ({
+        tag: el.tagName,
+        text: el.textContent?.trim(),
+        tabindex: el.getAttribute('tabindex'),
+      }))
   )
-  
+
   // Test Tab navigation
   for (let i = 0; i < focusable.length; i++) {
     await page.keyboard.press('Tab')
-    
+
     const focused = await page.evaluate(() => {
       const el = document.activeElement
       return {
@@ -27,7 +28,7 @@ async function testKeyboardNavigation(page: Page): Promise<KeyboardTestResult> {
         visible: el ? getComputedStyle(el).outline !== 'none' : false,
       }
     })
-    
+
     if (!focused.visible) {
       issues.push({
         type: 'focus-not-visible',
@@ -35,7 +36,7 @@ async function testKeyboardNavigation(page: Page): Promise<KeyboardTestResult> {
       })
     }
   }
-  
+
   return { focusableCount: focusable.length, issues }
 }
 ```
@@ -46,16 +47,16 @@ async function testKeyboardNavigation(page: Page): Promise<KeyboardTestResult> {
 async function detectFocusTraps(page: Page): Promise<FocusTrap[]> {
   const traps: FocusTrap[] = []
   const visited = new Set<string>()
-  
+
   // Tab through page multiple times
   for (let i = 0; i < 100; i++) {
     await page.keyboard.press('Tab')
-    
+
     const current = await page.evaluate(() => {
       const el = document.activeElement
       return el ? el.outerHTML.slice(0, 100) : null
     })
-    
+
     if (current && visited.has(current)) {
       // Check if we're cycling in a small loop
       if (visited.size < 5) {
@@ -66,10 +67,10 @@ async function detectFocusTraps(page: Page): Promise<FocusTrap[]> {
         break
       }
     }
-    
+
     visited.add(current)
   }
-  
+
   return traps
 }
 ```
@@ -78,10 +79,10 @@ async function detectFocusTraps(page: Page): Promise<FocusTrap[]> {
 
 ```typescript
 async function checkScreenReaderText(page: Page): Promise<SRIssue[]> {
-  return page.$$eval('*', elements => {
+  return page.$$eval('*', (elements) => {
     const issues: any[] = []
-    
-    elements.forEach(el => {
+
+    elements.forEach((el) => {
       // Check images
       if (el.tagName === 'IMG') {
         const alt = el.getAttribute('alt')
@@ -91,24 +92,24 @@ async function checkScreenReaderText(page: Page): Promise<SRIssue[]> {
           // Empty alt is OK for decorative images
         }
       }
-      
+
       // Check buttons/links without text
       if (el.tagName === 'BUTTON' || el.tagName === 'A') {
         const hasText = el.textContent?.trim()
         const hasAriaLabel = el.getAttribute('aria-label')
         const hasAriaLabelledby = el.getAttribute('aria-labelledby')
-        
+
         if (!hasText && !hasAriaLabel && !hasAriaLabelledby) {
           issues.push({ type: 'empty-interactive', element: el.outerHTML.slice(0, 100) })
         }
       }
-      
+
       // Check form inputs
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) {
         const id = el.getAttribute('id')
         const ariaLabel = el.getAttribute('aria-label')
         const ariaLabelledby = el.getAttribute('aria-labelledby')
-        
+
         if (id) {
           const label = document.querySelector(`label[for="${id}"]`)
           if (!label && !ariaLabel && !ariaLabelledby) {
@@ -117,7 +118,7 @@ async function checkScreenReaderText(page: Page): Promise<SRIssue[]> {
         }
       }
     })
-    
+
     return issues
   })
 }
@@ -127,27 +128,82 @@ async function checkScreenReaderText(page: Page): Promise<SRIssue[]> {
 
 ```typescript
 const validARIARoles = [
-  'alert', 'alertdialog', 'application', 'article', 'banner',
-  'button', 'cell', 'checkbox', 'columnheader', 'combobox',
-  'complementary', 'contentinfo', 'definition', 'dialog',
-  'directory', 'document', 'feed', 'figure', 'form', 'grid',
-  'gridcell', 'group', 'heading', 'img', 'link', 'list',
-  'listbox', 'listitem', 'log', 'main', 'marquee', 'math',
-  'menu', 'menubar', 'menuitem', 'menuitemcheckbox',
-  'menuitemradio', 'navigation', 'none', 'note', 'option',
-  'presentation', 'progressbar', 'radio', 'radiogroup',
-  'region', 'row', 'rowgroup', 'rowheader', 'scrollbar',
-  'search', 'searchbox', 'separator', 'slider', 'spinbutton',
-  'status', 'switch', 'tab', 'table', 'tablist', 'tabpanel',
-  'term', 'textbox', 'timer', 'toolbar', 'tooltip', 'tree',
-  'treegrid', 'treeitem'
+  'alert',
+  'alertdialog',
+  'application',
+  'article',
+  'banner',
+  'button',
+  'cell',
+  'checkbox',
+  'columnheader',
+  'combobox',
+  'complementary',
+  'contentinfo',
+  'definition',
+  'dialog',
+  'directory',
+  'document',
+  'feed',
+  'figure',
+  'form',
+  'grid',
+  'gridcell',
+  'group',
+  'heading',
+  'img',
+  'link',
+  'list',
+  'listbox',
+  'listitem',
+  'log',
+  'main',
+  'marquee',
+  'math',
+  'menu',
+  'menubar',
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio',
+  'navigation',
+  'none',
+  'note',
+  'option',
+  'presentation',
+  'progressbar',
+  'radio',
+  'radiogroup',
+  'region',
+  'row',
+  'rowgroup',
+  'rowheader',
+  'scrollbar',
+  'search',
+  'searchbox',
+  'separator',
+  'slider',
+  'spinbutton',
+  'status',
+  'switch',
+  'tab',
+  'table',
+  'tablist',
+  'tabpanel',
+  'term',
+  'textbox',
+  'timer',
+  'toolbar',
+  'tooltip',
+  'tree',
+  'treegrid',
+  'treeitem',
 ]
 
 async function validateARIA(page: Page): Promise<ARIAIssue[]> {
-  return page.$$eval('[role]', elements => {
+  return page.$$eval('[role]', (elements) => {
     return elements
-      .filter(el => !validARIARoles.includes(el.getAttribute('role') || ''))
-      .map(el => ({
+      .filter((el) => !validARIARoles.includes(el.getAttribute('role') || ''))
+      .map((el) => ({
         type: 'invalid-role',
         role: el.getAttribute('role'),
         element: el.outerHTML.slice(0, 100),
@@ -164,7 +220,7 @@ async function runA11yTestSuite(url: string): Promise<A11yTestResults> {
   const browser = await chromium.launch()
   const page = await browser.newPage()
   await page.goto(url)
-  
+
   const results = await Promise.all([
     new AxeBuilder({ page }).analyze(),
     testKeyboardNavigation(page),
@@ -172,9 +228,9 @@ async function runA11yTestSuite(url: string): Promise<A11yTestResults> {
     checkScreenReaderText(page),
     validateARIA(page),
   ])
-  
+
   await browser.close()
-  
+
   return {
     axe: results[0],
     keyboard: results[1],

@@ -14,11 +14,11 @@ Automated WCAG 2.1/2.2 accessibility testing with Vision API and axe-core.
 
 ## WCAG Levels Overview
 
-| Level | Requirements | Target |
-|-------|--------------|--------|
-| A | Minimum accessibility | Must have |
-| AA | Enhanced accessibility | Legal standard |
-| AAA | Optimal accessibility | Best practice |
+| Level | Requirements           | Target         |
+| ----- | ---------------------- | -------------- |
+| A     | Minimum accessibility  | Must have      |
+| AA    | Enhanced accessibility | Legal standard |
+| AAA   | Optimal accessibility  | Best practice  |
 
 ## Compliance Checker Architecture
 
@@ -65,22 +65,22 @@ async function runWCAGAudit(config: WCAGAuditConfig): Promise<WCAGResult> {
   const browser = await chromium.launch()
   const page = await browser.newPage()
   await page.goto(config.url)
-  
+
   // Run axe-core analysis
   const axeResults = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     .analyze()
-  
+
   // Capture screenshot for Vision analysis
   const screenshot = await page.screenshot({ fullPage: true })
-  
+
   // Run Vision API analysis
-  const visionResults = config.includeVisionAnalysis 
+  const visionResults = config.includeVisionAnalysis
     ? await analyzeWithVision(screenshot, config.level)
     : null
-  
+
   await browser.close()
-  
+
   return mergeResults(axeResults, visionResults, config)
 }
 ```
@@ -100,20 +100,18 @@ interface AxeConfig {
 
 async function runAxeAnalysis(page: Page, config: AxeConfig) {
   const tags = getTagsForLevel(config.level)
-  
-  const builder = new AxeBuilder({ page })
-    .withTags(tags)
-    .options({
-      resultTypes: ['violations', 'incomplete', 'passes'],
-      rules: config.rules ? { [config.rules[0]]: { enabled: true } } : undefined,
-    })
-  
+
+  const builder = new AxeBuilder({ page }).withTags(tags).options({
+    resultTypes: ['violations', 'incomplete', 'passes'],
+    rules: config.rules ? { [config.rules[0]]: { enabled: true } } : undefined,
+  })
+
   if (config.exclude) {
     builder.exclude(config.exclude)
   }
-  
+
   const results = await builder.analyze()
-  
+
   return {
     violations: results.violations.map(formatViolation),
     incomplete: results.incomplete.map(formatIncomplete),
@@ -158,27 +156,25 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic()
 
-async function analyzeWithVision(
-  screenshot: Buffer,
-  level: string
-): Promise<VisionResult> {
+async function analyzeWithVision(screenshot: Buffer, level: string): Promise<VisionResult> {
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: [
-        {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: 'image/png',
-            data: screenshot.toString('base64'),
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: 'image/png',
+              data: screenshot.toString('base64'),
+            },
           },
-        },
-        {
-          type: 'text',
-          text: `Analyze this webpage screenshot for WCAG ${level} accessibility issues.
+          {
+            type: 'text',
+            text: `Analyze this webpage screenshot for WCAG ${level} accessibility issues.
 
 Check for:
 1. **Color Contrast** - Text readability, sufficient contrast ratios
@@ -198,12 +194,13 @@ For each issue found:
 - Location description
 - Remediation suggestion
 
-Return structured JSON.`
-        }
-      ]
-    }]
+Return structured JSON.`,
+          },
+        ],
+      },
+    ],
   })
-  
+
   return JSON.parse(response.content[0].text)
 }
 ```
@@ -212,21 +209,18 @@ Return structured JSON.`
 
 ```typescript
 // contrast-checker.ts
-function calculateContrastRatio(
-  foreground: RGB,
-  background: RGB
-): number {
+function calculateContrastRatio(foreground: RGB, background: RGB): number {
   const l1 = getRelativeLuminance(foreground)
   const l2 = getRelativeLuminance(background)
-  
+
   const lighter = Math.max(l1, l2)
   const darker = Math.min(l1, l2)
-  
+
   return (lighter + 0.05) / (darker + 0.05)
 }
 
 function getRelativeLuminance({ r, g, b }: RGB): number {
-  const [rs, gs, bs] = [r, g, b].map(c => {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
     c = c / 255
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
   })
@@ -279,14 +273,14 @@ interface WCAGReport {
 
 function generateReport(results: WCAGResult): WCAGReport {
   const violations = [...results.automated.violations, ...results.visual.issues]
-  
+
   return {
     summary: {
       url: results.url,
       level: results.level,
       score: results.combined.score,
-      status: results.combined.score >= 90 ? 'pass' : 
-              results.combined.score >= 70 ? 'partial' : 'fail',
+      status:
+        results.combined.score >= 90 ? 'pass' : results.combined.score >= 70 ? 'partial' : 'fail',
       totalViolations: violations.length,
       bySeverity: countBySeverity(violations),
     },

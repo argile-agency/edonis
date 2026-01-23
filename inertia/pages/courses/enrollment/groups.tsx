@@ -34,12 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '~/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Edit, Folder, MessageSquare, Plus, Trash2, Users, Eye, EyeOff } from 'lucide-react'
 
 interface Grouping {
@@ -137,7 +132,10 @@ export default function GroupsManage({ course, groupings, groups }: Props) {
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/courses/${course.id}`} className="text-sm text-muted-foreground hover:underline">
+          <Link
+            href={`/courses/${course.id}`}
+            className="text-sm text-muted-foreground hover:underline"
+          >
             ← Retour au cours
           </Link>
           <h1 className="text-3xl font-bold mt-2">Groupes et Groupings</h1>
@@ -271,7 +269,10 @@ export default function GroupsManage({ course, groupings, groups }: Props) {
                       type="number"
                       value={groupForm.data.maxMembers || ''}
                       onChange={(e) =>
-                        groupForm.setData('maxMembers', e.target.value ? Number(e.target.value) : null)
+                        groupForm.setData(
+                          'maxMembers',
+                          e.target.value ? Number(e.target.value) : null
+                        )
                       }
                       placeholder="Illimité si vide"
                     />
@@ -371,8 +372,9 @@ export default function GroupsManage({ course, groupings, groups }: Props) {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Supprimer le grouping</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Êtes-vous sûr de vouloir supprimer ce grouping ? Les groupes qu'il contient
-                                  ne seront pas supprimés mais déplacés vers "Sans grouping".
+                                  Êtes-vous sûr de vouloir supprimer ce grouping ? Les groupes qu'il
+                                  contient ne seront pas supprimés mais déplacés vers "Sans
+                                  grouping".
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

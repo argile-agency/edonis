@@ -11,6 +11,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
 #### Tables créées
 
 **`users` (étendue)**
+
 - `id`: Clé primaire
 - `full_name`: Nom complet
 - `email`: Email unique
@@ -29,6 +30,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
 - `updated_at`: Date de mise à jour
 
 **`roles`**
+
 - `id`: Clé primaire
 - `name`: Nom du rôle (ex: "Administrator")
 - `slug`: Slug unique (ex: "admin")
@@ -39,6 +41,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
 - `updated_at`: Date de mise à jour
 
 **`user_roles` (pivot)**
+
 - `id`: Clé primaire
 - `user_id`: FK vers users
 - `role_id`: FK vers roles
@@ -50,14 +53,16 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
 ### 2. Rôles disponibles
 
 #### 🔴 Administrator (admin)
+
 - **Description**: Accès complet au système
-- **Permissions**: 
+- **Permissions**:
   - Gestion système complète
   - Gestion de tous les utilisateurs
   - Gestion de tous les cours
   - Accès aux rapports
 
 #### 🟡 Manager (manager)
+
 - **Description**: Gestion des cours et utilisateurs
 - **Permissions**:
   - Création/modification/suppression de cours
@@ -66,6 +71,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
   - Pas d'accès à la configuration système
 
 #### 🟢 Teacher (teacher)
+
 - **Description**: Enseignant avec gestion de cours
 - **Permissions**:
   - Création de cours
@@ -75,6 +81,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
   - Visualisation des étudiants
 
 #### 🔵 Student (student)
+
 - **Description**: Étudiant avec accès aux cours
 - **Permissions**:
   - Accès aux cours auxquels il est inscrit
@@ -84,6 +91,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
   - Participation aux forums
 
 #### ⚪ Guest (guest)
+
 - **Description**: Accès lecture seule aux cours publics
 - **Permissions**:
   - Lecture des cours publics
@@ -93,7 +101,7 @@ Ce module implémente un système complet de gestion des utilisateurs avec rôle
 
 Le système supporte deux types d'assignation de rôles :
 
-1. **Rôles globaux** (`course_id = null`): 
+1. **Rôles globaux** (`course_id = null`):
    - Valables dans tout le système
    - Ex: Un administrateur global
 
@@ -107,17 +115,17 @@ Le système supporte deux types d'assignation de rôles :
 
 #### Routes disponibles
 
-| Méthode | Route | Action | Description |
-|---------|-------|--------|-------------|
-| GET | `/admin/users` | `index` | Liste paginée des utilisateurs avec filtres |
-| GET | `/admin/users/create` | `create` | Formulaire de création |
-| POST | `/admin/users` | `store` | Créer un utilisateur |
-| GET | `/admin/users/:id` | `show` | Détails d'un utilisateur |
-| GET | `/admin/users/:id/edit` | `edit` | Formulaire d'édition |
-| PUT/PATCH | `/admin/users/:id` | `update` | Mettre à jour un utilisateur |
-| DELETE | `/admin/users/:id` | `destroy` | Désactiver un utilisateur (soft delete) |
-| POST | `/admin/users/:id/activate` | `activate` | Réactiver un utilisateur |
-| DELETE | `/admin/users/:id/force` | `forceDestroy` | Supprimer définitivement |
+| Méthode   | Route                       | Action         | Description                                 |
+| --------- | --------------------------- | -------------- | ------------------------------------------- |
+| GET       | `/admin/users`              | `index`        | Liste paginée des utilisateurs avec filtres |
+| GET       | `/admin/users/create`       | `create`       | Formulaire de création                      |
+| POST      | `/admin/users`              | `store`        | Créer un utilisateur                        |
+| GET       | `/admin/users/:id`          | `show`         | Détails d'un utilisateur                    |
+| GET       | `/admin/users/:id/edit`     | `edit`         | Formulaire d'édition                        |
+| PUT/PATCH | `/admin/users/:id`          | `update`       | Mettre à jour un utilisateur                |
+| DELETE    | `/admin/users/:id`          | `destroy`      | Désactiver un utilisateur (soft delete)     |
+| POST      | `/admin/users/:id/activate` | `activate`     | Réactiver un utilisateur                    |
+| DELETE    | `/admin/users/:id/force`    | `forceDestroy` | Supprimer définitivement                    |
 
 #### Filtres disponibles (GET `/admin/users`)
 
@@ -132,11 +140,13 @@ Le système supporte deux types d'assignation de rôles :
 Deux validators principaux :
 
 **`createUserValidator`**
+
 - Tous les champs requis pour création
 - Validation unicité email et studentId
 - Mot de passe minimum 8 caractères
 
 **`updateUserValidator`**
+
 - Champs optionnels sauf constraints d'unicité
 - Mot de passe optionnel (vide = pas de changement)
 
@@ -145,9 +155,11 @@ Deux validators principaux :
 #### `User` (app/models/user.ts)
 
 **Relations:**
+
 - `roles`: ManyToMany avec Role via user_roles
 
 **Méthodes utiles:**
+
 ```typescript
 await user.hasRole('admin') // Vérifie si l'utilisateur a le rôle
 await user.hasAnyRole(['admin', 'manager']) // Vérifie plusieurs rôles
@@ -161,6 +173,7 @@ await user.updateLastLogin() // Met à jour last_login_at
 #### `Role` (app/models/role.ts)
 
 **Méthodes utiles:**
+
 ```typescript
 await Role.findBySlug('admin')
 role.hasPermission('users.create') // Vérifie une permission
@@ -169,6 +182,7 @@ role.hasPermission('users.create') // Vérifie une permission
 #### `UserRole` (app/models/user_role.ts)
 
 **Méthodes statiques:**
+
 ```typescript
 // Assigner un rôle global
 await UserRole.assignRole(userId, 'admin')
@@ -207,9 +221,11 @@ router
 ### Pages créées
 
 #### 1. `/admin/users` - Liste des utilisateurs
+
 **Fichier**: `inertia/pages/users/index.tsx`
 
 **Fonctionnalités:**
+
 - Tableau paginé des utilisateurs
 - Recherche en temps réel
 - Filtres par rôle et statut
@@ -217,9 +233,11 @@ router
 - Actions rapides (Voir, Éditer, Activer/Désactiver)
 
 #### 2. `/admin/users/create` - Créer un utilisateur
+
 **Fichier**: `inertia/pages/users/create.tsx`
 
 **Sections:**
+
 - Informations de base (nom, email, mot de passe, téléphone)
 - Informations académiques (matricule, département, organisation)
 - Profil (avatar, bio)
@@ -228,17 +246,21 @@ router
 - Statut actif/inactif
 
 #### 3. `/admin/users/:id/edit` - Éditer un utilisateur
+
 **Fichier**: `inertia/pages/users/edit.tsx`
 
 Similaire à la création mais avec :
+
 - Données pré-remplies
 - Mot de passe optionnel
 - Modification des rôles existants
 
 #### 4. `/admin/users/:id` - Détails d'un utilisateur
+
 **Fichier**: `inertia/pages/users/show.tsx`
 
 **Vue d'ensemble complète:**
+
 - Informations personnelles
 - Préférences
 - Activité (dernière connexion, dates)
@@ -272,7 +294,7 @@ const admin = await User.default.create({
   fullName: 'Super Admin',
   email: 'admin@edonis.com',
   password: 'SecurePassword123!',
-  isActive: true
+  isActive: true,
 })
 
 // Assigner le rôle admin
@@ -299,17 +321,17 @@ router
 async update({ auth, params, request }: HttpContext) {
   const course = await Course.findOrFail(params.id)
   const user = auth.user!
-  
+
   // Vérifier si l'utilisateur est admin ou propriétaire du cours
   const isAdmin = await user.isAdmin()
   const isOwner = course.userId === user.id
-  
+
   if (!isAdmin && !isOwner) {
-    return response.forbidden({ 
-      message: 'Vous ne pouvez pas modifier ce cours' 
+    return response.forbidden({
+      message: 'Vous ne pouvez pas modifier ce cours'
     })
   }
-  
+
   // Mise à jour...
 }
 ```
@@ -335,7 +357,7 @@ test('user can have multiple roles', async () => {
   const user = await UserFactory.create()
   await UserRole.assignRole(user.id, 'admin')
   await UserRole.assignRole(user.id, 'teacher')
-  
+
   await user.load('roles')
   assert.equal(user.roles.length, 2)
 })
@@ -343,7 +365,7 @@ test('user can have multiple roles', async () => {
 test('user can check if has role', async () => {
   const user = await UserFactory.create()
   await UserRole.assignRole(user.id, 'admin')
-  
+
   assert.isTrue(await user.hasRole('admin'))
   assert.isFalse(await user.hasRole('teacher'))
 })
@@ -357,9 +379,9 @@ test('admin can view users list', async ({ client }) => {
   const admin = await UserFactory.with('roles', 1, (role) => {
     role.merge({ slug: 'admin' })
   }).create()
-  
+
   const response = await client.get('/admin/users').loginAs(admin)
-  
+
   response.assertStatus(200)
   response.assertInertiaComponent('users/index')
 })
@@ -368,9 +390,9 @@ test('student cannot access users list', async ({ client }) => {
   const student = await UserFactory.with('roles', 1, (role) => {
     role.merge({ slug: 'student' })
   }).create()
-  
+
   const response = await client.get('/admin/users').loginAs(student)
-  
+
   response.assertStatus(403)
 })
 ```
@@ -378,6 +400,7 @@ test('student cannot access users list', async ({ client }) => {
 ## Améliorations futures
 
 ### Phase 2
+
 - [ ] Import/Export CSV des utilisateurs
 - [ ] Réinitialisation de mot de passe par email
 - [ ] Historique des modifications utilisateur
@@ -385,6 +408,7 @@ test('student cannot access users list', async ({ client }) => {
 - [ ] Avatar upload vers Supabase Storage
 
 ### Phase 3
+
 - [ ] Authentification OAuth (Google, Microsoft)
 - [ ] Authentification à deux facteurs (2FA)
 - [ ] Logs d'audit détaillés
@@ -394,6 +418,7 @@ test('student cannot access users list', async ({ client }) => {
 ## Support
 
 Pour toute question ou problème, consulter :
+
 - Documentation AdonisJS: https://docs.adonisjs.com
 - Documentation Lucid ORM: https://lucid.adonisjs.com
 - README principal du projet

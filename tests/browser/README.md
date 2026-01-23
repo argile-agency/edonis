@@ -36,11 +36,11 @@ import { test } from '@japa/runner'
 test.group('Feature Name', () => {
   test('test description', async ({ visit }) => {
     const page = await visit('/path')
-    
+
     // Interact with elements
     await page.locator('button').click()
     await page.locator('input').fill('text')
-    
+
     // Assertions
     await page.assertPath('/expected-path')
     await page.assertTextContains('selector', 'text')
@@ -71,6 +71,7 @@ test.group('Feature Name', () => {
 ## CI/CD
 
 Browser tests run automatically in CI with headless browsers. Make sure to:
+
 - Keep tests fast (< 30s per test)
 - Use proper waiting strategies
 - Avoid hardcoded sleeps, use `waitForURL` or `waitForSelector`

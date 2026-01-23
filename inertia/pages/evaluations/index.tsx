@@ -20,7 +20,13 @@ interface Props {
   stats: Stats
 }
 
-export default function EvaluationsIndex({ auth, appSettings, menus, pendingEvaluations, stats }: Props) {
+export default function EvaluationsIndex({
+  auth,
+  appSettings,
+  menus,
+  pendingEvaluations,
+  stats,
+}: Props) {
   return (
     <>
       <Head title="Évaluations à corriger" />

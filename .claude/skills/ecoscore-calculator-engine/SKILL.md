@@ -56,15 +56,15 @@ async function calculateEcoScore(config: EcoScoreConfig): Promise<EcoScoreResult
     calculateCarbonFootprint(config.url),
     checkGreenHosting(config.url),
   ])
-  
+
   const breakdown = {
     performance: calculatePerformanceScore(lighthouse),
     carbon: calculateCarbonScore(carbon),
     bestPractices: calculateBestPracticesScore(lighthouse, greenCheck),
   }
-  
+
   const ecoscore = calculateWeightedScore(breakdown)
-  
+
   return {
     url: config.url,
     timestamp: new Date().toISOString(),
@@ -97,17 +97,17 @@ interface LighthouseMetrics {
 
 async function runLighthouseAnalysis(url: string): Promise<LighthouseMetrics> {
   const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless'] })
-  
+
   const result = await lighthouse(url, {
     port: chrome.port,
     output: 'json',
     onlyCategories: ['performance'],
   })
-  
+
   await chrome.kill()
-  
+
   const audits = result.lhr.audits
-  
+
   return {
     performance: result.lhr.categories.performance.score * 100,
     firstContentfulPaint: audits['first-contentful-paint'].numericValue,
@@ -127,18 +127,18 @@ async function runLighthouseAnalysis(url: string): Promise<LighthouseMetrics> {
 ```typescript
 // carbon-calculator.ts
 const SUSTAINABLE_WEB_DESIGN_MODEL = {
-  dataTransferPerGB: 0.81,      // kWh per GB
-  globalGridIntensity: 442,     // g CO2 per kWh (world average)
-  greenGridIntensity: 50,       // g CO2 per kWh (renewable)
-  datacenterPUE: 1.2,           // Power Usage Effectiveness
-  networkEnergy: 0.06,          // kWh per GB
-  deviceEnergy: 0.08,           // kWh per GB
+  dataTransferPerGB: 0.81, // kWh per GB
+  globalGridIntensity: 442, // g CO2 per kWh (world average)
+  greenGridIntensity: 50, // g CO2 per kWh (renewable)
+  datacenterPUE: 1.2, // Power Usage Effectiveness
+  networkEnergy: 0.06, // kWh per GB
+  deviceEnergy: 0.08, // kWh per GB
 }
 
 interface CarbonResult {
-  co2PerView: number           // grams
-  co2PerYear: number           // kg (assuming 10k views/month)
-  dataTransferred: number      // bytes
+  co2PerView: number // grams
+  co2PerYear: number // kg (assuming 10k views/month)
+  dataTransferred: number // bytes
   isGreenHosted: boolean
   breakdown: {
     datacenter: number
@@ -151,25 +151,27 @@ async function calculateCarbonFootprint(url: string): Promise<CarbonResult> {
   // Get page weight
   const pageData = await fetchPageMetrics(url)
   const gbTransferred = pageData.totalBytes / (1024 * 1024 * 1024)
-  
+
   // Check green hosting
   const isGreenHosted = await checkGreenHosting(url)
-  const gridIntensity = isGreenHosted 
-    ? SUSTAINABLE_WEB_DESIGN_MODEL.greenGridIntensity 
+  const gridIntensity = isGreenHosted
+    ? SUSTAINABLE_WEB_DESIGN_MODEL.greenGridIntensity
     : SUSTAINABLE_WEB_DESIGN_MODEL.globalGridIntensity
-  
+
   // Calculate energy per component
-  const datacenterEnergy = gbTransferred * SUSTAINABLE_WEB_DESIGN_MODEL.dataTransferPerGB 
-    * SUSTAINABLE_WEB_DESIGN_MODEL.datacenterPUE
+  const datacenterEnergy =
+    gbTransferred *
+    SUSTAINABLE_WEB_DESIGN_MODEL.dataTransferPerGB *
+    SUSTAINABLE_WEB_DESIGN_MODEL.datacenterPUE
   const networkEnergy = gbTransferred * SUSTAINABLE_WEB_DESIGN_MODEL.networkEnergy
   const deviceEnergy = gbTransferred * SUSTAINABLE_WEB_DESIGN_MODEL.deviceEnergy
-  
+
   const totalEnergy = datacenterEnergy + networkEnergy + deviceEnergy
   const co2PerView = totalEnergy * gridIntensity // grams
-  
+
   return {
     co2PerView: Math.round(co2PerView * 100) / 100,
-    co2PerYear: Math.round(co2PerView * 10000 * 12 / 1000 * 100) / 100, // 10k views/month
+    co2PerYear: Math.round(((co2PerView * 10000 * 12) / 1000) * 100) / 100, // 10k views/month
     dataTransferred: pageData.totalBytes,
     isGreenHosted,
     breakdown: {
@@ -187,12 +189,10 @@ async function calculateCarbonFootprint(url: string): Promise<CarbonResult> {
 // green-hosting.ts
 async function checkGreenHosting(url: string): Promise<GreenHostingResult> {
   const domain = new URL(url).hostname
-  
-  const response = await fetch(
-    `https://api.thegreenwebfoundation.org/greencheck/${domain}`
-  )
+
+  const response = await fetch(`https://api.thegreenwebfoundation.org/greencheck/${domain}`)
   const data = await response.json()
-  
+
   return {
     isGreen: data.green,
     hostedBy: data.hosted_by,
@@ -207,37 +207,39 @@ async function checkGreenHosting(url: string): Promise<GreenHostingResult> {
 ```typescript
 // scoring.ts
 interface ScoreWeights {
-  performance: 0.30
+  performance: 0.3
   carbon: 0.35
   bestPractices: 0.35
 }
 
 function calculateWeightedScore(breakdown: ScoreBreakdown): number {
   const weights: ScoreWeights = {
-    performance: 0.30,
+    performance: 0.3,
     carbon: 0.35,
     bestPractices: 0.35,
   }
-  
+
   return Math.round(
     breakdown.performance.score * weights.performance +
-    breakdown.carbon.score * weights.carbon +
-    breakdown.bestPractices.score * weights.bestPractices
+      breakdown.carbon.score * weights.carbon +
+      breakdown.bestPractices.score * weights.bestPractices
   )
 }
 
 function calculatePerformanceScore(lighthouse: LighthouseMetrics): PerformanceScore {
   // Page weight scoring (target < 500KB)
-  const weightScore = Math.max(0, 100 - (lighthouse.totalByteWeight / 1024 / 10))
-  
+  const weightScore = Math.max(0, 100 - lighthouse.totalByteWeight / 1024 / 10)
+
   // Request count scoring (target < 25)
-  const requestScore = Math.max(0, 100 - (lighthouse.requestCount * 2))
-  
+  const requestScore = Math.max(0, 100 - lighthouse.requestCount * 2)
+
   // DOM size scoring (target < 1500)
-  const domScore = Math.max(0, 100 - (lighthouse.domSize / 30))
-  
+  const domScore = Math.max(0, 100 - lighthouse.domSize / 30)
+
   return {
-    score: Math.round((lighthouse.performance * 0.4 + weightScore * 0.3 + requestScore * 0.2 + domScore * 0.1)),
+    score: Math.round(
+      lighthouse.performance * 0.4 + weightScore * 0.3 + requestScore * 0.2 + domScore * 0.1
+    ),
     metrics: lighthouse,
   }
 }
@@ -247,10 +249,10 @@ function calculateCarbonScore(carbon: CarbonResult): CarbonScore {
   let score = 100
   if (carbon.co2PerView > 0.5) score -= (carbon.co2PerView - 0.5) * 50
   if (carbon.co2PerView > 1.0) score -= (carbon.co2PerView - 1.0) * 30
-  
+
   // Bonus for green hosting
   if (carbon.isGreenHosted) score = Math.min(100, score + 10)
-  
+
   return {
     score: Math.max(0, Math.round(score)),
     co2PerView: carbon.co2PerView,
@@ -277,16 +279,16 @@ interface EcoScoreOutput {
   ecoscore: {
     value: number
     grade: string
-    percentile: number  // Compared to benchmark
+    percentile: number // Compared to benchmark
   }
   carbon: {
-    perView: { value: number, unit: 'g CO2' }
-    perYear: { value: number, unit: 'kg CO2' }
-    equivalent: string  // "X km driven" or "X trees needed"
+    perView: { value: number; unit: 'g CO2' }
+    perYear: { value: number; unit: 'kg CO2' }
+    equivalent: string // "X km driven" or "X trees needed"
   }
   performance: {
     lighthouse: number
-    pageWeight: { value: number, unit: 'KB' }
+    pageWeight: { value: number; unit: 'KB' }
     requests: number
     domNodes: number
   }

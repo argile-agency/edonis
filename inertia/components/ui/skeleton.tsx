@@ -10,11 +10,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 function Skeleton({ className, animated = true, ...props }: SkeletonProps) {
   return (
     <div
-      className={cn(
-        'rounded-md bg-muted',
-        animated && 'skeleton',
-        className
-      )}
+      className={cn('rounded-md bg-muted', animated && 'skeleton', className)}
       aria-hidden="true"
       {...props}
     />
@@ -38,7 +34,7 @@ function SkeletonText({
           key={i}
           className="h-4"
           style={{
-            width: i === lines - 1 ? lastLineWidth : '100%'
+            width: i === lines - 1 ? lastLineWidth : '100%',
           }}
         />
       ))}
@@ -60,9 +56,7 @@ function SkeletonAvatar({
     lg: 'h-12 w-12',
   }
 
-  return (
-    <Skeleton className={cn('rounded-full', sizeClasses[size], className)} />
-  )
+  return <Skeleton className={cn('rounded-full', sizeClasses[size], className)} />
 }
 
 /** Pre-built skeleton for cards */
@@ -130,7 +124,7 @@ function SkeletonTable({
               key={colIndex}
               className="h-4 flex-1"
               style={{
-                animationDelay: `${(rowIndex * columns + colIndex) * 50}ms`
+                animationDelay: `${(rowIndex * columns + colIndex) * 50}ms`,
               }}
             />
           ))}
@@ -140,11 +134,4 @@ function SkeletonTable({
   )
 }
 
-export {
-  Skeleton,
-  SkeletonText,
-  SkeletonAvatar,
-  SkeletonCard,
-  SkeletonStats,
-  SkeletonTable,
-}
+export { Skeleton, SkeletonText, SkeletonAvatar, SkeletonCard, SkeletonStats, SkeletonTable }

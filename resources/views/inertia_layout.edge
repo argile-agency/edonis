@@ -1,66 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#2a8a7a" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#3ba897" media="(prefers-color-scheme: dark)">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#2a8a7a" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#3ba897" media="(prefers-color-scheme: dark)" />
 
-  <title inertia>Edonis LMS</title>
+    <title inertia>
+      Edonis LMS
+    </title>
 
-  {{-- Typography: Source Serif Pro for headings, Inter for body --}}
-  <link rel="preconnect" href="https://fonts.bunny.net">
-  <link href="https://fonts.bunny.net/css?family=source-serif-4:400,500,600,700|inter:400,500,600,700&display=swap" rel="stylesheet" />
+    {{-- Typography: Source Serif Pro for headings, Inter for body --}}
+    <link rel="preconnect" href="https://fonts.bunny.net" />
+    <link
+      href="https://fonts.bunny.net/css?family=source-serif-4:400,500,600,700|inter:400,500,600,700&display=swap"
+      rel="stylesheet"
+    />
 
-  <style>
-    :root {
-      --font-heading: 'Source Serif 4', Georgia, serif;
-      --font-body: 'Inter', system-ui, sans-serif;
-    }
+    <style>
+      :root {
+        --font-heading: 'Source Serif 4', Georgia, serif;
+        --font-body: 'Inter', system-ui, sans-serif;
+      }
+      
+      body {
+        font-family: var(--font-body);
+      }
+      
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      .font-heading {
+        font-family: var(--font-heading);
+      }
+      
+      /* Prevent FOUT */
+      
+      .fonts-loading {
+        opacity: 0;
+      }
+      
+      .fonts-loaded {
+        opacity: 1;
+        transition: opacity 0.2s ease;
+      }
+    </style>
 
-    body {
-      font-family: var(--font-body);
-    }
+    @stack('dumper')
+    @viteReactRefresh()
+    @inertiaHead()
+    @vite(['inertia/app/app.tsx', `inertia/pages/${page.component}.tsx`])
+  </head>
 
-    h1, h2, h3, h4, h5, h6,
-    .font-heading {
-      font-family: var(--font-heading);
-    }
+  <body class="font-sans antialiased">
+    @inertia()
 
-    /* Prevent FOUT */
-    .fonts-loading {
-      opacity: 0;
-    }
-
-    .fonts-loaded {
-      opacity: 1;
-      transition: opacity 0.2s ease;
-    }
-  </style>
-
-  @stack('dumper')
-  @viteReactRefresh()
-  @inertiaHead()
-  @vite(['inertia/app/app.tsx', `inertia/pages/${page.component}.tsx`])
-</head>
-
-<body class="font-sans antialiased">
-  @inertia()
-
-  <script>
-    // Font loading detection
-    if ('fonts' in document) {
-      document.body.classList.add('fonts-loading');
-      Promise.all([
-        document.fonts.load('400 1em Inter'),
-        document.fonts.load('400 1em "Source Serif 4"')
-      ]).then(() => {
-        document.body.classList.remove('fonts-loading');
-        document.body.classList.add('fonts-loaded');
-      });
-    }
-  </script>
-</body>
+    <script>
+      // Font loading detection
+      if ("fonts" in document) {
+        document.body.classList.add("fonts-loading");
+        Promise.all([ document.fonts.load("400 1em Inter"), document.fonts.load('400 1em "Source Serif 4"') ]).then(() => {
+          document.body.classList.remove("fonts-loading");
+          document.body.classList.add("fonts-loaded");
+        });
+      }
+    </script>
+  </body>
 
 </html>

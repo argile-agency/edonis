@@ -353,7 +353,11 @@ export default function LearnCourse({
                         allowFullScreen
                       />
                     ) : (
-                      <video src={currentContent.externalUrl} controls className="w-full h-full rounded-lg" />
+                      <video
+                        src={currentContent.externalUrl}
+                        controls
+                        className="w-full h-full rounded-lg"
+                      />
                     )}
                   </div>
                 )}
@@ -375,7 +379,11 @@ export default function LearnCourse({
                     <CardContent className="p-6 text-center">
                       <LinkIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                       <p className="mb-4">Lien externe</p>
-                      <a href={currentContent.externalUrl} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={currentContent.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Button>Ouvrir le lien</Button>
                       </a>
                     </CardContent>
@@ -390,10 +398,7 @@ export default function LearnCourse({
             <div className="border-t p-4 bg-background">
               <div className="flex items-center justify-between max-w-4xl mx-auto">
                 {previousContent ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleContentClick(previousContent.id)}
-                  >
+                  <Button variant="outline" onClick={() => handleContentClick(previousContent.id)}>
                     <ChevronLeft className="mr-2 h-4 w-4" />
                     Précédent
                   </Button>

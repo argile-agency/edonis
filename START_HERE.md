@@ -18,10 +18,21 @@ Copiez-collez ce code et appuyez sur Entrée :
 const { default: User } = await import('./app/models/user.js')
 const { default: UserRole } = await import('./app/models/user_role.js')
 
-const admin = await User.firstOrCreate({ email: 'admin@edonis.com' }, { fullName: 'Admin Principal', email: 'admin@edonis.com', password: 'Admin123!', isActive: true })
+const admin = await User.firstOrCreate(
+  { email: 'admin@edonis.com' },
+  { fullName: 'Admin Principal', email: 'admin@edonis.com', password: 'Admin123!', isActive: true }
+)
 await UserRole.assignRole(admin.id, 'admin')
 
-const student = await User.firstOrCreate({ email: 'student@edonis.com' }, { fullName: 'Étudiant Test', email: 'student@edonis.com', password: 'Student123!', isActive: true })
+const student = await User.firstOrCreate(
+  { email: 'student@edonis.com' },
+  {
+    fullName: 'Étudiant Test',
+    email: 'student@edonis.com',
+    password: 'Student123!',
+    isActive: true,
+  }
+)
 await UserRole.assignRole(student.id, 'student')
 
 console.log('✅ COMPTES CRÉÉS!')
@@ -46,6 +57,7 @@ npm run dev
 Allez sur **http://localhost:3333**
 
 Vous verrez :
+
 - Des boutons **"Connexion"** et **"Inscription"** en haut à droite
 - Cliquez sur "Connexion"
 - Utilisez : `admin@edonis.com` / `Admin123!`
@@ -56,12 +68,14 @@ Vous verrez :
 ## 🎯 Ce que vous pouvez faire maintenant
 
 ### En tant qu'Admin
+
 - ✅ Accéder au Dashboard personnalisé
 - ✅ Gérer les utilisateurs (créer, modifier, supprimer)
 - ✅ Assigner des rôles
 - ✅ Voir tous les utilisateurs avec recherche et filtres
 
 ### En tant qu'étudiant
+
 - ✅ Accéder au Dashboard
 - ✅ Voir ses informations de profil
 - 🚧 Accéder aux cours (prochainement)

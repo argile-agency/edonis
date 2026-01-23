@@ -19,7 +19,7 @@ const admin = await User.firstOrCreate(
     fullName: 'Administrateur Principal',
     email: 'admin@edonis.com',
     password: 'Admin123!',
-    isActive: true
+    isActive: true,
   }
 )
 await UserRole.assignRole(admin.id, 'admin')
@@ -31,7 +31,7 @@ const manager = await User.firstOrCreate(
     fullName: 'Manager LMS',
     email: 'manager@edonis.com',
     password: 'Manager123!',
-    isActive: true
+    isActive: true,
   }
 )
 await UserRole.assignRole(manager.id, 'manager')
@@ -44,7 +44,7 @@ const teacher = await User.firstOrCreate(
     email: 'teacher@edonis.com',
     password: 'Teacher123!',
     department: 'Informatique',
-    isActive: true
+    isActive: true,
   }
 )
 await UserRole.assignRole(teacher.id, 'teacher')
@@ -58,7 +58,7 @@ const student = await User.firstOrCreate(
     password: 'Student123!',
     studentId: 'STU-2024-001',
     department: 'Informatique',
-    isActive: true
+    isActive: true,
   }
 )
 await UserRole.assignRole(student.id, 'student')
@@ -80,18 +80,19 @@ Tapez `.exit` pour quitter le REPL.
 
 ## Les 4 comptes de test
 
-| Rôle | Email | Mot de passe | Accès |
-|------|-------|--------------|-------|
-| 🔴 **Admin** | admin@edonis.com | Admin123! | Tout le système |
-| 🟡 **Manager** | manager@edonis.com | Manager123! | Gestion utilisateurs + cours |
-| 🟢 **Teacher** | teacher@edonis.com | Teacher123! | Ses cours uniquement |
-| 🔵 **Student** | student@edonis.com | Student123! | Cours inscrits |
+| Rôle           | Email              | Mot de passe | Accès                        |
+| -------------- | ------------------ | ------------ | ---------------------------- |
+| 🔴 **Admin**   | admin@edonis.com   | Admin123!    | Tout le système              |
+| 🟡 **Manager** | manager@edonis.com | Manager123!  | Gestion utilisateurs + cours |
+| 🟢 **Teacher** | teacher@edonis.com | Teacher123!  | Ses cours uniquement         |
+| 🔵 **Student** | student@edonis.com | Student123!  | Cours inscrits               |
 
 ---
 
 ## Tester la connexion
 
 1. Démarrez le serveur :
+
 ```bash
 npm run dev
 ```
@@ -100,21 +101,24 @@ npm run dev
 
 3. Connectez-vous avec l'un des comptes ci-dessus
 
-4. Vous serez redirigé vers `/dashboard` 
+4. Vous serez redirigé vers `/dashboard`
 
 ---
 
 ## Ce que vous verrez
 
 ### En tant qu'Admin ou Manager
+
 - Dashboard avec carte "Gérer les utilisateurs"
 - Accès à `/admin/users` pour le CRUD complet
 
 ### En tant que Teacher
+
 - Dashboard avec cartes "Mes cours" et "Évaluations"
 - (Fonctionnalités à venir)
 
 ### En tant que Student
+
 - Dashboard avec cartes "Mes cours" et "Mes notes"
 - (Fonctionnalités à venir)
 

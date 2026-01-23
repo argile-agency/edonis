@@ -209,9 +209,7 @@ export default function CourseOutline({
           )}
         </div>
 
-        <div className="space-y-2">
-          {module.contents.map((content) => renderContent(content))}
-        </div>
+        <div className="space-y-2">{module.contents.map((content) => renderContent(content))}</div>
 
         {module.children.map((child) => (
           <div key={child.id} className="mt-4">
@@ -253,9 +251,7 @@ export default function CourseOutline({
             </Link>
           </div>
 
-          {course.description && (
-            <p className="text-muted-foreground mb-6">{course.description}</p>
-          )}
+          {course.description && <p className="text-muted-foreground mb-6">{course.description}</p>}
 
           {/* Progress Overview */}
           <Card>
@@ -323,9 +319,7 @@ export default function CourseOutline({
               <CardContent className="py-12 text-center">
                 <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Aucun contenu disponible</h3>
-                <p className="text-muted-foreground">
-                  Ce cours ne contient pas encore de contenu
-                </p>
+                <p className="text-muted-foreground">Ce cours ne contient pas encore de contenu</p>
               </CardContent>
             </Card>
           ) : (

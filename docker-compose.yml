@@ -10,11 +10,11 @@ services:
       POSTGRES_PASSWORD: edonis_dev_password
       POSTGRES_DB: edonis_lms
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U edonis"]
+      test: ['CMD-SHELL', 'pg_isready -U edonis']
       interval: 10s
       timeout: 5s
       retries: 5

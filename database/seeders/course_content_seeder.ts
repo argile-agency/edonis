@@ -86,7 +86,7 @@ export default class extends BaseSeeder {
     })
 
     // Sous-module 2.1
-    const module2_1 = await CourseModule.create({
+    const subModule2Chapter1 = await CourseModule.create({
       courseId: course.id,
       parentId: module2.id,
       title: 'Chapitre 1: Les bases',
@@ -97,7 +97,7 @@ export default class extends BaseSeeder {
     })
 
     await CourseContent.create({
-      moduleId: module2_1.id,
+      moduleId: subModule2Chapter1.id,
       contentType: 'page',
       title: 'Leçon 1: Introduction aux concepts',
       description: 'Découvrez les concepts de base',
@@ -126,7 +126,7 @@ export default class extends BaseSeeder {
     })
 
     await CourseContent.create({
-      moduleId: module2_1.id,
+      moduleId: subModule2Chapter1.id,
       contentType: 'video',
       title: 'Vidéo explicative',
       description: 'Explication détaillée en vidéo',
@@ -139,7 +139,7 @@ export default class extends BaseSeeder {
     })
 
     await CourseContent.create({
-      moduleId: module2_1.id,
+      moduleId: subModule2Chapter1.id,
       contentType: 'link',
       title: 'Ressources complémentaires',
       description: 'Articles et documentation externe',
@@ -151,7 +151,7 @@ export default class extends BaseSeeder {
     })
 
     // Sous-module 2.2
-    const module2_2 = await CourseModule.create({
+    const subModule2Chapter2 = await CourseModule.create({
       courseId: course.id,
       parentId: module2.id,
       title: 'Chapitre 2: Applications pratiques',
@@ -162,7 +162,7 @@ export default class extends BaseSeeder {
     })
 
     await CourseContent.create({
-      moduleId: module2_2.id,
+      moduleId: subModule2Chapter2.id,
       contentType: 'page',
       title: 'Leçon 2: Exercices pratiques',
       description: 'Exercices pour mettre en pratique',
@@ -187,7 +187,7 @@ export default class extends BaseSeeder {
     })
 
     await CourseContent.create({
-      moduleId: module2_2.id,
+      moduleId: subModule2Chapter2.id,
       contentType: 'assignment',
       title: 'Devoir 1: Premier projet',
       description: 'Soumettez votre premier projet pratique',
