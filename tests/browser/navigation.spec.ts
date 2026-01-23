@@ -4,8 +4,8 @@ test.group('Navigation', () => {
   test('can visit home page', async ({ visit }) => {
     const page = await visit('/')
 
-    // Check for one of the h2 headings that exists on the page
-    await page.assertExists('h2:has-text("Documentation")')
+    // Check for elements that exist on the public home page
+    await page.assertExists('h2:has-text("Pourquoi nous choisir")')
     await page.assertExists('a[href="/login"]')
     await page.assertExists('a[href="/register"]')
   })
@@ -45,8 +45,9 @@ test.group('Navigation', () => {
       page.locator('button[type="submit"]').click(),
     ])
 
-    // Should see dashboard content
-    await page.assertTextContains('h1', 'Bienvenue')
+    // Should see dashboard content - use more specific selector to avoid ambiguity
+    // The welcome message h1 is inside the user info section with class text-2xl
+    await page.assertExists('h1.text-2xl:has-text("Bienvenue")')
     await page.assertExists('header')
   })
 

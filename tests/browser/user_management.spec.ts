@@ -61,8 +61,11 @@ test.group('User Management', () => {
     await page.goto('/admin/users')
     await page.waitForLoadState('networkidle')
 
-    // Filter by role
-    await page.locator('select#role').selectOption('admin')
+    // Filter by role - shadcn/ui uses Radix UI Select, not native select
+    // Click on the role select trigger to open the dropdown
+    await page.locator('button#role').click()
+    // Wait for dropdown to appear and select "Administrateur"
+    await page.locator('[role="option"]:has-text("Administrateur")').click()
     await page.locator('button:has-text("Filtrer")').click()
     await page.waitForTimeout(500)
 
