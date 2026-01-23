@@ -1,0 +1,60 @@
+name: "Edonis LMS CodeQL Configuration"
+
+# Paths to analyze - focus on application code
+paths:
+  - app
+  - inertia
+  - start
+  - config
+  - database
+
+# Paths to exclude from analysis
+paths-ignore:
+  - node_modules
+  - build
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - tests
+  - "**/*.d.ts"
+  - "inertia/components/ui" # shadcn/ui components are third-party
+
+# Query suites to run
+queries:
+  # Security queries - critical for an LMS handling student data
+  - uses: security-extended
+  - uses: security-and-quality
+
+  # Additional queries for web application security
+  - uses: security-experimental
+
+query-filters:
+  # Exclude low-impact queries that generate noise
+  - exclude:
+      tags contain: maintainability
+
+  # Include all security-related queries
+  - include:
+      tags contain: security
+
+  # Include queries for common web vulnerabilities
+  - include:
+      tags contain:
+        - injection
+        - xss
+        - csrf
+        - authentication
+        - authorization
+        - cryptography
+        - sensitive-data
+
+# Threat models relevant for LMS applications
+threat-models:
+  # Remote threats (most important for web apps)
+  - remote
+
+# Configure extraction for better TypeScript/JavaScript analysis
+extraction:
+  javascript:
+    # Ensure TypeScript files are properly analyzed
+    typescript:
+      mode: full
