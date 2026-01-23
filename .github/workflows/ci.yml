@@ -123,7 +123,7 @@ jobs:
         run: node ace migration:run --force
 
       - name: Run database seeders
-        run: node ace db:seed --force
+        run: node ace db:seed
 
       - name: Run unit tests
         run: node ace test functional || echo "No functional tests found yet"

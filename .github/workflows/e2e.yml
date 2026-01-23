@@ -61,7 +61,7 @@ jobs:
         run: node ace migration:run --force
 
       - name: Seed test data
-        run: node ace db:seed --force
+        run: node ace db:seed
 
       - name: Run browser tests
         run: node ace test browser
@@ -151,7 +151,7 @@ jobs:
         run: node ace migration:run --force
 
       - name: Seed test data
-        run: node ace db:seed --force
+        run: node ace db:seed
 
       - name: Run browser tests
         run: node ace test browser
