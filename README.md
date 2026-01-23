@@ -1,5 +1,11 @@
 # Edonis LMS
 
+[![CI](https://github.com/argile-agency/edonis/actions/workflows/ci.yml/badge.svg)](https://github.com/argile-agency/edonis/actions/workflows/ci.yml)
+[![E2E Tests](https://github.com/argile-agency/edonis/actions/workflows/e2e.yml/badge.svg)](https://github.com/argile-agency/edonis/actions/workflows/e2e.yml)
+[![Code Quality](https://github.com/argile-agency/edonis/actions/workflows/code-quality.yml/badge.svg)](https://github.com/argile-agency/edonis/actions/workflows/code-quality.yml)
+[![CodeQL](https://github.com/argile-agency/edonis/actions/workflows/code-quality.yml/badge.svg?event=schedule)](https://github.com/argile-agency/edonis/security/code-scanning)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 A modern, open-source Learning Management System built with AdonisJS, React, and PostgreSQL.
 
 **Edonis LMS** combines modern architecture, mobile-first design, and native AI integration to deliver a superior learning experience for educational institutions. Built with TypeScript and featuring comprehensive educational standards compliance (SCORM, xAPI, LTI 1.3, QTI 2.1).
@@ -157,46 +163,66 @@ docker logs edonis_postgres  # View logs
 node ace migration:run
 ```
 
-2. Start the development server:
+2. Seed the database with demo data:
 
 ```bash
-npm run dev
+node ace db:seed
 ```
 
-3. Open your browser:
+3. Start the development server:
+
+```bash
+bun run dev
+```
+
+4. Open your browser:
 
 ```
 http://localhost:3333
 ```
+
+### Test Accounts
+
+After running seeders, these accounts are available:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@edonis.test | password |
+| Manager | manager@edonis.test | password |
+| Teacher | teacher@edonis.test | password |
+| Student | student@edonis.test | password |
 
 ---
 
 ## Development Commands
 
 ```bash
-# Run migrations
-node ace migration:run
+# Development
+bun run dev              # Start dev server with HMR
+bun run build            # Build for production
+bun start                # Start production server
 
-# Rollback migrations
-node ace migration:rollback
+# Database
+node ace migration:run       # Run pending migrations
+node ace migration:rollback  # Rollback last batch
+node ace migration:fresh     # Drop all tables and re-run
+node ace db:seed             # Run database seeders
 
-# Create a new migration
-node ace make:migration <name>
+# Code Generation
+node ace make:migration <name>   # Create a migration
+node ace make:model <name>       # Create a model
+node ace make:controller <name>  # Create a controller
+node ace make:validator <name>   # Create a validator
 
-# Create a new model
-node ace make:model <name>
+# Code Quality
+bun run typecheck        # Type check TypeScript
+bun run lint             # Lint code
+bun run format           # Format with Prettier
 
-# Create a new controller
-node ace make:controller <name>
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Testing
+bun test                 # Run all tests
+node ace test            # Alternative test command
+node ace test browser    # Run E2E browser tests
 ```
 
 ---
@@ -248,6 +274,30 @@ node ace migration:run --force
 ```
 
 ---
+
+## 🔒 Security
+
+Edonis LMS takes security seriously, especially given that LMS platforms handle sensitive student data.
+
+### Automated Security Scanning
+
+- **CodeQL Analysis**: Runs on every PR and weekly, scanning for:
+  - SQL/Command injection vulnerabilities
+  - Cross-Site Scripting (XSS)
+  - Authentication/authorization flaws
+  - Sensitive data exposure
+  - Cryptography issues
+- **Dependency Review**: Checks for vulnerable dependencies on PRs
+- **Security Audit**: `bun audit` runs in CI to detect known vulnerabilities
+
+### Reporting Vulnerabilities
+
+If you discover a security vulnerability, please report it responsibly:
+1. **Do not** open a public issue
+2. Email security concerns to the maintainers
+3. Allow time for a fix before public disclosure
+
+See [GitHub Security Advisories](https://github.com/argile-agency/edonis/security/advisories) for known issues.
 
 ## 🤝 Contributing
 
@@ -341,8 +391,8 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 ## 💬 Support
 
 - **Documentation**: [CLAUDE.md](CLAUDE.md)
-- **Issues**: [GitHub Issues](https://github.com/your-org/edonis/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/edonis/discussions)
+- **Issues**: [GitHub Issues](https://github.com/argile-agency/edonis/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/argile-agency/edonis/discussions)
 
 ## 🙏 Acknowledgments
 
