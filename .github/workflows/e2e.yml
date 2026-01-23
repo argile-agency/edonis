@@ -39,6 +39,8 @@ jobs:
       APP_KEY: test_app_key_for_ci_pipeline_runs_only
       PORT: 3333
       HOST: localhost
+      LOG_LEVEL: info
+      SESSION_DRIVER: cookie
 
     steps:
       - name: Checkout code
@@ -126,6 +128,8 @@ jobs:
       APP_KEY: test_app_key_for_ci_pipeline_runs_only
       PORT: 3333
       HOST: localhost
+      LOG_LEVEL: info
+      SESSION_DRIVER: cookie
       BROWSER: ${{ matrix.browser }}
 
     steps:
