@@ -40,18 +40,14 @@
 ### Responsive Typography
 
 ```tsx
-<h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl">
-  Responsive Heading
-</h1>
+<h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl">Responsive Heading</h1>
 ```
 
 ### Responsive Spacing
 
 ```tsx
 <section className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-  <div className="max-w-7xl mx-auto">
-    Content
-  </div>
+  <div className="max-w-7xl mx-auto">Content</div>
 </section>
 ```
 
@@ -59,7 +55,9 @@
 
 ```tsx
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-  {items.map(item => <Card key={item.id} {...item} />)}
+  {items.map((item) => (
+    <Card key={item.id} {...item} />
+  ))}
 </div>
 ```
 
@@ -67,9 +65,7 @@
 
 ```tsx
 // Centered container with responsive padding
-<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-  Content
-</div>
+<div className="container mx-auto px-4 sm:px-6 lg:px-8">Content</div>
 ```
 
 ## Aspect Ratio
@@ -84,11 +80,13 @@
 ## Dark Mode Integration
 
 ```tsx
-<div className="
+<div
+  className="
   bg-white dark:bg-gray-900
   text-gray-900 dark:text-gray-100
   border-gray-200 dark:border-gray-700
-">
+"
+>
   Supports dark mode
 </div>
 ```

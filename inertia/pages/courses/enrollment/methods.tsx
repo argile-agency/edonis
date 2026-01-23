@@ -34,17 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
-import {
-  Calendar,
-  Edit,
-  Key,
-  Lock,
-  Plus,
-  Settings,
-  Trash2,
-  UserPlus,
-  Users,
-} from 'lucide-react'
+import { Calendar, Edit, Key, Lock, Plus, Settings, Trash2, UserPlus, Users } from 'lucide-react'
 
 interface EnrollmentMethod {
   id: number
@@ -196,7 +186,10 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link href={`/courses/${course.id}`} className="text-sm text-muted-foreground hover:underline">
+            <Link
+              href={`/courses/${course.id}`}
+              className="text-sm text-muted-foreground hover:underline"
+            >
               ← Retour au cours
             </Link>
             <h1 className="text-3xl font-bold mt-2">Méthodes d'inscription</h1>
@@ -272,13 +265,18 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
 
                   {/* Max Enrollments */}
                   <div className="grid gap-2">
-                    <Label htmlFor="maxEnrollments">Nombre maximum d'inscriptions (optionnel)</Label>
+                    <Label htmlFor="maxEnrollments">
+                      Nombre maximum d'inscriptions (optionnel)
+                    </Label>
                     <Input
                       id="maxEnrollments"
                       type="number"
                       value={form.data.maxEnrollments || ''}
                       onChange={(e) =>
-                        form.setData('maxEnrollments', e.target.value ? Number(e.target.value) : null)
+                        form.setData(
+                          'maxEnrollments',
+                          e.target.value ? Number(e.target.value) : null
+                        )
                       }
                       placeholder="Illimité si vide"
                     />
@@ -412,7 +410,11 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
                 </div>
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
                     Annuler
                   </Button>
                   <Button type="submit" disabled={form.processing}>
@@ -431,7 +433,8 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
               <Settings className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Aucune méthode d'inscription</h3>
               <p className="text-muted-foreground text-center mb-4">
-                Commencez par créer une méthode pour permettre aux étudiants de s'inscrire à ce cours.
+                Commencez par créer une méthode pour permettre aux étudiants de s'inscrire à ce
+                cours.
               </p>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -452,19 +455,13 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <CardTitle>{method.name}</CardTitle>
-                            {!method.isEnabled && (
-                              <Badge variant="secondary">Désactivée</Badge>
-                            )}
+                            {!method.isEnabled && <Badge variant="secondary">Désactivée</Badge>}
                           </div>
                           <CardDescription>{getMethodTypeName(method.methodType)}</CardDescription>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(method)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => openEditDialog(method)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
@@ -477,8 +474,8 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer cette méthode d'inscription ? Cette
-                                action est irréversible.
+                                Êtes-vous sûr de vouloir supprimer cette méthode d'inscription ?
+                                Cette action est irréversible.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -569,7 +566,9 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-maxEnrollments">Nombre maximum d'inscriptions (optionnel)</Label>
+                  <Label htmlFor="edit-maxEnrollments">
+                    Nombre maximum d'inscriptions (optionnel)
+                  </Label>
                   <Input
                     id="edit-maxEnrollments"
                     type="number"

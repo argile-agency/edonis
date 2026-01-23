@@ -56,6 +56,7 @@ You have **two options** for running PostgreSQL in development:
 ### Option 1: Supabase Local Dev (Recommended) ✨
 
 **Advantages:**
+
 - Full Supabase features (Auth, Storage, Realtime, Row Level Security)
 - Visual database UI (Supabase Studio)
 - Easy sync to production Supabase
@@ -64,21 +65,25 @@ You have **two options** for running PostgreSQL in development:
 **Setup:**
 
 1. Install Supabase CLI:
+
 ```bash
 brew install supabase/tap/supabase
 ```
 
 2. Start Supabase local:
+
 ```bash
 supabase start
 ```
 
 3. Get your credentials:
+
 ```bash
 supabase status
 ```
 
 4. Update your `.env` with the values from `supabase status`:
+
 ```env
 DB_HOST=127.0.0.1
 DB_PORT=54322
@@ -92,11 +97,13 @@ SUPABASE_SERVICE_KEY=<from supabase status>
 ```
 
 5. Access Supabase Studio:
+
 ```
 http://127.0.0.1:54323
 ```
 
 **Useful Commands:**
+
 ```bash
 supabase status      # Check running services
 supabase stop        # Stop all services
@@ -108,6 +115,7 @@ supabase db reset    # Reset database to fresh state
 ### Option 2: Docker PostgreSQL (Simple) 🐳
 
 **Advantages:**
+
 - Simpler, fewer dependencies
 - Standard PostgreSQL setup
 - Lightweight
@@ -115,11 +123,13 @@ supabase db reset    # Reset database to fresh state
 **Setup:**
 
 1. Start PostgreSQL with Docker Compose:
+
 ```bash
 docker-compose up -d
 ```
 
 2. Update your `.env`:
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -129,6 +139,7 @@ DB_DATABASE=edonis_lms
 ```
 
 **Useful Commands:**
+
 ```bash
 docker-compose up -d      # Start PostgreSQL
 docker-compose down       # Stop PostgreSQL
@@ -141,16 +152,19 @@ docker logs edonis_postgres  # View logs
 ## Running the Application
 
 1. Run database migrations:
+
 ```bash
 node ace migration:run
 ```
 
 2. Start the development server:
+
 ```bash
 npm run dev
 ```
 
 3. Open your browser:
+
 ```
 http://localhost:3333
 ```
@@ -215,6 +229,7 @@ When deploying to production with Supabase:
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Update `.env` with production credentials:
+
 ```env
 DB_HOST=db.xxxxx.supabase.co
 DB_PORT=5432
@@ -227,6 +242,7 @@ SUPABASE_ANON_KEY=<your-production-anon-key>
 ```
 
 3. Run migrations:
+
 ```bash
 node ace migration:run --force
 ```
@@ -257,6 +273,7 @@ Licensed under the Apache License, Version 2.0 (the "License"). You may obtain a
 http://www.apache.org/licenses/LICENSE-2.0
 
 This project uses Apache 2.0 for:
+
 - 🛡️ Patent protection for users and contributors
 - 🏢 Enterprise-friendly adoption
 - 🔒 Trademark protection for the "Edonis" brand
@@ -268,20 +285,21 @@ See [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details.
 
 Compared to existing LMS solutions:
 
-| Feature | Edonis | Moodle | Canvas | Blackboard |
-|---------|--------|--------|--------|------------|
-| **Modern Stack** | ✅ TypeScript/React | ❌ PHP | ❌ Ruby | ❌ Java |
-| **AI Integration** | ✅ Native | ⚠️ Plugins | ⚠️ Limited | ⚠️ Limited |
-| **Mobile-First** | ✅ PWA | ❌ | ⚠️ | ⚠️ |
-| **License** | Apache 2.0 | GPL | AGPL | Proprietary |
-| **Developer Experience** | ✅ Excellent | ❌ | ⚠️ | ❌ |
-| **Plugin System** | ✅ Type-safe | ✅ | ⚠️ | ❌ |
+| Feature                  | Edonis              | Moodle     | Canvas     | Blackboard  |
+| ------------------------ | ------------------- | ---------- | ---------- | ----------- |
+| **Modern Stack**         | ✅ TypeScript/React | ❌ PHP     | ❌ Ruby    | ❌ Java     |
+| **AI Integration**       | ✅ Native           | ⚠️ Plugins | ⚠️ Limited | ⚠️ Limited  |
+| **Mobile-First**         | ✅ PWA              | ❌         | ⚠️         | ⚠️          |
+| **License**              | Apache 2.0          | GPL        | AGPL       | Proprietary |
+| **Developer Experience** | ✅ Excellent        | ❌         | ⚠️         | ❌          |
+| **Plugin System**        | ✅ Type-safe        | ✅         | ⚠️         | ❌          |
 
 ## 🗺️ Roadmap
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 
 ### Phase 1 (MVP) - Q4 2025 (Current)
+
 - ✅ User management with RBAC
 - ✅ Authentication & authorization
 - ✅ Dynamic homepage system with role-based content
@@ -293,6 +311,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 - 🚧 Communication tools (forums, messaging)
 
 ### Phase 2 (AI & Mobile) - Q1-Q2 2026
+
 - 🔮 AI content generation (quizzes, summaries, objectives)
 - 🔮 Personalized learning paths
 - 🔮 Automated assessment & essay scoring
@@ -302,6 +321,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 - 🔮 Push notifications
 
 ### Phase 3 (Advanced Features) - Q3-Q4 2026
+
 - 🔮 Plugin marketplace & ecosystem
 - 🔮 Advanced learning analytics
 - 🔮 Video conferencing integration (Zoom, Google Meet)
@@ -310,6 +330,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 - 🔮 Multi-language support (i18n)
 
 ### Phase 4 (Enterprise & Scale) - 2027
+
 - 🔮 Advanced multi-tenancy features
 - 🔮 SSO integrations (SAML, OAuth)
 - 🔮 Full standards compliance (SCORM 2004, xAPI, LTI 1.3, QTI 2.1)
@@ -326,6 +347,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 ## 🙏 Acknowledgments
 
 Built with amazing open-source projects:
+
 - [AdonisJS](https://adonisjs.com) - The TypeScript framework
 - [React](https://react.dev) - UI library
 - [Inertia.js](https://inertiajs.com) - Modern monolith approach

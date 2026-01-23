@@ -40,8 +40,8 @@ export default function Privacy() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Edonis LMS s'engage à protéger la vie privée de ses utilisateurs. Cette politique
-                de confidentialité décrit comment nous collectons, utilisons et protégeons vos
+                Edonis LMS s'engage à protéger la vie privée de ses utilisateurs. Cette politique de
+                confidentialité décrit comment nous collectons, utilisons et protégeons vos
                 informations personnelles lorsque vous utilisez notre plateforme d'apprentissage en
                 ligne.
               </p>

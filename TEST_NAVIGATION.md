@@ -5,6 +5,7 @@
 Le middleware `silentAuth` a été ajouté au router pour permettre la vérification de l'authentification sur toutes les routes, y compris la page d'accueil.
 
 **Modification** : `start/kernel.ts`
+
 - Ajout de `silent_auth_middleware` au router middleware stack
 
 ---
@@ -14,6 +15,7 @@ Le middleware `silentAuth` a été ajouté au router pour permettre la vérifica
 ### Test 1 : Visiteur non connecté sur la page d'accueil
 
 1. **Démarrer le serveur**
+
    ```bash
    npm run dev
    ```
@@ -94,37 +96,42 @@ Le middleware `silentAuth` a été ajouté au router pour permettre la vérifica
 ## 🐛 Problèmes potentiels et solutions
 
 ### Les boutons ne sont pas visibles
+
 **Cause** : Le serveur n'a pas été redémarré après les modifications
 
 **Solution** :
+
 ```bash
 # Arrêter le serveur (Ctrl+C)
 npm run dev
 ```
 
 ### Les boutons ne fonctionnent pas (rien ne se passe au clic)
+
 **Cause** : Problème JavaScript dans le navigateur
 
 **Solution** :
+
 1. Ouvrir la console du navigateur (F12)
 2. Vérifier s'il y a des erreurs
 3. Rafraîchir la page avec Ctrl+Shift+R (cache clearing)
 
 ### Erreur "auth.user is undefined"
+
 **Cause** : Le middleware silentAuth n'est pas appliqué
 
 **Solution** : Vérifier que `start/kernel.ts` contient bien :
+
 ```typescript
-router.use([
-  ...
-  () => import('#middleware/silent_auth_middleware'),
-])
+router.use([...() => import('#middleware/silent_auth_middleware')])
 ```
 
 ### Les boutons "Connexion" et "Inscription" s'affichent même connecté
+
 **Cause** : La session n'est pas persistée ou le cookie est bloqué
 
 **Solution** :
+
 1. Vérifier que les cookies sont autorisés dans le navigateur
 2. Vider les cookies du site
 3. Se reconnecter
@@ -138,23 +145,23 @@ router.use([
 ```
 1. Visiteur arrive sur /
    → Voit "Connexion" et "Inscription"
-   
+
 2. Clique sur "Inscription"
    → Remplit le formulaire
    → Crée son compte
    → Est automatiquement connecté
    → Redirigé vers /dashboard
-   
+
 3. Retourne sur /
    → Voit "Bonjour, [Nom]", "Dashboard" et "Déconnexion"
-   
+
 4. Clique sur "Dashboard"
    → Accède à son tableau de bord
-   
+
 5. Retourne sur / et clique sur "Déconnexion"
    → Est déconnecté
    → Redirigé vers /login
-   
+
 6. Retourne sur /
    → Voit à nouveau "Connexion" et "Inscription"
 ```
@@ -163,12 +170,12 @@ router.use([
 
 ## 📊 Récapitulatif des liens
 
-| Bouton | URL cible | État requis | Description |
-|--------|-----------|-------------|-------------|
-| Connexion | `/login` | Non connecté | Page de connexion |
-| Inscription | `/register` | Non connecté | Page d'inscription |
-| Dashboard | `/dashboard` | Connecté | Tableau de bord |
-| Déconnexion | `/logout` (POST) | Connecté | Détruit la session |
+| Bouton      | URL cible        | État requis  | Description        |
+| ----------- | ---------------- | ------------ | ------------------ |
+| Connexion   | `/login`         | Non connecté | Page de connexion  |
+| Inscription | `/register`      | Non connecté | Page d'inscription |
+| Dashboard   | `/dashboard`     | Connecté     | Tableau de bord    |
+| Déconnexion | `/logout` (POST) | Connecté     | Détruit la session |
 
 ---
 

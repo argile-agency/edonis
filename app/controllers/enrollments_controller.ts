@@ -109,10 +109,10 @@ export default class EnrollmentsController {
 
     // Auto-assign to group if configured
     if (method.autoAssignGroupId) {
-      const CourseGroupMember = (await import('#models/course_group_member')).default
-      const group = await (
-        await import('#models/course_group')
-      ).default.findOrFail(method.autoAssignGroupId)
+      const CourseGroupMemberModule = await import('#models/course_group_member')
+      const CourseGroupMember = CourseGroupMemberModule.default
+      const CourseGroupModule = await import('#models/course_group')
+      const group = await CourseGroupModule.default.findOrFail(method.autoAssignGroupId)
 
       if (group.canAddMembers()) {
         await CourseGroupMember.create({
@@ -320,8 +320,10 @@ export default class EnrollmentsController {
 
         // Add to group if specified
         if (groupId) {
-          const CourseGroupMember = (await import('#models/course_group_member')).default
-          const group = await (await import('#models/course_group')).default.findOrFail(groupId)
+          const CourseGroupMemberModule = await import('#models/course_group_member')
+          const CourseGroupMember = CourseGroupMemberModule.default
+          const CourseGroupModule = await import('#models/course_group')
+          const group = await CourseGroupModule.default.findOrFail(groupId)
 
           if (group.canAddMembers()) {
             await CourseGroupMember.create({

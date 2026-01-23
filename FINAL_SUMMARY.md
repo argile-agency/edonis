@@ -21,6 +21,7 @@
 ## 🎨 Navigation intelligente sur la page d'accueil
 
 ### Pour les visiteurs non connectés
+
 ```
 ┌─────────────────────────────────────────┐
 │  [Connexion] [Inscription]              │
@@ -31,6 +32,7 @@
 ```
 
 ### Pour les utilisateurs connectés
+
 ```
 ┌─────────────────────────────────────────┐
 │  Bonjour, Jean | [Dashboard] [Déconnexion] │
@@ -66,7 +68,13 @@ await UserRole.assignRole(admin.id, 'admin')
 // Student
 const student = await User.firstOrCreate(
   { email: 'student@edonis.com' },
-  { fullName: 'Étudiant Dupont', email: 'student@edonis.com', password: 'Student123!', studentId: 'STU-001', isActive: true }
+  {
+    fullName: 'Étudiant Dupont',
+    email: 'student@edonis.com',
+    password: 'Student123!',
+    studentId: 'STU-001',
+    isActive: true,
+  }
 )
 await UserRole.assignRole(student.id, 'student')
 
@@ -86,11 +94,13 @@ npm run dev
 ### 3️⃣ Tester
 
 **Option A : Visiteur non connecté**
+
 1. Allez sur http://localhost:3333
 2. Cliquez sur **"Inscription"** → Créez un compte
 3. Vous serez automatiquement connecté et redirigé vers `/dashboard`
 
 **Option B : Utilisateur existant**
+
 1. Allez sur http://localhost:3333
 2. Cliquez sur **"Connexion"**
 3. Utilisez `admin@edonis.com` / `Admin123!`
@@ -120,22 +130,26 @@ Page d'accueil (/)
 ## 🎯 Fonctionnalités par rôle
 
 ### 🔴 Admin (admin@edonis.com)
+
 - ✅ Accès au Dashboard
 - ✅ Accès à la gestion des utilisateurs (`/admin/users`)
 - ✅ CRUD complet des utilisateurs
 - ✅ Assignation des rôles
 
 ### 🟡 Manager (manager@edonis.com)
+
 - ✅ Accès au Dashboard
 - ✅ Accès à la gestion des utilisateurs
 - ✅ CRUD des utilisateurs (sauf suppression système)
 
 ### 🟢 Teacher (teacher@edonis.com)
+
 - ✅ Accès au Dashboard
 - 🚧 Gestion de ses cours (à venir)
 - 🚧 Création d'évaluations (à venir)
 
 ### 🔵 Student (student@edonis.com)
+
 - ✅ Accès au Dashboard
 - 🚧 Consultation de ses cours (à venir)
 - 🚧 Soumission de devoirs (à venir)
@@ -145,6 +159,7 @@ Page d'accueil (/)
 ## 📁 Architecture complète
 
 ### Backend (Controllers)
+
 ```
 app/controllers/
 ├── auth_controller.ts        → Login/Register/Logout
@@ -154,6 +169,7 @@ app/controllers/
 ```
 
 ### Frontend (Pages React)
+
 ```
 inertia/pages/
 ├── home.tsx                  → Page d'accueil avec navigation
@@ -169,6 +185,7 @@ inertia/pages/
 ```
 
 ### Routes principales
+
 ```
 GET  /                    → Page d'accueil (public)
 GET  /login              → Connexion (public)
@@ -183,6 +200,7 @@ GET  /admin/users        → Gestion utilisateurs (admin/manager)
 ## 🧪 Tests rapides
 
 ### Test 1 : Navigation pour visiteur
+
 ```bash
 # Démarrer le serveur
 npm run dev
@@ -192,6 +210,7 @@ npm run dev
 ```
 
 ### Test 2 : Inscription nouveau compte
+
 ```bash
 # Cliquer sur "Inscription"
 # Remplir le formulaire
@@ -200,6 +219,7 @@ npm run dev
 ```
 
 ### Test 3 : Connexion Admin
+
 ```bash
 # Créer l'admin via REPL (voir étape 1)
 # Aller sur /login
@@ -208,6 +228,7 @@ npm run dev
 ```
 
 ### Test 4 : Déconnexion
+
 ```bash
 # Depuis n'importe quelle page connectée
 # Cliquer sur "Déconnexion"
@@ -219,19 +240,20 @@ npm run dev
 
 ## 📚 Documentation complète
 
-| Fichier | Description |
-|---------|-------------|
-| `SOLUTION.md` | Guide complet des solutions |
-| `AUTH_GUIDE.md` | Documentation authentification |
-| `CREATE_TEST_USERS.md` | Script création utilisateurs |
-| `QUICKSTART.md` | Guide démarrage rapide |
-| `docs/USER_MANAGEMENT.md` | Documentation technique |
+| Fichier                   | Description                    |
+| ------------------------- | ------------------------------ |
+| `SOLUTION.md`             | Guide complet des solutions    |
+| `AUTH_GUIDE.md`           | Documentation authentification |
+| `CREATE_TEST_USERS.md`    | Script création utilisateurs   |
+| `QUICKSTART.md`           | Guide démarrage rapide         |
+| `docs/USER_MANAGEMENT.md` | Documentation technique        |
 
 ---
 
 ## 🎨 Aperçu visuel
 
 ### Page d'accueil (Non connecté)
+
 ```
 ┌────────────────────────────────────────────────┐
 │                    [Connexion] [Inscription]    │
@@ -250,6 +272,7 @@ npm run dev
 ```
 
 ### Page d'accueil (Connecté)
+
 ```
 ┌────────────────────────────────────────────────┐
 │  Bonjour, Jean   [Dashboard] [Déconnexion]     │
@@ -268,6 +291,7 @@ npm run dev
 ## ✨ Ce qui fonctionne maintenant
 
 ### ✅ Authentification
+
 - [x] Inscription avec assignation automatique du rôle "Student"
 - [x] Connexion avec vérification des credentials
 - [x] Déconnexion avec destruction de session
@@ -275,12 +299,14 @@ npm run dev
 - [x] Vérification des rôles (Admin, Manager, Teacher, Student, Guest)
 
 ### ✅ Navigation
+
 - [x] Page d'accueil avec boutons contextuels
 - [x] Affichage du nom de l'utilisateur connecté
 - [x] Lien vers Dashboard pour utilisateurs connectés
 - [x] Boutons Login/Register pour visiteurs
 
 ### ✅ Gestion des utilisateurs
+
 - [x] CRUD complet (Admin/Manager)
 - [x] Assignation de rôles multiples
 - [x] Rôles contextuels (global + par cours)
@@ -288,6 +314,7 @@ npm run dev
 - [x] Recherche et filtres avancés
 
 ### ✅ Dashboard
+
 - [x] Personnalisé selon les rôles
 - [x] Cartes d'actions rapides
 - [x] Affichage des rôles de l'utilisateur
@@ -298,6 +325,7 @@ npm run dev
 ## 🚧 Prochaines fonctionnalités suggérées
 
 ### Phase 1 - Cours (2-3 jours)
+
 1. Module Courses
    - CRUD des cours
    - Catégories
@@ -310,11 +338,13 @@ npm run dev
    - Inscription par code
 
 ### Phase 2 - Contenu (3-4 jours)
+
 3. Modules et sections
 4. Ressources (Documents, Vidéos, Liens)
 5. Activities (Quiz, Devoirs, Forums)
 
 ### Phase 3 - Évaluation (3-4 jours)
+
 6. Système de quiz
 7. Soumission de devoirs
 8. Carnet de notes
@@ -341,6 +371,7 @@ Vous avez maintenant un **LMS pleinement fonctionnel** avec :
 ## 📞 Support
 
 Pour toute question :
+
 - Consultez les fichiers de documentation dans le dossier racine
 - Vérifiez la documentation AdonisJS : https://docs.adonisjs.com
 - Consultez la documentation Inertia : https://inertiajs.com

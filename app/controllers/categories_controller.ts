@@ -208,10 +208,10 @@ export default class CategoriesController {
   async reorder({ request, response, session }: HttpContext) {
     const { categoryIds } = request.only(['categoryIds'])
 
-    for (let i = 0; i < categoryIds.length; i++) {
-      const category = await CourseCategory.find(categoryIds[i])
+    for (const [index, categoryId] of categoryIds.entries()) {
+      const category = await CourseCategory.find(categoryId)
       if (category) {
-        category.sortOrder = i
+        category.sortOrder = index
         await category.save()
       }
     }

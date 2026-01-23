@@ -195,7 +195,9 @@ test.group('Grades - Browser Tests', (group) => {
     // Check assignment list
     await page.locator('text=Final Project').isVisible()
     await page.locator('text=92.0 / 100').isVisible()
-    await page.locator('text=Outstanding project! Great attention to detail and clean code.').isVisible()
+    await page
+      .locator('text=Outstanding project! Great attention to detail and clean code.')
+      .isVisible()
 
     // Check tabs
     await page.locator('text=Devoirs').isVisible()

@@ -15,7 +15,7 @@
     "breakdown": {
       "performance": {
         "score": 85,
-        "weight": 0.30,
+        "weight": 0.3,
         "metrics": {
           "lighthouse": 88,
           "pageWeightEstimate": "~180KB (CSS + JS bundle, no images)",
@@ -89,9 +89,7 @@
               "CSS animations avec prefers-reduced-motion",
               "Fallbacks pour les navigateurs anciens via CSS"
             ],
-            "recommendations": [
-              "Ajouter des fallbacks explicites pour CSS custom properties"
-            ]
+            "recommendations": ["Ajouter des fallbacks explicites pour CSS custom properties"]
           },
           {
             "id": "4.3",
@@ -117,9 +115,7 @@
               "Mode sombre avec ajustements de contraste",
               "Support prefers-contrast: high"
             ],
-            "recommendations": [
-              "Valider les contrastes avec un outil automatisé"
-            ]
+            "recommendations": ["Valider les contrastes avec un outil automatisé"]
           },
           {
             "id": "4.5",
@@ -166,7 +162,7 @@
       "contenus": {
         "name": "Contenus (Thématique 5)",
         "score": 75,
-        "weight": 0.10,
+        "weight": 0.1,
         "criteria": [
           {
             "id": "5.1",
@@ -190,9 +186,7 @@
               "Source Serif pour les titres (distinction)",
               "Tailles de texte appropriées (text-sm à text-5xl)"
             ],
-            "recommendations": [
-              "Vérifier le score Flesch pour les descriptions"
-            ]
+            "recommendations": ["Vérifier le score Flesch pour les descriptions"]
           },
           {
             "id": "5.3",
@@ -216,10 +210,7 @@
             "title": "Les formats d'images sont-ils adaptés ?",
             "status": "partiellement_conforme",
             "score": 65,
-            "evidence": [
-              "SVG pour icônes (conforme)",
-              "JPG externe pour avatars (non optimal)"
-            ],
+            "evidence": ["SVG pour icônes (conforme)", "JPG externe pour avatars (non optimal)"],
             "recommendations": [
               "Convertir les images en WebP ou AVIF",
               "Utiliser des placeholders SVG pour les avatars de démonstration"
@@ -231,9 +222,7 @@
             "title": "Les vidéos sont-elles optimisées ?",
             "status": "non_applicable",
             "score": 100,
-            "evidence": [
-              "Pas de vidéos sur la page showcase"
-            ],
+            "evidence": ["Pas de vidéos sur la page showcase"],
             "recommendations": []
           },
           {
@@ -283,9 +272,7 @@
               "CSS inline ou bundlé",
               "Fonts: 2 fichiers"
             ],
-            "recommendations": [
-              "Réduire les requêtes d'images externes"
-            ]
+            "recommendations": ["Réduire les requêtes d'images externes"]
           },
           {
             "id": "6.3",

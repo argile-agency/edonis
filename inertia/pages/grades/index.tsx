@@ -70,9 +70,7 @@ export default function GradesIndex({ grades }: Props) {
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Mes Notes</h1>
-          <p className="text-muted-foreground mt-2">
-            Vue d'ensemble de vos résultats académiques
-          </p>
+          <p className="text-muted-foreground mt-2">Vue d'ensemble de vos résultats académiques</p>
         </div>
 
         {/* Overall Statistics */}
@@ -112,9 +110,7 @@ export default function GradesIndex({ grades }: Props) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalSubmitted}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                sur {totalAssignments} devoirs
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">sur {totalAssignments} devoirs</p>
               <Progress
                 value={totalAssignments > 0 ? (totalSubmitted / totalAssignments) * 100 : 0}
                 className="mt-2"
@@ -168,7 +164,9 @@ export default function GradesIndex({ grades }: Props) {
                       </CardDescription>
                     </div>
                     <div className="text-right ml-4">
-                      <div className={`text-3xl font-bold ${getGradeColor(gradeData.overallGrade)}`}>
+                      <div
+                        className={`text-3xl font-bold ${getGradeColor(gradeData.overallGrade)}`}
+                      >
                         {gradeData.overallGrade !== null
                           ? `${gradeData.overallGrade.toFixed(1)}%`
                           : 'N/A'}
@@ -209,9 +207,7 @@ export default function GradesIndex({ grades }: Props) {
                           {gradeData.earnedPoints.toFixed(1)} / {gradeData.totalPoints} points
                         </span>
                       </div>
-                      <Progress
-                        value={(gradeData.earnedPoints / gradeData.totalPoints) * 100}
-                      />
+                      <Progress value={(gradeData.earnedPoints / gradeData.totalPoints) * 100} />
                     </div>
                   )}
 

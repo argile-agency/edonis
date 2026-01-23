@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useLazySection, type UseLazySectionOptions } from '~/hooks/use-lazy-section'
+import { useLazySection, type UseLazySectionOptions } from '~/hooks/use_lazy_section'
 import { cn } from '~/lib/utils'
 
 export interface LazySectionProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -28,16 +28,7 @@ export interface LazySectionProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 const LazySection = React.forwardRef<HTMLDivElement, LazySectionProps>(
   (
-    {
-      children,
-      fallback = null,
-      options,
-      minHeight,
-      eager = false,
-      className,
-      style,
-      ...props
-    },
+    { children, fallback = null, options, minHeight, eager = false, className, style, ...props },
     forwardedRef
   ) => {
     const { ref, isVisible } = useLazySection<HTMLDivElement>({

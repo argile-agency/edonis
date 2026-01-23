@@ -9,6 +9,7 @@ L'erreur **"Cannot GET:/login"** est maintenant résolue ! Le système d'authent
 ## 🎯 Ce qui a été ajouté
 
 ### 1. **AuthController** (`app/controllers/auth_controller.ts`)
+
 - ✅ `showLogin()` : Affiche la page de connexion
 - ✅ `login()` : Traite la connexion
 - ✅ `showRegister()` : Affiche la page d'inscription
@@ -16,10 +17,12 @@ L'erreur **"Cannot GET:/login"** est maintenant résolue ! Le système d'authent
 - ✅ `logout()` : Déconnexion
 
 ### 2. **Validators** (`app/validators/auth_validator.ts`)
+
 - ✅ `loginValidator` : Validation email + password
 - ✅ `registerValidator` : Validation nom, email, password avec confirmation
 
 ### 3. **Routes d'authentification** (`start/routes.ts`)
+
 ```typescript
 GET  /login      → Page de connexion
 POST /login      → Traiter la connexion
@@ -29,6 +32,7 @@ POST /logout     → Déconnexion
 ```
 
 ### 4. **Pages React**
+
 - ✅ `inertia/pages/auth/login.tsx` : Interface de connexion moderne
 - ✅ `inertia/pages/auth/register.tsx` : Interface d'inscription
 
@@ -79,7 +83,7 @@ const admin = await User.create({
   fullName: 'Administrateur Principal',
   email: 'admin@edonis.com',
   password: 'Admin123!',
-  isActive: true
+  isActive: true,
 })
 
 // Assigner le rôle admin
@@ -97,6 +101,7 @@ Tapez `.exit` pour quitter.
 ## 🔄 Flux d'authentification
 
 ### Inscription
+
 1. Utilisateur remplit le formulaire `/register`
 2. Validation des données (nom, email unique, password min 8 caractères)
 3. Création de l'utilisateur
@@ -105,6 +110,7 @@ Tapez `.exit` pour quitter.
 6. Redirection vers `/admin/users`
 
 ### Connexion
+
 1. Utilisateur remplit le formulaire `/login`
 2. Vérification des credentials
 3. Vérification que le compte est actif
@@ -113,6 +119,7 @@ Tapez `.exit` pour quitter.
 6. Redirection vers `/admin/users`
 
 ### Déconnexion
+
 1. Utilisateur clique sur "Déconnexion"
 2. Session détruite
 3. Redirection vers `/login`
@@ -131,11 +138,12 @@ router
     // ... autres routes
   })
   .prefix('/admin')
-  .use(middleware.auth())                          // ← Authentification requise
+  .use(middleware.auth()) // ← Authentification requise
   .use(middleware.role({ roles: ['admin', 'manager'] })) // ← Rôles requis
 ```
 
 ### Comportement
+
 - ❌ **Non connecté** → Redirection vers `/login`
 - ❌ **Mauvais rôle** (ex: Student) → Erreur 403 Forbidden
 - ✅ **Admin ou Manager** → Accès autorisé
@@ -145,6 +153,7 @@ router
 ## 🎨 Interface utilisateur
 
 ### Page de connexion (`/login`)
+
 - Design moderne avec gradient bleu
 - Formulaire simple : email + password
 - Option "Se souvenir de moi"
@@ -153,6 +162,7 @@ router
 - Validation en temps réel
 
 ### Page d'inscription (`/register`)
+
 - Formulaire complet : nom, email, password, confirmation
 - Validation : minimum 8 caractères pour le password
 - Checkbox conditions d'utilisation
@@ -183,8 +193,9 @@ return response.redirect().toRoute('users.index') // ← Changez la route
 ```
 
 Exemples :
+
 ```typescript
-return response.redirect().to('/')           // Page d'accueil
+return response.redirect().to('/') // Page d'accueil
 return response.redirect().toRoute('dashboard') // Dashboard
 ```
 
@@ -202,6 +213,7 @@ Dans `start/routes.ts`, commentez les routes register :
 ## 🧪 Tester l'authentification
 
 ### Test 1 : Inscription
+
 ```bash
 curl -X POST http://localhost:3333/register \
   -H "Content-Type: application/json" \
@@ -214,6 +226,7 @@ curl -X POST http://localhost:3333/register \
 ```
 
 ### Test 2 : Connexion
+
 ```bash
 curl -X POST http://localhost:3333/login \
   -H "Content-Type: application/json" \
@@ -224,6 +237,7 @@ curl -X POST http://localhost:3333/login \
 ```
 
 ### Test 3 : Accès route protégée
+
 ```bash
 # Sans authentification → Redirection /login
 curl -I http://localhost:3333/admin/users
@@ -234,25 +248,33 @@ curl -I http://localhost:3333/admin/users
 ## 🐛 Résolution des problèmes courants
 
 ### Erreur : "Cannot GET:/login"
+
 ✅ **Résolu !** Les routes ont été créées.
 
 ### Erreur : "Email already exists"
+
 ➡️ L'email est déjà utilisé. Utilisez un autre email ou connectez-vous.
 
 ### Erreur : "Password must be at least 8 characters"
+
 ➡️ Le mot de passe doit contenir au moins 8 caractères.
 
 ### Je suis redirigé vers /login en boucle
+
 ➡️ Vérifiez :
+
 1. Que vous êtes bien connecté
 2. Que votre compte est actif (`is_active = true`)
 3. Vos cookies de session
 
 ### Je reçois 403 Forbidden sur /admin/users
+
 ➡️ Votre utilisateur n'a pas le rôle requis. Vérifiez vos rôles :
+
 ```bash
 node ace repl
 ```
+
 ```javascript
 const { default: User } = await import('./app/models/user.js')
 const user = await User.findBy('email', 'votre@email.com')
@@ -265,16 +287,19 @@ console.log(await user.getRoleNames())
 ## 📚 Prochaines étapes recommandées
 
 ### Immédiat
+
 1. ✅ **Ajouter un bouton de déconnexion** dans le header
 2. ✅ **Implémenter "Mot de passe oublié"**
 3. ✅ **Afficher l'utilisateur connecté** dans la navbar
 
 ### Court terme
+
 4. **Dashboard personnalisé** par rôle
 5. **Confirmation d'email** lors de l'inscription
 6. **Historique des connexions**
 
 ### Moyen terme
+
 7. **Authentification OAuth** (Google, Microsoft)
 8. **2FA (Two-Factor Authentication)**
 9. **Sessions multiples** gestion
@@ -288,10 +313,10 @@ console.log(await user.getRoleNames())
 ```typescript
 async index({ auth, inertia }: HttpContext) {
   const user = auth.user!
-  
+
   // Charger les rôles
   await user.load('roles' as any)
-  
+
   return inertia.render('dashboard', {
     user: user.serialize(),
     isAdmin: await user.isAdmin(),
@@ -305,13 +330,13 @@ async index({ auth, inertia }: HttpContext) {
 async update({ auth, params, response }: HttpContext) {
   const user = auth.user!
   const isAdmin = await user.isAdmin()
-  
+
   if (!isAdmin) {
     return response.forbidden({
       message: 'Accès non autorisé'
     })
   }
-  
+
   // Logique de mise à jour...
 }
 ```
@@ -321,7 +346,7 @@ async update({ auth, params, response }: HttpContext) {
 ```typescript
 async dashboard({ auth, response }: HttpContext) {
   const user = auth.user!
-  
+
   if (await user.isAdmin()) {
     return response.redirect().toRoute('admin.dashboard')
   } else if (await user.isTeacher()) {
@@ -336,9 +361,10 @@ async dashboard({ auth, response }: HttpContext) {
 
 ## 🎉 Félicitations !
 
-Votre système d'authentification est maintenant **complètement fonctionnel** ! 
+Votre système d'authentification est maintenant **complètement fonctionnel** !
 
 Vous pouvez :
+
 - ✅ Vous inscrire
 - ✅ Vous connecter
 - ✅ Vous déconnecter

@@ -50,30 +50,35 @@
 
 ## Synthèse
 
-| Métrique | Valeur |
-|----------|--------|
-| Critères conformes | {{conformity.conforme}} |
-| Critères non conformes | {{conformity.nonConforme}} |
-| Critères partiellement conformes | {{conformity.partiel}} |
-| Critères non applicables | {{conformity.nonApplicable}} |
+| Métrique                         | Valeur                       |
+| -------------------------------- | ---------------------------- |
+| Critères conformes               | {{conformity.conforme}}      |
+| Critères non conformes           | {{conformity.nonConforme}}   |
+| Critères partiellement conformes | {{conformity.partiel}}       |
+| Critères non applicables         | {{conformity.nonApplicable}} |
 
 ## Score par Thématique
 
 {{#each thematiques}}
+
 ### {{name}} - {{score}}/100
+
 {{#each criteria}}
+
 - [{{status}}] {{id}}: {{title}}
-{{/each}}
-{{/each}}
+  {{/each}}
+  {{/each}}
 
 ## Actions Prioritaires
 
 {{#each prioritizedActions}}
+
 ### {{priority}}: {{criterion}}
+
 - **Action:** {{action}}
 - **Impact:** {{impact}}
 - **Effort:** {{effort}}
-{{/each}}
+  {{/each}}
 ```
 
 ## PDF Header Template

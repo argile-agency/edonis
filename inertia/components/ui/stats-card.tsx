@@ -59,27 +59,26 @@ export interface StatsCardProps
 }
 
 const StatsCard = React.forwardRef<HTMLDivElement, StatsCardProps>(
-  ({
-    className,
-    variant,
-    title,
-    value,
-    description,
-    icon,
-    trend,
-    trendValue,
-    animated = false,
-    ...props
-  }, ref) => {
+  (
+    {
+      className,
+      variant,
+      title,
+      value,
+      description,
+      icon,
+      trend,
+      trendValue,
+      animated = false,
+      ...props
+    },
+    ref
+  ) => {
     const trendConfig = trend ? trendVariants[trend] : null
     const TrendIcon = trendConfig?.icon
 
     return (
-      <div
-        ref={ref}
-        className={cn(statsCardVariants({ variant, className }))}
-        {...props}
-      >
+      <div ref={ref} className={cn(statsCardVariants({ variant, className }))} {...props}>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
@@ -113,9 +112,7 @@ const StatsCard = React.forwardRef<HTMLDivElement, StatsCardProps>(
                 {trendValue}
               </span>
             )}
-            {description && (
-              <p className="text-xs text-muted-foreground">{description}</p>
-            )}
+            {description && <p className="text-xs text-muted-foreground">{description}</p>}
           </div>
         )}
       </div>

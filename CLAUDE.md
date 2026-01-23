@@ -48,6 +48,7 @@ node ace test         # Alternative test command
 **IMPORTANT**: When developing features that require demo data, ALWAYS use existing seeders instead of creating new ones.
 
 **Existing Seeders**:
+
 - `user_seeder.ts` - Creates test users (admin, manager, teacher, student)
 - `course_seeder.ts` - Creates sample courses with various statuses
 - `course_category_seeder.ts` - Creates course categories
@@ -58,16 +59,18 @@ node ace test         # Alternative test command
 - `menu_seeder.ts` - Navigation menus (header, footer, user menu)
 
 **Seeder Guidelines**:
+
 1. Run `node ace db:seed` to populate all demo data
 2. Reuse existing data models instead of creating duplicates
-3. Check for existing records with `findBy()` or `updateOrCreate()` 
+3. Check for existing records with `findBy()` or `updateOrCreate()`
 4. Keep demo data realistic but minimal to avoid bloat during development
 5. Document any new seeders in this file
 
 **Test Accounts** (after running seeders):
+
 ```
 Admin:    admin@edonis.test / password
-Manager:  manager@edonis.test / password  
+Manager:  manager@edonis.test / password
 Teacher:  teacher@edonis.test / password
 Student:  student@edonis.test / password
 ```
@@ -79,6 +82,7 @@ The project uses GitHub Actions for continuous integration and deployment.
 ### Available Workflows
 
 **1. CI Pipeline** (`.github/workflows/ci.yml`)
+
 - **Triggers**: Push and Pull Requests to main/develop
 - **Jobs**:
   - **Lint & Type Check**: ESLint and TypeScript validation
@@ -88,6 +92,7 @@ The project uses GitHub Actions for continuous integration and deployment.
 - **Status**: Required checks for PR merges
 
 **2. E2E Browser Tests** (`.github/workflows/e2e.yml`)
+
 - **Triggers**: Pull Requests, nightly schedule (2 AM UTC), manual dispatch
 - **Jobs**:
   - **Browser Tests**: Runs Playwright tests with Chromium
@@ -96,6 +101,7 @@ The project uses GitHub Actions for continuous integration and deployment.
 - **Timeout**: 20 minutes (single), 30 minutes (matrix)
 
 **3. Code Quality** (`.github/workflows/code-quality.yml`)
+
 - **Triggers**: Push and Pull Requests to main/develop
 - **Jobs**:
   - **CodeQL**: Security vulnerability scanning
@@ -105,6 +111,7 @@ The project uses GitHub Actions for continuous integration and deployment.
   - **Code Metrics**: Lines of code and bundle size reporting
 
 **4. Dependabot** (`.github/dependabot.yml`)
+
 - **Schedule**: Weekly updates on Mondays at 9 AM
 - **Scope**: npm dependencies and GitHub Actions
 - **Configuration**:
@@ -170,6 +177,7 @@ Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 ### Market Positioning
 
 Edonis LMS aims to succeed by combining:
+
 - **Modern architecture** (AdonisJS/TypeScript) for superior developer experience
 - **Mobile-first design** with Progressive Web App capabilities
 - **Native AI integration** for personalized learning and content generation
@@ -186,6 +194,7 @@ Edonis LMS aims to succeed by combining:
 ### Target Scale
 
 Architecture designed to support **10,000+ concurrent users** through:
+
 - Horizontal scaling with multiple AdonisJS instances
 - Read replicas for read-heavy operations
 - Redis cluster for session storage and caching
@@ -228,19 +237,22 @@ src/
 **SSR Enabled**: Server-side rendering is configured in `vite.config.ts` for better SEO and initial page load.
 
 **Subpath Imports**: The project uses Node.js subpath imports (defined in `package.json`) instead of relative imports:
+
 - `#controllers/*` → `./app/controllers/*.js`
 - `#models/*` → `./app/models/*.js`
 - `#middleware/*` → `./app/middleware/*.js`
 - `#validators/*` → `./app/validators/*.js`
 - Frontend uses `~/` alias → `./inertia/`
 
-**Authentication & Authorization**: 
+**Authentication & Authorization**:
+
 - Session-based auth with `@adonisjs/auth`
 - Role-based access control (RBAC) with custom middleware
 - User-Role-Permission pattern via database models
 - Custom `role` middleware in `app/middleware/role_middleware.ts`
 
 **Database**: PostgreSQL with Lucid ORM. Two setup options:
+
 - **Supabase Local** (recommended): Full Supabase stack locally
 - **Docker Compose**: Simple PostgreSQL container
 
@@ -304,11 +316,11 @@ CREATE TABLE courses (
     instructor_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    
+
     -- Performance indexes
     INDEX idx_tenant_courses (tenant_id, id),
     INDEX idx_instructor_courses (instructor_id, tenant_id),
-    
+
     -- Row-level security
     CONSTRAINT fk_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
@@ -327,7 +339,7 @@ export default class TenantAwareModel extends BaseModel {
   // Automatically scope all queries by tenant
   public static boot() {
     super.boot()
-    
+
     this.before('find', (query) => {
       const tenantId = getCurrentTenantId() // From context
       query.where('tenant_id', tenantId)
@@ -344,10 +356,10 @@ export default class TenantMiddleware {
   async handle({ auth, request }: HttpContext, next: NextFn) {
     const user = auth.user!
     const tenantId = user.tenantId
-    
+
     // Set tenant context for this request
     setRequestTenantId(tenantId)
-    
+
     await next()
   }
 }
@@ -366,29 +378,22 @@ import { Server } from 'socket.io'
 export class CollaborativeDocumentService {
   private io: Server
 
-  public async handleDocumentEdit(
-    documentId: string, 
-    operation: Operation, 
-    userId: string
-  ) {
+  public async handleDocumentEdit(documentId: string, operation: Operation, userId: string) {
     // Transform operation based on current document state
     const transformedOp = await this.transformOperation(operation, documentId)
-    
+
     // Apply operation to document
     await Document.applyOperation(documentId, transformedOp)
-    
+
     // Broadcast to collaborators
     this.io.to(`document-${documentId}`).emit('document-operation', {
       operation: transformedOp,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     })
   }
-  
-  private async transformOperation(
-    operation: Operation, 
-    documentId: string
-  ): Promise<Operation> {
+
+  private async transformOperation(operation: Operation, documentId: string): Promise<Operation> {
     // Operational transformation algorithm for concurrent editing
     const pendingOps = await this.getPendingOperations(documentId)
     return this.applyTransformations(operation, pendingOps)
@@ -409,9 +414,9 @@ export class NotificationService {
     // Send real-time notification via SSE
     transmit.broadcast(`user/${userId}/notifications`, {
       type: 'notification',
-      data: notification
+      data: notification,
     })
-    
+
     // Also persist for offline users
     await Notification.create({ userId, ...notification })
   }
@@ -433,20 +438,20 @@ interface LMSPlugin {
   license: string
   dependencies: PluginDependency[]
   permissions: PluginPermission[]
-  
+
   // Lifecycle hooks
   initialize(): Promise<void>
   activate?(): Promise<void>
   deactivate?(): Promise<void>
   uninstall?(): Promise<void>
-  
+
   // Extension points
   getRoutes?(): Route[]
   getMiddleware?(): Middleware[]
   getViewComponents?(): ViewComponent[]
   getDatabaseMigrations?(): Migration[]
   getEventListeners?(): EventListener[]
-  
+
   // Configuration
   getSettings?(): PluginSettings
   validateSettings?(settings: unknown): Promise<boolean>
@@ -459,19 +464,19 @@ export class PluginSecurityService {
       this.verifyCodeSignature(plugin),
       this.scanDependencies(plugin),
       this.validatePermissions(plugin),
-      this.checkAPICompliance(plugin)
+      this.checkAPICompliance(plugin),
     ])
-    
+
     return this.aggregateResults(checks)
   }
-  
+
   public createSandbox(plugin: LMSPlugin): PluginSandbox {
     // Isolated execution environment with limited API access
     return new PluginSandbox({
       allowedAPIs: plugin.permissions,
       memoryLimit: '256MB',
       cpuLimit: '50%',
-      networkAccess: plugin.permissions.includes('network')
+      networkAccess: plugin.permissions.includes('network'),
     })
   }
 }
@@ -483,37 +488,35 @@ export class PluginSecurityService {
 // Plugin registry and management
 export class PluginRegistry {
   private plugins: Map<string, LoadedPlugin> = new Map()
-  
+
   public async discoverPlugins(): Promise<Plugin[]> {
     // Scan plugins directory
     const pluginDirs = await this.scanPluginDirectories()
-    
+
     // Load and validate plugin manifests
-    const plugins = await Promise.all(
-      pluginDirs.map(dir => this.loadPluginManifest(dir))
-    )
-    
-    return plugins.filter(p => p !== null)
+    const plugins = await Promise.all(pluginDirs.map((dir) => this.loadPluginManifest(dir)))
+
+    return plugins.filter((p) => p !== null)
   }
-  
+
   public async installPlugin(pluginId: string): Promise<void> {
     const plugin = await this.downloadPlugin(pluginId)
-    
+
     // Security validation
     const validation = await this.securityService.validatePlugin(plugin)
     if (!validation.isValid) {
       throw new PluginSecurityError(validation.errors)
     }
-    
+
     // Install dependencies
     await this.installDependencies(plugin)
-    
+
     // Run migrations
     await this.runMigrations(plugin)
-    
+
     // Initialize plugin
     await plugin.initialize()
-    
+
     // Register in system
     this.plugins.set(plugin.name, plugin)
   }
@@ -525,6 +528,7 @@ export class PluginRegistry {
 ### MVP Features (Phase 1)
 
 **User Management Module**:
+
 - ✅ Multi-role system (admin, instructor, student, guest)
 - ✅ Role-based access control (RBAC)
 - [ ] SSO integration (SAML 2.0, OAuth 2.0)
@@ -532,6 +536,7 @@ export class PluginRegistry {
 - [ ] Parent/guardian portal access
 
 **Course Management Module**:
+
 - ✅ Drag-and-drop course builder (content builder with modules)
 - ✅ Content organization (modules, lessons, activities)
 - ✅ Enrollment systems (self-enroll, manual, bulk, key-based, request-based)
@@ -542,6 +547,7 @@ export class PluginRegistry {
 - [ ] Course templates and cloning
 
 **Assessment Engine Module**:
+
 - ✅ Assignment creation and management
 - ✅ Multiple assignment types (essay, file_upload, online_text, offline)
 - ✅ Rubric support and grading criteria
@@ -553,6 +559,7 @@ export class PluginRegistry {
 - [ ] Peer assessment capabilities
 
 **Gradebook Module**:
+
 - ✅ Category-based grading system
 - ✅ Weighted score calculations
 - ✅ Progress tracking dashboards (student and instructor views)
@@ -563,6 +570,7 @@ export class PluginRegistry {
 - [ ] Parent portal access to grades
 
 **Communication Module**:
+
 - [ ] Discussion forums with threading
 - [ ] Direct messaging system
 - [ ] Announcements and news feed
@@ -570,6 +578,7 @@ export class PluginRegistry {
 - [ ] Email notifications
 
 **Calendar Module**:
+
 - [ ] Integrated scheduling system
 - [ ] Event management (assignments, quizzes, meetings)
 - [ ] Deadline reminders and notifications
@@ -583,32 +592,30 @@ export class PluginRegistry {
 // AI content generation service
 export class AIContentService {
   public async generateQuiz(
-    topic: string, 
+    topic: string,
     difficulty: 'easy' | 'medium' | 'hard',
     questionCount: number
   ): Promise<Quiz> {
     const prompt = this.buildQuizPrompt(topic, difficulty, questionCount)
-    
+
     const response = await this.aiProvider.generate(prompt)
-    
+
     return {
       title: `${topic} Quiz`,
       questions: this.parseQuizResponse(response),
       difficulty,
-      generatedAt: new Date()
+      generatedAt: new Date(),
     }
   }
-  
+
   public async generateSummary(content: string): Promise<string> {
     return await this.aiProvider.summarize(content, {
       maxLength: 500,
-      style: 'educational'
+      style: 'educational',
     })
   }
-  
-  public async generateLearningObjectives(
-    content: string
-  ): Promise<string[]> {
+
+  public async generateLearningObjectives(content: string): Promise<string[]> {
     const prompt = `Generate 3-5 SMART learning objectives for: ${content}`
     const response = await this.aiProvider.generate(prompt)
     return this.parseLearningObjectives(response)
@@ -627,20 +634,20 @@ export class AdaptiveLearningService {
   ): Promise<LearningPath> {
     // Analyze student performance
     const performance = await this.analyzePerformance(studentId, courseId)
-    
+
     // Get learning style preferences
     const preferences = await this.getLearningPreferences(studentId)
-    
+
     // Generate adaptive path
     const path = await this.aiProvider.generatePath({
       performance,
       preferences,
-      courseContent: await this.getCourseContent(courseId)
+      courseContent: await this.getCourseContent(courseId),
     })
-    
+
     return path
   }
-  
+
   public async recommendNextActivity(
     studentId: string,
     currentActivity: string
@@ -649,9 +656,9 @@ export class AdaptiveLearningService {
     const recommendations = await this.aiProvider.recommend({
       studentId,
       currentActivity,
-      performanceHistory: await this.getPerformanceHistory(studentId)
+      performanceHistory: await this.getPerformanceHistory(studentId),
     })
-    
+
     return recommendations[0]
   }
 }
@@ -662,26 +669,23 @@ export class AdaptiveLearningService {
 ```typescript
 // AI essay scoring service
 export class AutomatedAssessmentService {
-  public async scoreEssay(
-    essay: string,
-    rubric: Rubric
-  ): Promise<EssayScore> {
+  public async scoreEssay(essay: string, rubric: Rubric): Promise<EssayScore> {
     const analysis = await this.aiProvider.analyzeEssay(essay, {
       grammar: true,
       coherence: true,
       contentQuality: true,
-      rubricAlignment: rubric
+      rubricAlignment: rubric,
     })
-    
+
     return {
       overallScore: analysis.score,
       criteriaScores: analysis.criteriaBreakdown,
       feedback: analysis.constructiveFeedback,
       suggestions: analysis.improvementSuggestions,
-      confidence: analysis.confidenceLevel
+      confidence: analysis.confidenceLevel,
     }
   }
-  
+
   public async detectPlagiarism(
     submission: string,
     compareAgainst: string[]
@@ -704,14 +708,14 @@ export class AITutoringService {
       query,
       context,
       courseContent: context.currentLesson,
-      studentLevel: await this.assessStudentLevel(context.studentId)
+      studentLevel: await this.assessStudentLevel(context.studentId),
     })
-    
+
     return {
       answer: response.text,
       relatedResources: response.suggestedResources,
       followUpQuestions: response.followUpQuestions,
-      confidence: response.confidence
+      confidence: response.confidence,
     }
   }
 }
@@ -724,24 +728,22 @@ export class AITutoringService {
 ```typescript
 // Service worker for offline support
 export class OfflineContentService {
-  public async downloadCourseForOffline(
-    courseId: string
-  ): Promise<void> {
+  public async downloadCourseForOffline(courseId: string): Promise<void> {
     const content = await this.fetchCourseContent(courseId)
-    
+
     // Cache course materials
     await this.cacheContent(content.videos, 'course-videos')
     await this.cacheContent(content.documents, 'course-docs')
     await this.cacheContent(content.images, 'course-images')
-    
+
     // Store course data in IndexedDB
     await this.storeOfflineData(courseId, content.data)
   }
-  
+
   public async syncOfflineProgress(): Promise<void> {
     // Background sync when online
     const pendingUpdates = await this.getPendingUpdates()
-    
+
     for (const update of pendingUpdates) {
       await this.syncUpdate(update)
     }
@@ -750,6 +752,7 @@ export class OfflineContentService {
 ```
 
 **Touch-Optimized Interface**:
+
 - Gesture navigation (swipe, pinch, pull-to-refresh)
 - Thumb-friendly design patterns (bottom navigation)
 - Large touch targets (minimum 44x44px)
@@ -760,19 +763,16 @@ export class OfflineContentService {
 ```typescript
 // Web Push notification service
 export class PushNotificationService {
-  public async sendNotification(
-    userId: string,
-    notification: Notification
-  ): Promise<void> {
+  public async sendNotification(userId: string, notification: Notification): Promise<void> {
     const subscription = await this.getSubscription(userId)
-    
+
     await webPush.sendNotification(subscription, {
       title: notification.title,
       body: notification.body,
       icon: '/icon-192.png',
       badge: '/badge-72.png',
       data: notification.data,
-      actions: notification.actions
+      actions: notification.actions,
     })
   }
 }
@@ -790,26 +790,22 @@ export class SCORMService {
       Initialize: () => this.handleInitialize(scoId, studentId),
       Terminate: () => this.handleTerminate(scoId, studentId),
       GetValue: (element: string) => this.getValue(scoId, element),
-      SetValue: (element: string, value: string) => 
-        this.setValue(scoId, studentId, element, value),
+      SetValue: (element: string, value: string) => this.setValue(scoId, studentId, element, value),
       Commit: () => this.commit(scoId, studentId),
       GetLastError: () => this.getLastError(),
       GetErrorString: (errorCode: string) => this.getErrorString(errorCode),
-      GetDiagnostic: (errorCode: string) => this.getDiagnostic(errorCode)
+      GetDiagnostic: (errorCode: string) => this.getDiagnostic(errorCode),
     }
   }
-  
+
   private async setValue(
-    scoId: string, 
-    studentId: string, 
-    element: string, 
+    scoId: string,
+    studentId: string,
+    element: string,
     value: string
   ): Promise<boolean> {
     // Store SCORM data model values
-    await SCORMData.updateOrCreate(
-      { scoId, studentId, element },
-      { value, updatedAt: new Date() }
-    )
+    await SCORMData.updateOrCreate({ scoId, studentId, element }, { value, updatedAt: new Date() })
     return true
   }
 }
@@ -831,11 +827,11 @@ export class XAPIService {
       actor: {
         name: actor.name,
         mbox: `mailto:${actor.email}`,
-        objectType: 'Agent'
+        objectType: 'Agent',
       },
       verb: {
         id: verb.id,
-        display: { 'en-US': verb.display }
+        display: { 'en-US': verb.display },
       },
       object: {
         id: object.id,
@@ -843,18 +839,18 @@ export class XAPIService {
         definition: {
           name: { 'en-US': object.name },
           description: { 'en-US': object.description },
-          type: object.type
-        }
+          type: object.type,
+        },
       },
       result,
       context,
       timestamp: new Date().toISOString(),
-      stored: new Date().toISOString()
+      stored: new Date().toISOString(),
     }
-    
+
     // Store in Learning Record Store (LRS)
     await this.lrs.storeStatement(statement)
-    
+
     // Emit for real-time analytics
     await this.analyticsService.processStatement(statement)
   }
@@ -864,16 +860,16 @@ export class XAPIService {
 await xapiService.trackStatement(
   { name: 'John Doe', email: 'john@example.com' },
   { id: 'http://adlnet.gov/expapi/verbs/completed', display: 'completed' },
-  { 
+  {
     id: 'http://lms.example.com/course/intro-biology/module-1',
     name: 'Cell Biology Module',
     description: 'Introduction to cell structure',
-    type: 'http://adlnet.gov/expapi/activities/module'
+    type: 'http://adlnet.gov/expapi/activities/module',
   },
-  { 
+  {
     score: { scaled: 0.85 },
     completion: true,
-    duration: 'PT45M'
+    duration: 'PT45M',
   }
 )
 ```
@@ -883,26 +879,24 @@ await xapiService.trackStatement(
 ```typescript
 // LTI 1.3 tool provider implementation
 export class LTIService {
-  public async handleLaunchRequest(
-    request: LTILaunchRequest
-  ): Promise<LTIResponse> {
+  public async handleLaunchRequest(request: LTILaunchRequest): Promise<LTIResponse> {
     // Validate JWT token
     const claims = await this.validateIdToken(request.id_token)
-    
+
     // Extract user and context
     const user = await this.mapLTIUser(claims)
     const context = await this.mapLTIContext(claims)
-    
+
     // Create or update session
     const session = await this.createLTISession(user, context, claims)
-    
+
     // Return launch URL with session
     return {
       launchUrl: this.buildLaunchUrl(session),
-      sessionId: session.id
+      sessionId: session.id,
     }
   }
-  
+
   public async handleGradePassback(
     lineItemUrl: string,
     studentId: string,
@@ -915,13 +909,11 @@ export class LTIService {
       scoreMaximum: 100,
       activityProgress: 'Completed',
       gradingProgress: 'FullyGraded',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   }
-  
-  public async handleDeepLinking(
-    request: DeepLinkingRequest
-  ): Promise<DeepLinkingResponse> {
+
+  public async handleDeepLinking(request: DeepLinkingRequest): Promise<DeepLinkingResponse> {
     // Return content items for deep linking
     return {
       contentItems: [
@@ -930,10 +922,10 @@ export class LTIService {
           title: 'Interactive Quiz',
           url: 'https://lms.example.com/quiz/123',
           custom: {
-            quiz_id: '123'
-          }
-        }
-      ]
+            quiz_id: '123',
+          },
+        },
+      ],
     }
   }
 }
@@ -947,27 +939,27 @@ export class QTIService {
   public async importQTI(qtiXml: string): Promise<Question[]> {
     const doc = this.parseQTI(qtiXml)
     const questions: Question[] = []
-    
+
     // Parse assessment items
     for (const item of doc.assessmentItems) {
       const question = await this.mapQTIItem(item)
       questions.push(question)
     }
-    
+
     return questions
   }
-  
+
   public async exportQTI(questions: Question[]): Promise<string> {
     const assessment = this.createQTIAssessment()
-    
+
     for (const question of questions) {
       const item = this.mapQuestionToQTI(question)
       assessment.addItem(item)
     }
-    
+
     return assessment.toXML()
   }
-  
+
   private mapQTIItem(item: QTIAssessmentItem): Question {
     return {
       type: this.mapQTIInteractionType(item.interaction),
@@ -977,8 +969,8 @@ export class QTIService {
       correctResponse: this.extractCorrectResponse(item.responseDeclaration),
       metadata: {
         qtiIdentifier: item.identifier,
-        qtiVersion: '2.1'
-      }
+        qtiVersion: '2.1',
+      },
     }
   }
 }
@@ -1070,9 +1062,9 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class UsersController {
   async index({ inertia }: HttpContext) {
     const users = await User.query().preload('roles')
-    
+
     return inertia.render('users/index', {
-      users: users.serialize()
+      users: users.serialize(),
     })
   }
 }
@@ -1121,10 +1113,12 @@ const payload = await request.validateUsing(createUserValidator)
 ### Authentication & Authorization
 
 **Auth Middleware**: Protects routes requiring authentication
+
 - `middleware.auth()` - Requires authenticated user
 - `middleware.guest()` - Requires unauthenticated user
 
 **Role Middleware**: Custom RBAC implementation
+
 - `middleware.role({ roles: ['admin', 'manager'] })` - Requires specific roles
 - Defined in `app/middleware/role_middleware.ts`
 
@@ -1199,11 +1193,11 @@ import { test } from '@japa/runner'
 test.group('Authentication', () => {
   test('user can login with valid credentials', async ({ browser, visit }) => {
     const page = await visit('/login')
-    
+
     await page.locator('input[name="email"]').fill('student@example.com')
     await page.locator('input[name="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
-    
+
     await page.waitForURL('/dashboard')
     await page.locator('text=Welcome back').isVisible()
   })
@@ -1211,11 +1205,13 @@ test.group('Authentication', () => {
 ```
 
 **Available Browser Tests**:
+
 - `tests/browser/auth.spec.ts` - Authentication flows (login, register, logout)
 - `tests/browser/user_management.spec.ts` - Admin user management operations
 - `tests/browser/navigation.spec.ts` - Navigation and access control
 
 **Browser Test Features**:
+
 - Full Playwright API access
 - Automatic server startup/shutdown
 - Screenshot capture on failure
@@ -1240,6 +1236,7 @@ BROWSER=firefox node ace test browser  # chromium (default), firefox, webkit
 ```
 
 **Best Practices**:
+
 - Test critical user journeys end-to-end
 - Use data-testid attributes for stable selectors
 - Clean up test data in afterEach hooks
@@ -1266,11 +1263,11 @@ test('can login with valid credentials', async ({ client }) => {
 
 Unit tests for models, services, and utilities:
 
-```typescript
+````typescript
 test('user can check if they have a role', async ({ assert }) => {
   const user = await User.find(1)
   const hasRole = await user.hasRole('admin')
-  
+
   assert.isTrue(hasRole)
 })
 
@@ -1299,7 +1296,7 @@ sharedData: {
     }
   },
 }
-```
+````
 
 Access in any page component via props:
 
@@ -1324,6 +1321,7 @@ node bin/server.js
 ```
 
 The build process:
+
 1. Compiles TypeScript backend code
 2. Builds frontend assets with Vite (client + SSR bundles)
 3. Copies meta files (views, public assets)

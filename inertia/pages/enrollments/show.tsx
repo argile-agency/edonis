@@ -74,7 +74,12 @@ interface Props {
   }
 }
 
-export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, userEnrollment }: Props) {
+export default function EnrollmentShow({
+  course,
+  enrollmentMethods,
+  isEnrolled,
+  userEnrollment,
+}: Props) {
   const [selectedMethod, setSelectedMethod] = useState<EnrollmentMethod | null>(null)
 
   const keyForm = useForm({
@@ -168,9 +173,7 @@ export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, 
               </Badge>
               <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
               {course.courseCategory && (
-                <p className="text-muted-foreground">
-                  Catégorie: {course.courseCategory.name}
-                </p>
+                <p className="text-muted-foreground">Catégorie: {course.courseCategory.name}</p>
               )}
             </div>
           </div>
@@ -270,7 +273,7 @@ export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, 
                           {!method.isEnabled && 'Cette méthode est actuellement désactivée.'}
                           {method.maxEnrollments &&
                             method.currentEnrollments >= method.maxEnrollments &&
-                            'Le nombre maximum d\'inscriptions a été atteint.'}
+                            "Le nombre maximum d'inscriptions a été atteint."}
                           {method.enrollmentStartDate &&
                             new Date(method.enrollmentStartDate) > new Date() &&
                             `Les inscriptions ouvrent le ${formatDate(method.enrollmentStartDate)}.`}
@@ -323,14 +326,18 @@ export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, 
                     {method.methodType === 'self' && available && (
                       <div>
                         {method.welcomeMessage && (
-                          <p className="text-sm text-muted-foreground mb-4">{method.welcomeMessage}</p>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {method.welcomeMessage}
+                          </p>
                         )}
                         <Button
                           onClick={() => handleSelfEnrollment(method)}
                           disabled={selfForm.processing}
                           className="w-full"
                         >
-                          {selfForm.processing ? 'Inscription en cours...' : "S'inscrire maintenant"}
+                          {selfForm.processing
+                            ? 'Inscription en cours...'
+                            : "S'inscrire maintenant"}
                         </Button>
                       </div>
                     )}
@@ -339,7 +346,9 @@ export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, 
                     {method.methodType === 'key' && available && (
                       <form onSubmit={(e) => handleKeyEnrollment(e, method)}>
                         {method.welcomeMessage && (
-                          <p className="text-sm text-muted-foreground mb-4">{method.welcomeMessage}</p>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {method.welcomeMessage}
+                          </p>
                         )}
                         <div className="space-y-4">
                           <div>
@@ -405,8 +414,8 @@ export default function EnrollmentShow({ course, enrollmentMethods, isEnrolled, 
                       <Alert>
                         <Info className="h-4 w-4" />
                         <AlertDescription>
-                          Cette méthode d'inscription nécessite qu'un enseignant vous ajoute manuellement
-                          au cours. Veuillez contacter l'instructeur du cours.
+                          Cette méthode d'inscription nécessite qu'un enseignant vous ajoute
+                          manuellement au cours. Veuillez contacter l'instructeur du cours.
                         </AlertDescription>
                       </Alert>
                     )}

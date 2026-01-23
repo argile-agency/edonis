@@ -5,11 +5,13 @@
 **Endpoint:** `https://api.thegreenwebfoundation.org/`
 
 ### Green Check
+
 ```bash
 GET /greencheck/{domain}
 ```
 
 Response:
+
 ```json
 {
   "url": "example.com",
@@ -22,6 +24,7 @@ Response:
 ```
 
 ### Batch Check
+
 ```bash
 POST /v3/greencheck
 Content-Type: application/json
@@ -38,6 +41,7 @@ GET /site?url={encoded_url}
 ```
 
 Response:
+
 ```json
 {
   "url": "https://example.com",
@@ -64,6 +68,7 @@ GET ?url={encoded_url}&key={API_KEY}&strategy=mobile&category=performance
 ```
 
 Response fields:
+
 ```json
 {
   "lighthouseResult": {
@@ -106,8 +111,8 @@ CARBON_API_KEY=optional
 
 ## Rate Limits
 
-| API | Rate Limit | Notes |
-|-----|------------|-------|
-| Green Web Foundation | 1000/day | Free tier |
-| Website Carbon | 500/day | Free tier |
-| PageSpeed Insights | 25000/day | With API key |
+| API                  | Rate Limit | Notes        |
+| -------------------- | ---------- | ------------ |
+| Green Web Foundation | 1000/day   | Free tier    |
+| Website Carbon       | 500/day    | Free tier    |
+| PageSpeed Insights   | 25000/day  | With API key |
