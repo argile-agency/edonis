@@ -6,6 +6,9 @@ import { hydrateRoot } from 'react-dom/client'
 import { createInertiaApp } from '@inertiajs/react'
 import { resolvePageComponent } from '@adonisjs/inertia/helpers'
 import { ThemeProvider } from '~/components/theme-provider'
+import { Toaster } from 'sonner'
+import { PwaInstallPrompt } from '~/components/pwa-install-prompt'
+import { ConnectivityIndicator } from '~/components/connectivity-indicator'
 
 const appName = import.meta.env.VITE_APP_NAME || 'AdonisJS'
 
@@ -22,7 +25,10 @@ createInertiaApp({
     hydrateRoot(
       el,
       <ThemeProvider defaultTheme="system" storageKey="edonis-ui-theme">
+        <ConnectivityIndicator />
         <App {...props} />
+        <Toaster position="top-right" richColors closeButton />
+        <PwaInstallPrompt />
       </ThemeProvider>
     )
   },

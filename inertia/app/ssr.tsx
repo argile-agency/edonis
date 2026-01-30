@@ -1,6 +1,7 @@
 import ReactDOMServer from 'react-dom/server'
 import { createInertiaApp } from '@inertiajs/react'
 import { ThemeProvider } from '~/components/theme-provider'
+import { Toaster } from 'sonner'
 
 export default function render(page: any) {
   return createInertiaApp({
@@ -13,6 +14,7 @@ export default function render(page: any) {
     setup: ({ App, props }) => (
       <ThemeProvider defaultTheme="system" storageKey="edonis-ui-theme">
         <App {...props} />
+        <Toaster position="top-right" richColors closeButton />
       </ThemeProvider>
     ),
   })

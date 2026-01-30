@@ -349,6 +349,7 @@ export default function LearnCourse({
                     currentContent.externalUrl.includes('youtu.be') ? (
                       <iframe
                         src={currentContent.externalUrl.replace('watch?v=', 'embed/')}
+                        title={currentContent.title}
                         className="w-full h-full rounded-lg"
                         allowFullScreen
                       />
@@ -357,7 +358,9 @@ export default function LearnCourse({
                         src={currentContent.externalUrl}
                         controls
                         className="w-full h-full rounded-lg"
-                      />
+                      >
+                        <track kind="captions" />
+                      </video>
                     )}
                   </div>
                 )}
