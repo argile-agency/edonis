@@ -596,7 +596,7 @@ export class PluginRegistry {
 
 ## Essential Feature Roadmap
 
-### MVP Features (Phase 1)
+### Completed Features (Phase 1 — Q1 2026)
 
 **User Management Module**:
 
@@ -606,9 +606,6 @@ export class PluginRegistry {
 - ✅ MFA/2FA with TOTP and recovery codes
 - ✅ Profile management with avatar upload
 - ✅ User settings with linked social accounts
-- [ ] SSO integration (SAML 2.0)
-- [ ] Bulk user import/management
-- [ ] Parent/guardian portal access
 
 **Course Management Module**:
 
@@ -619,7 +616,6 @@ export class PluginRegistry {
 - ✅ Course approval workflow
 - ✅ Course permissions and sharing
 - ✅ Course groups and groupings
-- [ ] Course templates and cloning
 
 **Assessment Engine Module**:
 
@@ -629,9 +625,6 @@ export class PluginRegistry {
 - ✅ Multiple grading types (points, percentage, letter, pass/fail)
 - ✅ Late submission policies and penalties
 - ✅ Multiple attempts per assignment
-- [ ] Quiz builder with question banks
-- [ ] Multiple question types (MCQ, essay, file upload, etc.)
-- [ ] Peer assessment capabilities
 
 **Gradebook Module**:
 
@@ -641,6 +634,40 @@ export class PluginRegistry {
 - ✅ Grade overview across all courses
 - ✅ Assignment submission tracking
 - ✅ Feedback system with grader attribution
+
+**Security & GDPR Module**:
+
+- ✅ CSP headers, CORS, rate limiting
+- ✅ PII encryption at column level
+- ✅ Audit logging with admin page
+- ✅ GDPR terms consent versioning and re-consent flow
+- ✅ Data export (JSON) and account anonymization (right to be forgotten)
+- ✅ Custom error pages (404, 429, 500)
+
+**PWA & Accessibility**:
+
+- ✅ Service worker with workbox caching and offline fallback page
+- ✅ PWA install prompt and connectivity indicator
+- ✅ ESLint jsx-a11y linting and axe-core browser tests
+- ✅ Skip links and aria-live regions for screen readers
+
+### Planned Features (Phase 2 — Q2-Q3 2026)
+
+**User Management** (remaining):
+
+- [ ] SSO integration (SAML 2.0)
+- [ ] Bulk user import/management
+- [ ] Parent/guardian portal access
+
+**Course Management** (remaining):
+
+- [ ] Course templates and cloning
+
+**Assessment Engine** (remaining):
+
+- [ ] Quiz builder with question banks
+- [ ] Multiple question types (MCQ, essay, file upload, etc.)
+- [ ] Peer assessment capabilities
 - [ ] Grade export (CSV, PDF)
 - [ ] Parent portal access to grades
 
@@ -651,6 +678,7 @@ export class PluginRegistry {
 - [ ] Announcements and news feed
 - [ ] Video conferencing integration (Zoom, Google Meet)
 - [ ] Email notifications
+- [ ] Push notifications
 
 **Calendar Module**:
 
@@ -659,7 +687,7 @@ export class PluginRegistry {
 - [ ] Deadline reminders and notifications
 - [ ] Resource booking (rooms, equipment)
 
-### AI-Powered Features (Phase 2)
+### AI-Powered Features (Phase 2 — Q2-Q3 2026)
 
 **Content Generation** (addressing 47% CAGR in AI education):
 

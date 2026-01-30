@@ -377,7 +377,7 @@ Compared to existing LMS solutions:
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 
-### Phase 1 (MVP) - Q4 2025
+### Phase 1 (MVP) - Q1 2026
 
 - [x] User management with RBAC
 - [x] Authentication & authorization
@@ -387,10 +387,6 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 - [x] Course enrollment workflows
 - [x] Assignment workflow & evaluations
 - [x] Gradebook & progress tracking
-- [ ] Communication tools (forums, messaging)
-
-### Phase 1.5 (Security, GDPR, A11y) - Q1 2026 (Current)
-
 - [x] MFA/2FA with TOTP and recovery codes
 - [x] OAuth 2.0 social login (Google, GitHub)
 - [x] CSP headers and rate limiting
@@ -404,18 +400,19 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 - [x] User settings with linked social accounts
 - [x] Custom error pages (404, 429, 500)
 
-### Phase 2 (AI & Advanced Features) - Q2-Q3 2026
+### Phase 2 (Communication & AI) - Q2-Q3 2026
 
+- [ ] Communication tools (forums, messaging)
+- [ ] Discussion forums with threading
+- [ ] Direct messaging system
+- [ ] Push notifications
 - [ ] AI content generation (quizzes, summaries, objectives)
 - [ ] Personalized learning paths
 - [ ] Automated assessment & essay scoring
 - [ ] AI tutoring chatbot
-- [ ] Push notifications
-- [ ] Discussion forums with threading
-- [ ] Direct messaging system
 - [ ] Video conferencing integration (Zoom, Google Meet)
 
-### Phase 3 (Enterprise & Scale) - Q4 2026
+### Phase 3 (Enterprise & Scale) - Q4 2026 - Q1 2027
 
 - [ ] Plugin marketplace & ecosystem
 - [ ] Advanced learning analytics
