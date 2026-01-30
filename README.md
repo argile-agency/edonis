@@ -185,9 +185,9 @@ http://localhost:3333
 
 After running seeders, these accounts are available:
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@edonis.test | password |
+| Role    | Email               | Password |
+| ------- | ------------------- | -------- |
+| Admin   | admin@edonis.test   | password |
 | Manager | manager@edonis.test | password |
 | Teacher | teacher@edonis.test | password |
 | Student | student@edonis.test | password |
@@ -293,6 +293,7 @@ Edonis LMS takes security seriously, especially given that LMS platforms handle 
 ### Reporting Vulnerabilities
 
 If you discover a security vulnerability, please report it responsibly:
+
 1. **Do not** open a public issue
 2. Email security concerns to the maintainers
 3. Allow time for a fix before public disclosure

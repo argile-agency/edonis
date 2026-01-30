@@ -1,4 +1,4 @@
-name: "Edonis LMS CodeQL Configuration"
+name: 'Edonis LMS CodeQL Configuration'
 
 # Paths to analyze - focus on application code
 paths:
@@ -12,11 +12,11 @@ paths:
 paths-ignore:
   - node_modules
   - build
-  - "**/*.test.ts"
-  - "**/*.spec.ts"
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
   - tests
-  - "**/*.d.ts"
-  - "inertia/components/ui" # shadcn/ui components are third-party
+  - '**/*.d.ts'
+  - 'inertia/components/ui' # shadcn/ui components are third-party
 
 # Query suites to run
 queries:
