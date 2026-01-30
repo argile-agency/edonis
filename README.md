@@ -10,15 +10,16 @@ A modern, open-source Learning Management System built with AdonisJS, React, and
 
 **Edonis LMS** combines modern architecture, mobile-first design, and native AI integration to deliver a superior learning experience for educational institutions. Built with TypeScript and featuring comprehensive educational standards compliance (SCORM, xAPI, LTI 1.3, QTI 2.1).
 
-## ✨ Key Features
+## Key Features
 
-- 🎓 **Complete LMS Functionality**: Course management, assignments, gradebook, and assessments
-- 🤖 **AI-Powered Learning**: Content generation, personalized paths, automated grading
-- 📱 **Mobile-First PWA**: Offline support, touch-optimized, cross-platform
-- 🔌 **Extensible Plugin System**: WordPress-inspired but type-safe
-- 📊 **Learning Analytics**: xAPI/SCORM compliance for detailed insights
-- 🔒 **Enterprise-Ready**: Multi-tenancy, SSO, role-based access control
-- 🌐 **Standards Compliant**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1
+- **Complete LMS Functionality**: Course management, assignments, gradebook, and assessments
+- **Security**: MFA/2FA (TOTP), CSP headers, rate limiting, PII encryption
+- **OAuth 2.0**: Social login with Google and GitHub
+- **GDPR Compliance**: Audit logs, terms consent versioning, data export, account deletion (right to be forgotten)
+- **Progressive Web App**: Offline support, install prompt, connectivity detection
+- **Accessibility**: ESLint jsx-a11y, axe-core automated tests, skip links, aria-live regions
+- **Enterprise-Ready**: Multi-tenancy, RBAC, role-based access control
+- **Standards Compliant**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1 (planned)
 
 ## 🛠️ Tech Stack
 
@@ -231,20 +232,30 @@ node ace test browser    # Run E2E browser tests
 
 ```
 ├── app/
-│   ├── controllers/     # HTTP controllers
-│   ├── models/         # Database models
-│   └── middleware/     # Middleware
-├── config/             # Configuration files
+│   ├── controllers/     # HTTP controllers (auth, profile, 2FA, OAuth, audit, account)
+│   ├── models/          # Lucid ORM models (User, Role, AuditLog, SocialAccount)
+│   ├── services/        # Business logic (AuditService, TwoFactorService, EncryptionService)
+│   ├── middleware/       # Request middleware (auth, guest, role)
+│   ├── validators/      # VineJS validation schemas
+│   └── exceptions/      # Custom exception handler (404, 429, 500 pages)
+├── config/              # AdonisJS config (shield, cors, limiter, ally, inertia)
 ├── database/
-│   └── migrations/     # Database migrations
+│   ├── migrations/      # Database schema migrations
+│   └── seeders/         # Database seeders (users, courses, menus)
 ├── inertia/
-│   ├── pages/          # React pages
-│   └── components/     # React components
+│   ├── pages/           # React pages (auth, dashboard, profile, settings, 2FA, account, admin)
+│   └── components/      # React components (UI, layout, PWA, a11y, flash-toaster)
+├── public/
+│   ├── icons/           # PWA icons (192x192, 512x512)
+│   └── offline.html     # PWA offline fallback page
 ├── resources/
-│   └── views/          # Edge templates
-└── start/
-    ├── routes.ts       # Application routes
-    └── kernel.ts       # Middleware registration
+│   └── views/           # Edge templates (Inertia layout, error pages)
+├── start/
+│   ├── routes.ts        # Application routes
+│   ├── kernel.ts        # Middleware registration
+│   └── limiter.ts       # Rate limiting configuration
+└── tests/
+    └── browser/         # E2E browser tests (auth, navigation, a11y)
 ```
 
 ---
@@ -275,9 +286,19 @@ node ace migration:run --force
 
 ---
 
-## 🔒 Security
+## Security
 
 Edonis LMS takes security seriously, especially given that LMS platforms handle sensitive student data.
+
+### Application Security
+
+- **MFA/2FA**: TOTP-based two-factor authentication with recovery codes
+- **CSP Headers**: Content Security Policy with strict directives via `@adonisjs/shield`
+- **Rate Limiting**: Protection against brute-force on login, register, 2FA challenge, and password change endpoints
+- **PII Encryption**: Automatic column-level encryption for sensitive user data (phone, address, identification number)
+- **CORS**: Environment-based origin validation
+- **OAuth 2.0**: Social login with Google and GitHub via `@adonisjs/ally`
+- **Audit Logging**: All security-relevant actions are logged with IP, user agent, and metadata
 
 ### Automated Security Scanning
 
@@ -289,6 +310,13 @@ Edonis LMS takes security seriously, especially given that LMS platforms handle 
   - Cryptography issues
 - **Dependency Review**: Checks for vulnerable dependencies on PRs
 - **Security Audit**: `bun audit` runs in CI to detect known vulnerabilities
+
+### GDPR Compliance
+
+- **Audit Logs**: Track all user actions with resource type, old/new values, and metadata
+- **Terms Consent**: Versioned consent tracking with re-consent banner when terms change
+- **Data Export**: Users can export all their data as JSON (profile, enrollments, submissions, progress)
+- **Right to Be Forgotten**: Account anonymization preserving academic integrity
 
 ### Reporting Vulnerabilities
 
@@ -345,49 +373,59 @@ Compared to existing LMS solutions:
 | **Developer Experience** | ✅ Excellent        | ❌         | ⚠️         | ❌          |
 | **Plugin System**        | ✅ Type-safe        | ✅         | ⚠️         | ❌          |
 
-## 🗺️ Roadmap
+## Roadmap
 
 See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
 
-### Phase 1 (MVP) - Q4 2025 (Current)
+### Phase 1 (MVP) - Q4 2025
 
-- ✅ User management with RBAC
-- ✅ Authentication & authorization
-- ✅ Dynamic homepage system with role-based content
-- ✅ Theme system (light/dark/system)
-- 🚧 Course management system
-- 🚧 Course enrollment workflows
-- 🚧 Assignment workflow & evaluations
-- 🚧 Gradebook & progress tracking
-- 🚧 Communication tools (forums, messaging)
+- [x] User management with RBAC
+- [x] Authentication & authorization
+- [x] Dynamic homepage system with role-based content
+- [x] Theme system (light/dark/system)
+- [x] Course management system
+- [x] Course enrollment workflows
+- [x] Assignment workflow & evaluations
+- [x] Gradebook & progress tracking
+- [ ] Communication tools (forums, messaging)
 
-### Phase 2 (AI & Mobile) - Q1-Q2 2026
+### Phase 1.5 (Security, GDPR, A11y) - Q1 2026 (Current)
 
-- 🔮 AI content generation (quizzes, summaries, objectives)
-- 🔮 Personalized learning paths
-- 🔮 Automated assessment & essay scoring
-- 🔮 AI tutoring chatbot
-- 🔮 PWA with offline support
-- 🔮 Mobile optimization & touch gestures
-- 🔮 Push notifications
+- [x] MFA/2FA with TOTP and recovery codes
+- [x] OAuth 2.0 social login (Google, GitHub)
+- [x] CSP headers and rate limiting
+- [x] PII encryption (phone, address, identification)
+- [x] Audit logging system with admin page
+- [x] GDPR: terms consent versioning and re-consent flow
+- [x] GDPR: data export and account deletion (right to be forgotten)
+- [x] PWA: service worker, offline page, install prompt, connectivity indicator
+- [x] Accessibility: jsx-a11y linting, axe-core tests, skip links, aria-live
+- [x] Profile management with avatar upload
+- [x] User settings with linked social accounts
+- [x] Custom error pages (404, 429, 500)
 
-### Phase 3 (Advanced Features) - Q3-Q4 2026
+### Phase 2 (AI & Advanced Features) - Q2-Q3 2026
 
-- 🔮 Plugin marketplace & ecosystem
-- 🔮 Advanced learning analytics
-- 🔮 Video conferencing integration (Zoom, Google Meet)
-- 🔮 Gamification features (badges, leaderboards)
-- 🔮 Real-time collaboration tools
-- 🔮 Multi-language support (i18n)
+- [ ] AI content generation (quizzes, summaries, objectives)
+- [ ] Personalized learning paths
+- [ ] Automated assessment & essay scoring
+- [ ] AI tutoring chatbot
+- [ ] Push notifications
+- [ ] Discussion forums with threading
+- [ ] Direct messaging system
+- [ ] Video conferencing integration (Zoom, Google Meet)
 
-### Phase 4 (Enterprise & Scale) - 2027
+### Phase 3 (Enterprise & Scale) - Q4 2026
 
-- 🔮 Advanced multi-tenancy features
-- 🔮 SSO integrations (SAML, OAuth)
-- 🔮 Full standards compliance (SCORM 2004, xAPI, LTI 1.3, QTI 2.1)
-- 🔮 Advanced security features
-- 🔮 Performance optimization for 10k+ users
-- 🔮 Enterprise support & SLA options
+- [ ] Plugin marketplace & ecosystem
+- [ ] Advanced learning analytics
+- [ ] Gamification features (badges, leaderboards)
+- [ ] Real-time collaboration tools
+- [ ] Multi-language support (i18n)
+- [ ] SSO integration (SAML 2.0)
+- [ ] Full standards compliance (SCORM 2004, xAPI, LTI 1.3, QTI 2.1)
+- [ ] Performance optimization for 10k+ users
+- [ ] Enterprise support & SLA options
 
 ## 💬 Support
 

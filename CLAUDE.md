@@ -252,9 +252,32 @@ src/
 **Authentication & Authorization**:
 
 - Session-based auth with `@adonisjs/auth`
+- MFA/2FA with TOTP via `otpauth` (QR code setup, recovery codes)
+- OAuth 2.0 social login (Google, GitHub) via `@adonisjs/ally`
 - Role-based access control (RBAC) with custom middleware
 - User-Role-Permission pattern via database models
 - Custom `role` middleware in `app/middleware/role_middleware.ts`
+
+**Security**:
+
+- CSP headers via `@adonisjs/shield` (Content Security Policy)
+- Rate limiting via `@adonisjs/limiter` on login, register, 2FA, password change
+- PII encryption at column level via `EncryptionService` (phone, address, identification)
+- Audit logging on all security-relevant actions via `AuditService`
+
+**GDPR Compliance**:
+
+- Audit logs table tracking all user/admin actions with IP, user agent, metadata
+- Terms consent versioning with `TERMS_VERSION` env variable and re-consent banner
+- Data export (JSON) for data portability
+- Account anonymization (right to be forgotten) preserving academic integrity
+
+**Progressive Web App**:
+
+- Service worker with workbox caching (images: CacheFirst, assets: StaleWhileRevalidate)
+- Offline fallback page (`public/offline.html`)
+- Install prompt banner (`beforeinstallprompt` event)
+- Connectivity indicator (online/offline detection)
 
 **Database**: PostgreSQL with Lucid ORM. Two setup options:
 
@@ -266,32 +289,62 @@ src/
 ```
 app/
 ├── controllers/     # HTTP request handlers
-├── models/          # Lucid ORM models (User, Role, UserRole, etc.)
+│   ├── auth_controller.ts          # Login, register, logout (with 2FA redirect)
+│   ├── profile_controller.ts       # Profile edit, avatar upload, settings
+│   ├── two_factor_controller.ts    # MFA/2FA setup, challenge, recovery
+│   ├── social_auth_controller.ts   # OAuth redirect, callback, disconnect
+│   ├── account_controller.ts       # Data export, account deletion, terms acceptance
+│   ├── audit_logs_controller.ts    # Admin audit log viewer
+│   └── users_controller.ts         # Admin user CRUD
+├── models/          # Lucid ORM models
+│   ├── user.ts                     # User with 2FA, PII encryption, terms versioning
+│   ├── audit_log.ts                # Audit log entries
+│   ├── social_account.ts           # OAuth linked accounts
+│   └── ...                         # Role, UserRole, Course, etc.
+├── services/        # Business logic services
+│   ├── audit_service.ts            # Audit logging with context extraction
+│   ├── two_factor_service.ts       # TOTP generation, verification, recovery codes
+│   └── encryption_service.ts       # PII encryption/decryption wrapper
 ├── middleware/      # Request middleware (auth, guest, role, etc.)
 ├── validators/      # VineJS validation schemas
-└── exceptions/      # Custom exception classes
+└── exceptions/      # Custom exception handler (404, 429, 500 pages)
 
 config/              # AdonisJS configuration files
 ├── auth.ts          # Authentication configuration
 ├── database.ts      # Database connection settings
-├── inertia.ts       # Inertia.js configuration
+├── inertia.ts       # Inertia.js configuration (shared data incl. termsConsentRequired)
+├── shield.ts        # CSP headers, CSRF, XSS protection
+├── cors.ts          # CORS with environment-based origin validation
+├── limiter.ts       # Rate limiting configuration (memory store)
+├── ally.ts          # OAuth 2.0 providers (Google, GitHub)
 └── ...
 
 database/
 ├── migrations/      # Database schema migrations
-└── seeders/         # Database seeders (roles, test users)
+└── seeders/         # Database seeders (roles, test users, menus)
 
 inertia/
 ├── app/
-│   ├── app.tsx      # Client-side entry point
+│   ├── app.tsx      # Client-side entry (+ PWA install prompt, connectivity indicator)
 │   └── ssr.tsx      # Server-side rendering entry
 ├── pages/           # Inertia pages (route components)
-│   ├── auth/        # Login, register pages
+│   ├── auth/        # Login, register (with OAuth buttons)
+│   ├── two-factor/  # 2FA setup (QR code) and challenge pages
+│   ├── profile/     # Profile edit with 2FA badge
+│   ├── settings/    # User settings with linked social accounts
+│   ├── account/     # Data export, account deletion (GDPR)
+│   ├── admin/       # Admin pages (audit-logs)
+│   ├── errors/      # Custom error pages (not_found, too_many_requests, server_error)
 │   ├── users/       # User CRUD pages
 │   ├── dashboard.tsx
 │   └── home.tsx
 ├── components/
-│   └── ui/          # shadcn/ui components
+│   ├── ui/                          # shadcn/ui components
+│   ├── layout/                      # App header, sidebar, footer
+│   ├── pwa-install-prompt.tsx       # PWA install banner
+│   ├── connectivity-indicator.tsx   # Offline detection banner
+│   ├── flash-toaster.tsx            # Toast notifications with aria-live
+│   └── terms-consent-banner.tsx     # GDPR terms re-consent banner
 ├── css/
 │   └── app.css      # Tailwind CSS with custom theme
 └── lib/
@@ -299,10 +352,23 @@ inertia/
 
 start/
 ├── routes.ts        # Application routes definition
-└── kernel.ts        # Middleware registration
+├── kernel.ts        # Middleware registration
+└── limiter.ts       # Rate limiting rules (named throttles)
+
+public/
+├── icons/           # PWA icons (icon-192.png, icon-512.png)
+├── offline.html     # PWA offline fallback page
+└── uploads/         # User uploads (avatars)
+
+tests/
+└── browser/         # E2E browser tests
+    ├── auth.spec.ts
+    ├── navigation.spec.ts
+    ├── user_management.spec.ts
+    └── accessibility.spec.ts  # axe-core a11y tests
 
 resources/
-└── views/           # Edge templates (only root.edge for Inertia)
+└── views/           # Edge templates (Inertia layout, error pages)
 ```
 
 ## Multi-Tenancy Architecture
@@ -536,7 +602,11 @@ export class PluginRegistry {
 
 - ✅ Multi-role system (admin, instructor, student, guest)
 - ✅ Role-based access control (RBAC)
-- [ ] SSO integration (SAML 2.0, OAuth 2.0)
+- ✅ OAuth 2.0 social login (Google, GitHub)
+- ✅ MFA/2FA with TOTP and recovery codes
+- ✅ Profile management with avatar upload
+- ✅ User settings with linked social accounts
+- [ ] SSO integration (SAML 2.0)
 - [ ] Bulk user import/management
 - [ ] Parent/guardian portal access
 
@@ -1214,6 +1284,7 @@ test.group('Authentication', () => {
 - `tests/browser/auth.spec.ts` - Authentication flows (login, register, logout)
 - `tests/browser/user_management.spec.ts` - Admin user management operations
 - `tests/browser/navigation.spec.ts` - Navigation and access control
+- `tests/browser/accessibility.spec.ts` - Automated a11y checks with axe-core on key pages
 
 **Browser Test Features**:
 
@@ -1352,6 +1423,20 @@ DB_DATABASE=edonis_lms
 # Session
 SESSION_DRIVER=cookie
 
+# CORS
+CORS_ORIGIN=http://localhost:3333  # Comma-separated for multiple origins
+
+# GDPR — Terms versioning (bump to trigger re-consent banner)
+TERMS_VERSION=1.0
+
+# OAuth 2.0 (optional — enables social login buttons)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=/auth/google/callback
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=/auth/github/callback
+
 # Supabase (optional)
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_ANON_KEY=<key>
@@ -1376,3 +1461,9 @@ LTI_SECRET=<secret>
 - **Multi-Tenancy**: Always include `tenant_id` in tenant-aware queries
 - **Performance**: Consider query optimization and caching for high-traffic routes
 - **Security**: Sanitize user input, use parameterized queries, validate on both client and server
+- **Audit Logging**: Use `AuditService.logFromContext(ctx, { ... })` for all security-relevant actions
+- **PII Encryption**: Use `EncryptionService.encrypt()`/`decrypt()` or Lucid column `prepare`/`consume` for sensitive fields
+- **Rate Limiting**: All auth-related endpoints must have rate limiting via `@adonisjs/limiter`
+- **Accessibility**: Use `eslint-plugin-jsx-a11y` rules; all new pages should pass axe-core critical/serious checks
+- **GDPR**: Any new personal data field must be included in the data export (`AccountController.exportData`) and anonymized in account deletion
+- **PWA**: New client-side components that depend on browser APIs must handle SSR gracefully (return `null` on server)
