@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ debug ? errorName + ': ' + errorMessage : 'Erreur serveur' }} - Edonis LMS</title>
+  <style>
+    :root {
+      --bg: #fdfcfa;
+      --bg-surface: #fff;
+      --bg-code: #f8f5f0;
+      --fg: #302820;
+      --fg-muted: #6b6055;
+      --fg-faint: #9a9088;
+      --primary: #2a8a7a;
+      --border: #e5dfda;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --red-border: #fecaca;
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --amber-border: #fde68a;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Source Serif 4', Georgia, serif;
+      --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Fira Code', monospace;
+      --radius: 0.5rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121010;
+        --bg-surface: #1c1917;
+        --bg-code: #1c1917;
+        --fg: #f0ece6;
+        --fg-muted: #9a9088;
+        --fg-faint: #6b6055;
+        --border: #2c2622;
+        --red-bg: #1f0a0a;
+        --red-border: #7f1d1d;
+        --amber-bg: #1a1000;
+        --amber-border: #78350f;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header bar ── */
+    .error-header {
+      background: var(--red);
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+    }
+    .error-header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .error-badge {
+      background: rgba(255,255,255,0.2);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.625rem;
+      border-radius: 999px;
+      letter-spacing: 0.025em;
+      white-space: nowrap;
+    }
+    .error-class {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    /* ── Main content ── */
+    .error-body {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* ── Message card ── */
+    .message-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .message-text {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--fg);
+      word-break: break-word;
+    }
+    .message-hint {
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--fg-muted);
+    }
+
+    /* ── Section panels ── */
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .panel-body {
+      padding: 0;
+    }
+
+    /* ── Stack trace ── */
+    .stack-frame {
+      padding: 0.625rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      transition: background 0.15s;
+    }
+    .stack-frame:last-child { border-bottom: none; }
+    .stack-frame:hover { background: var(--bg); }
+    .stack-frame.is-app {
+      background: var(--red-bg);
+      border-left: 3px solid var(--red);
+    }
+    .stack-frame.is-app:hover {
+      background: var(--red-bg);
+    }
+    .frame-number {
+      color: var(--fg-faint);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      min-width: 1.75rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .frame-file {
+      font-family: var(--font-mono);
+      color: var(--fg);
+      word-break: break-all;
+    }
+    .frame-file .line-number {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .frame-method {
+      color: var(--fg-muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    /* ── Info table ── */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    .info-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .info-table tr:last-child { border-bottom: none; }
+    .info-table th {
+      text-align: left;
+      padding: 0.5rem 1.25rem;
+      font-weight: 600;
+      color: var(--fg-muted);
+      white-space: nowrap;
+      width: 140px;
+      vertical-align: top;
+    }
+    .info-table td {
+      padding: 0.5rem 1.25rem;
+      font-family: var(--font-mono);
+      color: var(--fg);
+      word-break: break-all;
+    }
+
+    /* ── Raw output (production) ── */
+    .raw-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.7;
+      color: var(--fg);
+    }
+
+    /* ── Non-debug (production) centered layout ── */
+    .production-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .production-inner {
+      max-width: 420px;
+    }
+    .production-code {
+      font-family: var(--font-heading);
+      font-size: 5rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+    .production-title {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .production-message {
+      color: var(--fg-muted);
+      margin-bottom: 2rem;
+    }
+    .production-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .production-btn:active { transform: scale(0.98); }
+    .btn-reload {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-reload:hover { opacity: 0.9; }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .tab-btn {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--fg-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--fg); }
+    .tab-btn.active {
+      color: var(--red);
+      border-bottom-color: var(--red);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+@if(debug)
+  {{-- ═══════════════════════════════════════════════════════ --}}
+  {{-- DEBUG MODE: Full error details (Laravel Ignition style) --}}
+  {{-- ═══════════════════════════════════════════════════════ --}}
+
+  <div class="error-header">
+    <div class="error-header-inner">
+      <span class="error-badge">{{ statusCode }}</span>
+      <span class="error-class">{{ errorName }}</span>
+    </div>
+  </div>
+
+  <div class="error-body">
+    {{-- Error message --}}
+    <div class="message-card">
+      <div class="message-text">{{ errorMessage }}</div>
+      @if(hint)
+        <div class="message-hint">{{ hint }}</div>
+      @end
+    </div>
+
+    {{-- Tabs: Stack Trace / Request / App --}}
+    <div class="panel">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('stack')">Stack Trace</button>
+        <button class="tab-btn" onclick="switchTab('request')">Request</button>
+        <button class="tab-btn" onclick="switchTab('app')">App</button>
+      </div>
+
+      {{-- Tab: Stack Trace --}}
+      <div id="tab-stack" class="tab-content active">
+        @if(frames && frames.length)
+          @each(frame in frames)
+            <div class="stack-frame {{ frame.isApp ? 'is-app' : '' }}">
+              <span class="frame-number">{{ frame.index }}</span>
+              <span class="frame-file">
+                {{ frame.file }}@if(frame.line)<span class="line-number">:{{ frame.line }}</span>@end
+              </span>
+              @if(frame.method)
+                <span class="frame-method">{{ frame.method }}</span>
+              @end
+            </div>
+          @end
+        @else
+          <div class="raw-block" style="margin: 1rem;">{{ errorStack }}</div>
+        @end
+      </div>
+
+      {{-- Tab: Request --}}
+      <div id="tab-request" class="tab-content">
+        <table class="info-table">
+          <tr><th>URL</th><td>{{ requestMethod }} {{ requestUrl }}</td></tr>
+          @if(routeName)
+            <tr><th>Route</th><td>{{ routeName }}</td></tr>
+          @end
+          <tr><th>Status</th><td>{{ statusCode }}</td></tr>
+        </table>
+      </div>
+
+      {{-- Tab: App --}}
+      <div id="tab-app" class="tab-content">
+        <table class="info-table">
+          <tr><th>Environment</th><td>{{ nodeEnv }}</td></tr>
+          <tr><th>AdonisJS</th><td>{{ adonisVersion }}</td></tr>
+          <tr><th>Node.js</th><td>{{ nodeVersion }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    {{-- Raw stack trace (always available, collapsed) --}}
+    <details>
+      <summary style="font-size: 0.8125rem; color: var(--fg-faint); cursor: pointer; margin-bottom: 0.5rem;">
+        Raw stack trace
+      </summary>
+      <div class="raw-block">{{ errorStack }}</div>
+    </details>
+  </div>
+
+  <script>
+    function switchTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'))
+      document.getElementById('tab-' + name).classList.add('active')
+      event.target.classList.add('active')
+    }
+  </script>
+
+@else
+  {{-- ═══════════════════════════════════════ --}}
+  {{-- PRODUCTION MODE: Clean, minimal display --}}
+  {{-- ═══════════════════════════════════════ --}}
+
+  <div class="production-wrapper">
+    <div class="production-inner">
+      <div class="production-code">{{ statusCode }}</div>
+      <h1 class="production-title">Service temporairement indisponible</h1>
+      <p class="production-message">
+        Le service rencontre un problème temporaire. Veuillez réessayer dans quelques instants.
+      </p>
+      <button class="production-btn btn-reload" onclick="location.reload()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+@end
+</body>
+</html>
