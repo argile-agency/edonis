@@ -1,4 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import logger from '@adonisjs/core/services/logger'
 
 export default class DashboardController {
   /**
@@ -8,8 +9,12 @@ export default class DashboardController {
   async index({ auth, inertia }: HttpContext) {
     const user = auth.user!
 
-    // Charger les rôles
-    await user.load('roles' as any)
+    try {
+      // Charger les rôles
+      await user.load('roles' as any)
+    } catch (error) {
+      logger.error('DashboardController: failed to load user roles: %s', (error as Error).message)
+    }
 
     return inertia.render('dashboard', {
       user: user.serialize(),
