@@ -73,20 +73,6 @@ export default class extends BaseSeeder {
       }
     )
 
-    await MenuItem.updateOrCreate(
-      { menuId: mainMenu.id, url: '/dashboard' },
-      {
-        menuId: mainMenu.id,
-        label: 'Tableau de bord',
-        url: '/dashboard',
-        icon: 'LayoutDashboard',
-        order: 3,
-        visibility: 'authenticated',
-        isActive: true,
-        target: '_self',
-      }
-    )
-
     // Créer le menu footer
     const footerMenu = await Menu.updateOrCreate(
       { slug: 'footer-menu' },

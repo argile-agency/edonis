@@ -3,6 +3,7 @@ import type { InferSharedProps } from '@adonisjs/inertia/types'
 import AppSetting from '#models/app_setting'
 import MenuLocation from '#models/menu_location'
 import logger from '@adonisjs/core/services/logger'
+import env from '#start/env'
 
 const inertiaConfig = defineConfig({
   /**
@@ -19,11 +20,12 @@ const inertiaConfig = defineConfig({
     auth: (ctx) =>
       ctx.inertia.always(async () => {
         try {
-          if (ctx.auth.user) {
-            await ctx.auth.user.load('roles')
+          const user = ctx.auth?.user
+          if (user) {
+            await user.load('roles')
           }
           return {
-            user: ctx.auth.user ? ctx.auth.user.toJSON() : null,
+            user: user ? user.toJSON() : null,
           }
         } catch (error) {
           logger.warn('Failed to load auth shared data: %s', (error as Error).message)
@@ -42,12 +44,37 @@ const inertiaConfig = defineConfig({
         }
       }),
 
+    flash: (ctx) =>
+      ctx.inertia.always(() => {
+        try {
+          return {
+            success: ctx.session.flashMessages.get('success') as string | undefined,
+            error: ctx.session.flashMessages.get('error') as string | undefined,
+          }
+        } catch {
+          return { success: undefined, error: undefined }
+        }
+      }),
+
+    termsConsentRequired: (ctx) =>
+      ctx.inertia.always(() => {
+        try {
+          const user = ctx.auth?.user
+          const currentVersion = env.get('TERMS_VERSION', '')
+          if (!user || !currentVersion) return false
+          return user.termsAcceptedVersion !== currentVersion
+        } catch {
+          return false
+        }
+      }),
+
     menus: (ctx) =>
       ctx.inertia.always(async () => {
         try {
-          const headerMenu = await MenuLocation.getMenuTreeForLocation('header', ctx.auth.user)
-          const footerMenu = await MenuLocation.getMenuTreeForLocation('footer', ctx.auth.user)
-          const userMenu = await MenuLocation.getMenuTreeForLocation('user-menu', ctx.auth.user)
+          const user = ctx.auth?.user
+          const headerMenu = await MenuLocation.getMenuTreeForLocation('header', user)
+          const footerMenu = await MenuLocation.getMenuTreeForLocation('footer', user)
+          const userMenu = await MenuLocation.getMenuTreeForLocation('user-menu', user)
 
           return {
             header: headerMenu || [],

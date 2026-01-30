@@ -8,6 +8,7 @@ import {
   validateEmailUnique,
   validateStudentIdUnique,
 } from '#validators/user_validator'
+import AuditService from '#services/audit_service'
 
 export default class UsersController {
   /**
@@ -75,7 +76,8 @@ export default class UsersController {
    * Créer un nouvel utilisateur
    * POST /admin/users
    */
-  async store({ request, response, session }: HttpContext) {
+  async store(ctx: HttpContext) {
+    const { request, response, session } = ctx
     const data = await request.validateUsing(createUserValidator)
 
     // Validation manuelle de l'unicité
@@ -119,6 +121,13 @@ export default class UsersController {
         })
       }
     }
+
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.create',
+      resourceType: 'User',
+      resourceId: user.id,
+      newValues: user.serialize(),
+    })
 
     session.flash('success', 'Utilisateur créé avec succès')
     return response.redirect().toRoute('users.index')
@@ -166,8 +175,10 @@ export default class UsersController {
    * Mettre à jour un utilisateur
    * PUT/PATCH /admin/users/:id
    */
-  async update({ params, request, response, session }: HttpContext) {
+  async update(ctx: HttpContext) {
+    const { params, request, response, session } = ctx
     const user = await User.findOrFail(params.id)
+    const oldValues = user.serialize()
     const data = await request.validateUsing(updateUserValidator)
 
     // Validation manuelle de l'unicité
@@ -224,6 +235,14 @@ export default class UsersController {
       }
     }
 
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.update',
+      resourceType: 'User',
+      resourceId: user.id,
+      oldValues,
+      newValues: user.serialize(),
+    })
+
     session.flash('success', 'Utilisateur mis à jour avec succès')
     return response.redirect().toRoute('users.index')
   }
@@ -232,12 +251,19 @@ export default class UsersController {
    * Supprimer un utilisateur (soft delete via is_active)
    * DELETE /admin/users/:id
    */
-  async destroy({ params, response, session }: HttpContext) {
+  async destroy(ctx: HttpContext) {
+    const { params, response, session } = ctx
     const user = await User.findOrFail(params.id)
 
     // Soft delete - désactiver l'utilisateur
     user.isActive = false
     await user.save()
+
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.deactivate',
+      resourceType: 'User',
+      resourceId: user.id,
+    })
 
     session.flash('success', 'Utilisateur désactivé avec succès')
     return response.redirect().toRoute('users.index')
@@ -247,10 +273,17 @@ export default class UsersController {
    * Activer un utilisateur
    * POST /admin/users/:id/activate
    */
-  async activate({ params, response, session }: HttpContext) {
+  async activate(ctx: HttpContext) {
+    const { params, response, session } = ctx
     const user = await User.findOrFail(params.id)
     user.isActive = true
     await user.save()
+
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.activate',
+      resourceType: 'User',
+      resourceId: user.id,
+    })
 
     session.flash('success', 'Utilisateur activé avec succès')
     return response.redirect().back()
@@ -260,8 +293,18 @@ export default class UsersController {
    * Supprimer définitivement un utilisateur
    * DELETE /admin/users/:id/force
    */
-  async forceDestroy({ params, response, session }: HttpContext) {
+  async forceDestroy(ctx: HttpContext) {
+    const { params, response, session } = ctx
     const user = await User.findOrFail(params.id)
+    const oldValues = user.serialize()
+
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.delete',
+      resourceType: 'User',
+      resourceId: user.id,
+      oldValues,
+    })
+
     await user.delete()
 
     session.flash('success', 'Utilisateur supprimé définitivement')

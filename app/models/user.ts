@@ -1,10 +1,11 @@
 import { DateTime } from 'luxon'
 import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'
-import { BaseModel, column, manyToMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeSave, column, manyToMany } from '@adonisjs/lucid/orm'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
 import Role from '#models/role'
+import EncryptionService from '#services/encryption_service'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -19,6 +20,12 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare fullName: string | null
 
   @column()
+  declare firstName: string | null
+
+  @column()
+  declare lastName: string | null
+
+  @column()
   declare email: string
 
   @column({ serializeAs: null })
@@ -28,10 +35,22 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare avatarUrl: string | null
 
   @column()
-  declare bio: string | null
+  declare avatarDescription: string | null
 
   @column()
+  declare bio: string | null
+
+  @column({
+    prepare: (value: string | null) => EncryptionService.encrypt(value),
+    consume: (value: string | null) => EncryptionService.decrypt(value),
+  })
   declare phone: string | null
+
+  @column({
+    prepare: (value: string | null) => EncryptionService.encrypt(value),
+    consume: (value: string | null) => EncryptionService.decrypt(value),
+  })
+  declare mobilePhone: string | null
 
   @column()
   declare studentId: string | null
@@ -43,6 +62,33 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare organization: string | null
 
   @column()
+  declare city: string | null
+
+  @column()
+  declare country: string | null
+
+  @column({
+    prepare: (value: string | null) => EncryptionService.encrypt(value),
+    consume: (value: string | null) => EncryptionService.decrypt(value),
+  })
+  declare address: string | null
+
+  @column({
+    prepare: (value: string | null) => EncryptionService.encrypt(value),
+    consume: (value: string | null) => EncryptionService.decrypt(value),
+  })
+  declare identificationNumber: string | null
+
+  @column()
+  declare webUrl: string | null
+
+  @column()
+  declare emailVisibility: string
+
+  @column()
+  declare profileVisibility: string
+
+  @column()
   declare locale: string
 
   @column()
@@ -50,6 +96,24 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column()
   declare isActive: boolean
+
+  @column({ serializeAs: null })
+  declare twoFactorSecret: string | null
+
+  @column()
+  declare twoFactorEnabled: boolean
+
+  @column({ serializeAs: null })
+  declare twoFactorRecoveryCodes: string | null
+
+  @column.dateTime()
+  declare twoFactorConfirmedAt: DateTime | null
+
+  @column.dateTime()
+  declare termsAcceptedAt: DateTime | null
+
+  @column()
+  declare termsAcceptedVersion: string | null
 
   @column.dateTime()
   declare lastLoginAt: DateTime | null
@@ -59,6 +123,16 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  @beforeSave()
+  static syncFullName(user: User) {
+    if (user.$dirty.firstName !== undefined || user.$dirty.lastName !== undefined) {
+      const parts = [user.firstName, user.lastName].filter(Boolean)
+      if (parts.length > 0) {
+        user.fullName = parts.join(' ')
+      }
+    }
+  }
 
   // Relations
   @manyToMany(() => Role, {

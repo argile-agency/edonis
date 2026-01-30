@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
+import { loginThrottle, registerThrottle, passwordThrottle } from './limiter.js'
 
 const UsersController = () => import('#controllers/users_controller')
 const AuthController = () => import('#controllers/auth_controller')
@@ -21,6 +22,11 @@ const EvaluationsController = () => import('#controllers/evaluations_controller'
 const CourseContentsController = () => import('#controllers/course_contents_controller')
 const PagesController = () => import('#controllers/pages_controller')
 const GradesController = () => import('#controllers/grades_controller')
+const ProfileController = () => import('#controllers/profile_controller')
+const TwoFactorController = () => import('#controllers/two_factor_controller')
+const SocialAuthController = () => import('#controllers/social_auth_controller')
+const AccountController = () => import('#controllers/account_controller')
+const AuditLogsController = () => import('#controllers/audit_logs_controller')
 
 router.get('/', [HomeController, 'index']).as('home')
 
@@ -59,16 +65,115 @@ router
   .group(() => {
     // Login
     router.get('/login', [AuthController, 'showLogin']).as('login')
-    router.post('/login', [AuthController, 'login'])
+    router.post('/login', [AuthController, 'login']).use(loginThrottle)
 
     // Register
     router.get('/register', [AuthController, 'showRegister']).as('register')
-    router.post('/register', [AuthController, 'register'])
+    router.post('/register', [AuthController, 'register']).use(registerThrottle)
   })
   .use(middleware.guest())
 
 // Logout (nécessite authentification)
 router.post('/logout', [AuthController, 'logout']).as('logout').use(middleware.auth())
+
+/*
+|--------------------------------------------------------------------------
+| Routes 2FA (authentifié — configuration)
+|--------------------------------------------------------------------------
+*/
+router
+  .group(() => {
+    router.get('/two-factor', [TwoFactorController, 'show']).as('user.two-factor')
+    router.post('/two-factor/enable', [TwoFactorController, 'enable']).as('user.two-factor.enable')
+    router
+      .post('/two-factor/confirm', [TwoFactorController, 'confirm'])
+      .as('user.two-factor.confirm')
+    router
+      .post('/two-factor/disable', [TwoFactorController, 'disable'])
+      .as('user.two-factor.disable')
+    router
+      .post('/two-factor/recovery', [TwoFactorController, 'regenerateCodes'])
+      .as('user.two-factor.recovery')
+  })
+  .prefix('/user')
+  .use(middleware.auth())
+
+/*
+|--------------------------------------------------------------------------
+| Routes 2FA (challenge — pas encore authentifié)
+|--------------------------------------------------------------------------
+*/
+router.get('/two-factor/challenge', [TwoFactorController, 'challenge']).as('two-factor.challenge')
+router
+  .post('/two-factor/challenge', [TwoFactorController, 'verifyChallenge'])
+  .as('two-factor.verify')
+  .use(loginThrottle)
+router
+  .post('/two-factor/challenge/recovery', [TwoFactorController, 'verifyRecovery'])
+  .as('two-factor.recovery')
+  .use(loginThrottle)
+
+/*
+|--------------------------------------------------------------------------
+| Routes OAuth (connexion sociale)
+|--------------------------------------------------------------------------
+*/
+router
+  .get('/auth/:provider/redirect', [SocialAuthController, 'redirect'])
+  .as('auth.social.redirect')
+router
+  .get('/auth/:provider/callback', [SocialAuthController, 'callback'])
+  .as('auth.social.callback')
+
+/*
+|--------------------------------------------------------------------------
+| Routes du profil et paramètres utilisateur
+|--------------------------------------------------------------------------
+| Routes pour la gestion du compte personnel (profil, mot de passe, paramètres)
+*/
+router
+  .group(() => {
+    router.get('/profile', [ProfileController, 'edit']).as('user.profile.edit')
+    router.post('/profile', [ProfileController, 'update']).as('user.profile.update')
+    router
+      .post('/profile/password', [ProfileController, 'updatePassword'])
+      .as('user.profile.password')
+      .use(passwordThrottle)
+    router
+      .post('/profile/avatar', [ProfileController, 'updateAvatar'])
+      .as('user.profile.avatar.update')
+    router
+      .delete('/profile/avatar', [ProfileController, 'deleteAvatar'])
+      .as('user.profile.avatar.delete')
+    router.get('/settings', [ProfileController, 'settings']).as('user.settings')
+    router.put('/settings', [ProfileController, 'updateSettings']).as('user.settings.update')
+
+    // Social accounts management
+    router
+      .delete('/social-accounts/:id', [SocialAuthController, 'disconnect'])
+      .as('user.social-accounts.disconnect')
+
+    // Account management (GDPR)
+    router.get('/account', [AccountController, 'show']).as('user.account')
+    router.post('/account/export', [AccountController, 'exportData']).as('user.account.export')
+    router
+      .post('/account/accept-terms', [AccountController, 'acceptTerms'])
+      .as('user.account.accept-terms')
+    router.delete('/account', [AccountController, 'deleteAccount']).as('user.account.delete')
+  })
+  .prefix('/user')
+  .use(middleware.auth())
+
+/*
+|--------------------------------------------------------------------------
+| Routes d'administration — Audit logs
+|--------------------------------------------------------------------------
+*/
+router
+  .get('/admin/audit-logs', [AuditLogsController, 'index'])
+  .as('admin.audit-logs')
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin'] }))
 
 /*
 |--------------------------------------------------------------------------

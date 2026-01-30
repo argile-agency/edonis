@@ -35,4 +35,28 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_USER: Env.schema.string(),
   DB_PASSWORD: Env.schema.string.optional(),
   DB_DATABASE: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring CORS
+  |----------------------------------------------------------
+  */
+  CORS_ORIGIN: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring ally package
+  |----------------------------------------------------------
+  */
+  GOOGLE_CLIENT_ID: Env.schema.string.optional(),
+  GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
+  GITHUB_CLIENT_ID: Env.schema.string.optional(),
+  GITHUB_CLIENT_SECRET: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring terms version (GDPR re-consent)
+  |----------------------------------------------------------
+  */
+  TERMS_VERSION: Env.schema.string.optional(),
 })
