@@ -2,6 +2,7 @@ import { defineConfig } from '@adonisjs/inertia'
 import type { InferSharedProps } from '@adonisjs/inertia/types'
 import AppSetting from '#models/app_setting'
 import MenuLocation from '#models/menu_location'
+import logger from '@adonisjs/core/services/logger'
 
 const inertiaConfig = defineConfig({
   /**
@@ -10,36 +11,52 @@ const inertiaConfig = defineConfig({
   rootView: 'inertia_layout',
 
   /**
-   * Data that should be shared with all rendered pages
+   * Data that should be shared with all rendered pages.
+   * Each resolver is wrapped in try/catch so that pages can still render
+   * when the database is unreachable (graceful degradation).
    */
   sharedData: {
     auth: (ctx) =>
       ctx.inertia.always(async () => {
-        if (ctx.auth.user) {
-          await ctx.auth.user.load('roles')
-        }
-        return {
-          user: ctx.auth.user ? ctx.auth.user.toJSON() : null,
+        try {
+          if (ctx.auth.user) {
+            await ctx.auth.user.load('roles')
+          }
+          return {
+            user: ctx.auth.user ? ctx.auth.user.toJSON() : null,
+          }
+        } catch (error) {
+          logger.warn('Failed to load auth shared data: %s', (error as Error).message)
+          return { user: null }
         }
       }),
 
     appSettings: (ctx) =>
       ctx.inertia.always(async () => {
-        const settings = await AppSetting.getActiveSettings()
-        return settings ? settings.toJSON() : null
+        try {
+          const settings = await AppSetting.getActiveSettings()
+          return settings ? settings.toJSON() : null
+        } catch (error) {
+          logger.warn('Failed to load appSettings shared data: %s', (error as Error).message)
+          return null
+        }
       }),
 
     menus: (ctx) =>
       ctx.inertia.always(async () => {
-        // Récupérer les menus pour chaque location
-        const headerMenu = await MenuLocation.getMenuTreeForLocation('header', ctx.auth.user)
-        const footerMenu = await MenuLocation.getMenuTreeForLocation('footer', ctx.auth.user)
-        const userMenu = await MenuLocation.getMenuTreeForLocation('user-menu', ctx.auth.user)
+        try {
+          const headerMenu = await MenuLocation.getMenuTreeForLocation('header', ctx.auth.user)
+          const footerMenu = await MenuLocation.getMenuTreeForLocation('footer', ctx.auth.user)
+          const userMenu = await MenuLocation.getMenuTreeForLocation('user-menu', ctx.auth.user)
 
-        return {
-          header: headerMenu || [],
-          footer: footerMenu || [],
-          userMenu: userMenu || [],
+          return {
+            header: headerMenu || [],
+            footer: footerMenu || [],
+            userMenu: userMenu || [],
+          }
+        } catch (error) {
+          logger.warn('Failed to load menus shared data: %s', (error as Error).message)
+          return { header: [], footer: [], userMenu: [] }
         }
       }),
   },
