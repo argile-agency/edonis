@@ -44,6 +44,9 @@ export default class extends BaseSeeder {
     headerLocation.menuId = mainMenu.id
     await headerLocation.save()
 
+    // Supprimer le lien "Tableau de bord" du header s'il existe
+    await MenuItem.query().where('menuId', mainMenu.id).where('url', '/dashboard').delete()
+
     // Créer les items du menu principal
     await MenuItem.updateOrCreate(
       { menuId: mainMenu.id, url: '/' },
