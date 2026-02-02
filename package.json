@@ -58,7 +58,7 @@
     "prettier": "^3.5.3",
     "ts-node-maintained": "^10.9.5",
     "typescript": "~5.8.3",
-    "vite": "^6.3.5",
+    "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
   },
   "dependencies": {
