@@ -41,7 +41,7 @@
     "@japa/browser-client": "^2.1.1",
     "@japa/plugin-adonisjs": "^4.0.0",
     "@japa/runner": "^4.2.0",
-    "@swc/core": "1.11.24",
+    "@swc/core": "1.15.11",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.15.18",
