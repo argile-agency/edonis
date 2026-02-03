@@ -129,60 +129,60 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | TBD | Pending |
-| BUILD-02 | TBD | Pending |
-| BUILD-03 | TBD | Pending |
-| BUILD-04 | TBD | Pending |
-| BUILD-05 | TBD | Pending |
-| BUILD-06 | TBD | Pending |
-| BUILD-07 | TBD | Pending |
-| BUILD-08 | TBD | Pending |
-| BUILD-09 | TBD | Pending |
-| BUILD-10 | TBD | Pending |
-| PAGE-01 | TBD | Pending |
-| PAGE-02 | TBD | Pending |
-| PAGE-03 | TBD | Pending |
-| PAGE-04 | TBD | Pending |
-| PAGE-05 | TBD | Pending |
-| PAGE-06 | TBD | Pending |
-| PAGE-07 | TBD | Pending |
-| FILE-01 | TBD | Pending |
-| FILE-02 | TBD | Pending |
-| FILE-03 | TBD | Pending |
-| FILE-04 | TBD | Pending |
-| FILE-05 | TBD | Pending |
-| FILE-06 | TBD | Pending |
-| URL-01 | TBD | Pending |
-| URL-02 | TBD | Pending |
-| URL-03 | TBD | Pending |
-| URL-04 | TBD | Pending |
-| ASSIGN-01 | TBD | Pending |
-| ASSIGN-02 | TBD | Pending |
-| ASSIGN-03 | TBD | Pending |
-| IMPORT-01 | TBD | Pending |
-| IMPORT-02 | TBD | Pending |
-| IMPORT-03 | TBD | Pending |
-| IMPORT-04 | TBD | Pending |
-| IMPORT-05 | TBD | Pending |
-| IMPORT-06 | TBD | Pending |
-| IMPORT-07 | TBD | Pending |
-| IMPORT-08 | TBD | Pending |
-| IMPORT-09 | TBD | Pending |
-| IMPORT-10 | TBD | Pending |
-| IMPORT-11 | TBD | Pending |
-| TRACK-01 | TBD | Pending |
-| TRACK-02 | TBD | Pending |
-| TRACK-03 | TBD | Pending |
-| TRACK-04 | TBD | Pending |
-| PERM-01 | TBD | Pending |
-| PERM-02 | TBD | Pending |
-| PERM-03 | TBD | Pending |
+| BUILD-01 | Phase 2 | Pending |
+| BUILD-02 | Phase 2 | Pending |
+| BUILD-03 | Phase 2 | Pending |
+| BUILD-04 | Phase 2 | Pending |
+| BUILD-05 | Phase 2 | Pending |
+| BUILD-06 | Phase 2 | Pending |
+| BUILD-07 | Phase 2 | Pending |
+| BUILD-08 | Phase 2 | Pending |
+| BUILD-09 | Phase 2 | Pending |
+| BUILD-10 | Phase 2 | Pending |
+| PAGE-01 | Phase 3 | Pending |
+| PAGE-02 | Phase 3 | Pending |
+| PAGE-03 | Phase 3 | Pending |
+| PAGE-04 | Phase 3 | Pending |
+| PAGE-05 | Phase 3 | Pending |
+| PAGE-06 | Phase 3 | Pending |
+| PAGE-07 | Phase 3 | Pending |
+| FILE-01 | Phase 4 | Pending |
+| FILE-02 | Phase 4 | Pending |
+| FILE-03 | Phase 4 | Pending |
+| FILE-04 | Phase 4 | Pending |
+| FILE-05 | Phase 4 | Pending |
+| FILE-06 | Phase 4 | Pending |
+| URL-01 | Phase 5 | Pending |
+| URL-02 | Phase 5 | Pending |
+| URL-03 | Phase 5 | Pending |
+| URL-04 | Phase 5 | Pending |
+| ASSIGN-01 | Phase 6 | Pending |
+| ASSIGN-02 | Phase 6 | Pending |
+| ASSIGN-03 | Phase 6 | Pending |
+| IMPORT-01 | Phase 8 | Pending |
+| IMPORT-02 | Phase 8 | Pending |
+| IMPORT-03 | Phase 8 | Pending |
+| IMPORT-04 | Phase 8 | Pending |
+| IMPORT-05 | Phase 8 | Pending |
+| IMPORT-06 | Phase 8 | Pending |
+| IMPORT-07 | Phase 8 | Pending |
+| IMPORT-08 | Phase 8 | Pending |
+| IMPORT-09 | Phase 8 | Pending |
+| IMPORT-10 | Phase 8 | Pending |
+| IMPORT-11 | Phase 8 | Pending |
+| TRACK-01 | Phase 7 | Pending |
+| TRACK-02 | Phase 7 | Pending |
+| TRACK-03 | Phase 7 | Pending |
+| TRACK-04 | Phase 7 | Pending |
+| PERM-01 | Phase 9 | Pending |
+| PERM-02 | Phase 9 | Pending |
+| PERM-03 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 41 total
-- Mapped to phases: 0
-- Unmapped: 41 (pending roadmap)
+- Mapped to phases: 41
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-03 after initial definition*
+*Last updated: 2026-02-03 after roadmap creation*
