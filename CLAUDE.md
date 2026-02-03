@@ -172,6 +172,11 @@ chore(deps): update dependencies
 
 Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
 
+**Commit Guidelines:**
+- Keep commit messages short and concise (one line preferred)
+- Do NOT add AI co-authoring lines (Co-Authored-By, etc.)
+- Focus on what changed, not who/what generated it
+
 ## Product Vision & Strategy
 
 ### Market Positioning
