@@ -33,10 +33,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. FileStorageService can store files outside webroot with random names
   3. FileStorageService can retrieve files by ID and serve downloads
   4. Files are deduplicated by checksum (same file uploaded twice uses same storage)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: Content models and file storage service
+- [ ] 01-01-PLAN.md — ContentFile model, FileStorageService, and file download endpoint
 
 ### Phase 2: Builder UI
 **Goal**: Teachers can visually organize course content with drag-and-drop
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Content Foundation | 0/1 | Not started | - |
+| 1. Content Foundation | 0/1 | Ready to execute | - |
 | 2. Builder UI | 0/3 | Not started | - |
 | 3. Page Content | 0/3 | Not started | - |
 | 4. File Content | 0/3 | Not started | - |
