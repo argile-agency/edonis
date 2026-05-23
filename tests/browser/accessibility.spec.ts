@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import AxeBuilder from '@axe-core/playwright'
+import { AxeBuilder } from '@axe-core/playwright'
 
 /**
  * Accessibility tests using axe-core.
