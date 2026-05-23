@@ -49,9 +49,11 @@ node ace test         # Alternative test command
 
 **Existing Seeders**:
 
+- `role_seeder.ts` - Creates roles (admin, manager, teacher, student)
 - `user_seeder.ts` - Creates test users (admin, manager, teacher, student)
 - `course_seeder.ts` - Creates sample courses with various statuses
 - `course_category_seeder.ts` - Creates course categories
+- `course_content_seeder.ts` - Creates sample course content
 - `enrollment_method_seeder.ts` - Creates enrollment methods
 - `cohort_seeder.ts` - Creates student cohorts
 - `student_enrollment_seeder.ts` - Enrolls test student in courses
@@ -84,90 +86,35 @@ The project uses GitHub Actions for continuous integration and deployment.
 **1. CI Pipeline** (`.github/workflows/ci.yml`)
 
 - **Triggers**: Push and Pull Requests to main/develop
-- **Jobs**:
-  - **Lint & Type Check**: ESLint and TypeScript validation
-  - **Build**: Production build verification
-  - **Security Audit**: Dependency vulnerability scanning
-  - **Unit Tests**: Runs functional tests with PostgreSQL
+- **Jobs**: Lint & Type Check, Build, Security Audit, Unit Tests (matrix: PostgreSQL, MySQL, SQLite)
 - **Status**: Required checks for PR merges
 
 **2. E2E Browser Tests** (`.github/workflows/e2e.yml`)
 
 - **Triggers**: Pull Requests, nightly schedule (2 AM UTC), manual dispatch
-- **Jobs**:
-  - **Browser Tests**: Runs Playwright tests with Chromium
-  - **Multi-Browser Matrix**: Tests on Chromium, Firefox, and Webkit (nightly/manual only)
 - **Artifacts**: Screenshots, videos, and test reports on failure
-- **Timeout**: 20 minutes (single), 30 minutes (matrix)
 
 **3. Code Quality** (`.github/workflows/code-quality.yml`)
 
 - **Triggers**: Push and Pull Requests to main/develop
-- **Jobs**:
-  - **CodeQL**: Security vulnerability scanning
-  - **Dependency Review**: Checks for vulnerable/problematic dependencies
-  - **Prettier Check**: Code formatting validation
-  - **Commit Lint**: Validates conventional commit messages
-  - **Code Metrics**: Lines of code and bundle size reporting
+- **Jobs**: CodeQL, Dependency Review, Prettier Check, Commit Lint, Code Metrics
 
 **4. Dependabot** (`.github/dependabot.yml`)
 
-- **Schedule**: Weekly updates on Mondays at 9 AM
-- **Scope**: npm dependencies and GitHub Actions
-- **Configuration**:
-  - Groups minor/patch updates together
-  - Separate groups for dev and production dependencies
-  - Auto-assigns to @delwwwinc
-  - Uses conventional commit format
+- Weekly updates on Mondays at 9 AM, groups minor/patch, auto-assigns to @delwwwinc
 
-### Workflow Status Badges
-
-Add these to your README.md to show CI status:
-
-```markdown
-![CI](https://github.com/delwwwinc/edonis/workflows/CI/badge.svg)
-![E2E](https://github.com/delwwwinc/edonis/workflows/E2E%20Browser%20Tests/badge.svg)
-![Code Quality](https://github.com/delwwwinc/edonis/workflows/Code%20Quality/badge.svg)
-```
-
-### Running Workflows Locally
-
-To simulate CI checks before pushing:
+### Running CI Checks Locally
 
 ```bash
-# Run all CI checks locally
 bun run lint && bun run typecheck && bun run build && node ace test
-
-# Run browser tests locally
-node ace db:seed && node ace test browser
-
-# Check code formatting
-bun run format --check
+node ace db:seed && node ace test browser    # E2E tests
+bun run format --check                       # Formatting check
 ```
-
-### Environment Variables for CI
-
-The following environment variables are configured in GitHub Actions:
-
-- `NODE_ENV`: Set to `test`
-- `APP_KEY`: Test-only encryption key
-- `DB_*`: PostgreSQL connection details (from service container)
-- `PORT` / `HOST`: Server configuration
-
-**Note**: Never commit real credentials. Use GitHub Secrets for production deployments.
 
 ### Conventional Commit Format
 
-All commits must follow the conventional commits specification:
-
 ```
 type(scope): description
-
-Examples:
-feat(auth): add SSO login with SAML 2.0
-fix(users): resolve hydration error in user list
-docs(readme): update installation instructions
-chore(deps): update dependencies
 ```
 
 Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
@@ -177,76 +124,33 @@ Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 - Do NOT add AI co-authoring lines (Co-Authored-By, etc.)
 - Focus on what changed, not who/what generated it
 
-## Product Vision & Strategy
-
-### Market Positioning
-
-Edonis LMS aims to succeed by combining:
-
-- **Modern architecture** (AdonisJS/TypeScript) for superior developer experience
-- **Mobile-first design** with Progressive Web App capabilities
-- **Native AI integration** for personalized learning and content generation
-- **Cost advantages and transparency** of open-source software
-- **Apache 2.0 licensing** for enterprise adoption without licensing concerns
-
-### Key Success Factors
-
-1. **Modular Monolithic Architecture**: Start simple, scale when needed
-2. **Educational Standards Compliance**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1
-3. **Hybrid Funding Model**: Open-core features + professional services
-4. **Developer Experience First**: TypeScript-first, comprehensive docs, easy customization
-
-### Target Scale
-
-Architecture designed to support **10,000+ concurrent users** through:
-
-- Horizontal scaling with multiple AdonisJS instances
-- Read replicas for read-heavy operations
-- Redis cluster for session storage and caching
-- Connection pooling (pgBouncer) for database efficiency
-
 ## Architecture Overview
 
-This is an **AdonisJS 6** application using **Inertia.js** with **React 19** for a modern monolithic architecture (no separate API/frontend builds).
+**AdonisJS 6** application using **Inertia.js** with **React 19** — modern monolithic architecture (no separate API/frontend builds).
 
 ### Architectural Principles
 
-1. **Modular Monolithic Design**: Clear module boundaries for future microservices evolution if needed
+1. **Modular Monolithic Design**: Clear module boundaries for future microservices evolution
 2. **Domain-Driven Structure**: Organized by business domains, not technical layers
 3. **Multi-Tenancy Ready**: Shared database with tenant isolation via `tenant_id`
 4. **Type-Safe Throughout**: TypeScript for backend, frontend, and API contracts
 5. **Standards Compliant**: Built-in support for educational standards (SCORM, xAPI, LTI, QTI)
 
-### Planned Module Structure
-
-```
-src/
-├── modules/
-│   ├── user-management/          # Authentication, profiles, SSO
-│   ├── course-management/        # Course creation, organization, templates
-│   ├── learning-delivery/        # Content delivery, progress tracking
-│   ├── assessment-engine/        # Quizzes, assignments, grading, rubrics
-│   ├── analytics-reporting/      # Learning analytics, xAPI statements
-│   ├── communication/            # Forums, messaging, notifications
-│   ├── content-authoring/        # Course content creation tools
-│   ├── ai-integration/           # AI-powered features (content gen, tutoring)
-│   └── standards-compliance/     # SCORM, LTI, QTI implementations
-├── shared/                       # Common utilities and services
-└── infrastructure/               # Database, caching, external services
-```
+> See `docs/PRODUCT_VISION.md` and `docs/FUTURE_ARCHITECTURE.md` for strategic context and planned architecture specs.
 
 ### Current Implementation
 
-**Monolithic SPA**: Uses Inertia.js to build SPAs without building an API. Server-side routing with client-side navigation.
+**Monolithic SPA**: Inertia.js for SPAs without building an API. Server-side routing with client-side navigation.
 
-**SSR Enabled**: Server-side rendering is configured in `vite.config.ts` for better SEO and initial page load.
+**SSR Enabled**: Server-side rendering configured in `vite.config.ts`.
 
-**Subpath Imports**: The project uses Node.js subpath imports (defined in `package.json`) instead of relative imports:
+**Subpath Imports** (defined in `package.json`):
 
 - `#controllers/*` → `./app/controllers/*.js`
 - `#models/*` → `./app/models/*.js`
 - `#middleware/*` → `./app/middleware/*.js`
 - `#validators/*` → `./app/validators/*.js`
+- `#services/*` → `./app/services/*.js`
 - Frontend uses `~/` alias → `./inertia/`
 
 **Authentication & Authorization**:
@@ -254,13 +158,11 @@ src/
 - Session-based auth with `@adonisjs/auth`
 - MFA/2FA with TOTP via `otpauth` (QR code setup, recovery codes)
 - OAuth 2.0 social login (Google, GitHub) via `@adonisjs/ally`
-- Role-based access control (RBAC) with custom middleware
-- User-Role-Permission pattern via database models
-- Custom `role` middleware in `app/middleware/role_middleware.ts`
+- Role-based access control (RBAC) with custom `role` middleware in `app/middleware/role_middleware.ts`
 
 **Security**:
 
-- CSP headers via `@adonisjs/shield` (Content Security Policy)
+- CSP headers via `@adonisjs/shield`
 - Rate limiting via `@adonisjs/limiter` on login, register, 2FA, password change
 - PII encryption at column level via `EncryptionService` (phone, address, identification)
 - Audit logging on all security-relevant actions via `AuditService`
@@ -276,32 +178,62 @@ src/
 
 - Service worker with workbox caching (images: CacheFirst, assets: StaleWhileRevalidate)
 - Offline fallback page (`public/offline.html`)
-- Install prompt banner (`beforeinstallprompt` event)
-- Connectivity indicator (online/offline detection)
+- Install prompt banner and connectivity indicator
 
-**Database**: PostgreSQL with Lucid ORM. Two setup options:
+**Database**: Multi-engine support via Lucid ORM (Knex.js). Engines:
 
-- **Supabase Local** (recommended): Full Supabase stack locally
-- **Docker Compose**: Simple PostgreSQL container
+- **PostgreSQL** (recommended for production): JSONB columns, GIN full-text search
+- **MySQL / MariaDB**: Native JSON, FULLTEXT search
+- **SQLite** (dev/small deployments): Zero setup, file-based
+
+Engine selected via `DB_CONNECTION` env var. See `docs/MULTI_DATABASE.md` for setup guide.
+
+Docker services available: `docker compose up postgres|mysql|mariadb`
 
 ### Directory Structure
 
 ```
 app/
-├── controllers/     # HTTP request handlers
+├── controllers/
 │   ├── auth_controller.ts          # Login, register, logout (with 2FA redirect)
 │   ├── profile_controller.ts       # Profile edit, avatar upload, settings
 │   ├── two_factor_controller.ts    # MFA/2FA setup, challenge, recovery
 │   ├── social_auth_controller.ts   # OAuth redirect, callback, disconnect
 │   ├── account_controller.ts       # Data export, account deletion, terms acceptance
 │   ├── audit_logs_controller.ts    # Admin audit log viewer
-│   └── users_controller.ts         # Admin user CRUD
-├── models/          # Lucid ORM models
+│   ├── users_controller.ts         # Admin user CRUD
+│   ├── courses_controller.ts       # Course management
+│   ├── course_contents_controller.ts # Course content/modules
+│   ├── categories_controller.ts    # Course categories
+│   ├── enrollments_controller.ts   # Enrollment management
+│   ├── evaluations_controller.ts   # Evaluation/assessment management
+│   ├── grades_controller.ts        # Gradebook
+│   ├── dashboard_controller.ts     # Dashboard page
+│   ├── home_controller.ts          # Home/landing page
+│   └── pages_controller.ts         # Static/dynamic pages
+├── models/
 │   ├── user.ts                     # User with 2FA, PII encryption, terms versioning
+│   ├── role.ts / user_role.ts      # RBAC roles and pivot
 │   ├── audit_log.ts                # Audit log entries
 │   ├── social_account.ts           # OAuth linked accounts
-│   └── ...                         # Role, UserRole, Course, etc.
-├── services/        # Business logic services
+│   ├── course.ts                   # Course
+│   ├── course_module.ts            # Course modules
+│   ├── course_content.ts           # Course content items
+│   ├── course_category.ts          # Course categories
+│   ├── course_enrollment.ts        # Student enrollments
+│   ├── course_enrollment_method.ts # Enrollment methods
+│   ├── course_enrollment_request.ts # Enrollment requests
+│   ├── course_permission.ts        # Course-level permissions
+│   ├── course_group.ts / course_group_member.ts / course_grouping.ts # Groups
+│   ├── cohort.ts / cohort_member.ts # Student cohorts
+│   ├── bulk_enrollment_log.ts      # Bulk enrollment tracking
+│   ├── assignment.ts               # Assignments
+│   ├── submission.ts               # Student submissions
+│   ├── grade_category.ts           # Gradebook categories
+│   ├── content_progress.ts         # Content progress tracking
+│   ├── app_setting.ts              # App settings
+│   └── menu.ts / menu_item.ts / menu_location.ts # Navigation menus
+├── services/
 │   ├── audit_service.ts            # Audit logging with context extraction
 │   ├── two_factor_service.ts       # TOTP generation, verification, recovery codes
 │   └── encryption_service.ts       # PII encryption/decryption wrapper
@@ -310,34 +242,31 @@ app/
 └── exceptions/      # Custom exception handler (404, 429, 500 pages)
 
 config/              # AdonisJS configuration files
-├── auth.ts          # Authentication configuration
-├── database.ts      # Database connection settings
-├── inertia.ts       # Inertia.js configuration (shared data incl. termsConsentRequired)
-├── shield.ts        # CSP headers, CSRF, XSS protection
-├── cors.ts          # CORS with environment-based origin validation
-├── limiter.ts       # Rate limiting configuration (memory store)
-├── ally.ts          # OAuth 2.0 providers (Google, GitHub)
-└── ...
-
 database/
 ├── migrations/      # Database schema migrations
-└── seeders/         # Database seeders (roles, test users, menus)
+└── seeders/         # Database seeders
 
 inertia/
 ├── app/
 │   ├── app.tsx      # Client-side entry (+ PWA install prompt, connectivity indicator)
 │   └── ssr.tsx      # Server-side rendering entry
-├── pages/           # Inertia pages (route components)
+├── pages/
 │   ├── auth/        # Login, register (with OAuth buttons)
 │   ├── two-factor/  # 2FA setup (QR code) and challenge pages
 │   ├── profile/     # Profile edit with 2FA badge
 │   ├── settings/    # User settings with linked social accounts
 │   ├── account/     # Data export, account deletion (GDPR)
 │   ├── admin/       # Admin pages (audit-logs)
-│   ├── errors/      # Custom error pages (not_found, too_many_requests, server_error)
+│   ├── courses/     # Course management pages
+│   ├── enrollments/ # Enrollment management pages
+│   ├── evaluations/ # Assessment/evaluation pages
+│   ├── grades/      # Gradebook pages
+│   ├── pages/       # Dynamic pages
 │   ├── users/       # User CRUD pages
+│   ├── errors/      # Custom error pages (not_found, too_many_requests, server_error)
 │   ├── dashboard.tsx
-│   └── home.tsx
+│   ├── home.tsx
+│   └── showcase.tsx
 ├── components/
 │   ├── ui/                          # shadcn/ui components
 │   ├── layout/                      # App header, sidebar, footer
@@ -361,723 +290,40 @@ public/
 └── uploads/         # User uploads (avatars)
 
 tests/
-└── browser/         # E2E browser tests
-    ├── auth.spec.ts
-    ├── navigation.spec.ts
-    ├── user_management.spec.ts
-    └── accessibility.spec.ts  # axe-core a11y tests
+├── browser/         # E2E browser tests (Playwright via @japa/browser-client)
+│   ├── auth.spec.ts
+│   ├── navigation.spec.ts
+│   ├── user_management.spec.ts
+│   ├── grades.spec.ts
+│   └── accessibility.spec.ts  # axe-core a11y tests
+└── functional/      # API/Integration tests
 
 resources/
 └── views/           # Edge templates (Inertia layout, error pages)
 ```
 
-## Multi-Tenancy Architecture
-
-### Database Design Pattern
-
-**Shared Database with Tenant ID** approach for optimal cost-effectiveness and operational simplicity:
-
-```sql
--- Multi-tenant table structure pattern
-CREATE TABLE courses (
-    id SERIAL PRIMARY KEY,
-    tenant_id UUID NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    instructor_id INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW(),
-
-    -- Performance indexes
-    INDEX idx_tenant_courses (tenant_id, id),
-    INDEX idx_instructor_courses (instructor_id, tenant_id),
-
-    -- Row-level security
-    CONSTRAINT fk_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
-);
-```
-
-### Tenant Isolation Strategy
-
-**Model-Level Enforcement**:
-
-```typescript
-// Base multi-tenant model
-export default class TenantAwareModel extends BaseModel {
-  @column()
-  declare tenantId: string
-
-  // Automatically scope all queries by tenant
-  public static boot() {
-    super.boot()
-
-    this.before('find', (query) => {
-      const tenantId = getCurrentTenantId() // From context
-      query.where('tenant_id', tenantId)
-    })
-  }
-}
-```
-
-**Middleware Protection**:
-
-```typescript
-// Ensure tenant context for all requests
-export default class TenantMiddleware {
-  async handle({ auth, request }: HttpContext, next: NextFn) {
-    const user = auth.user!
-    const tenantId = user.tenantId
-
-    // Set tenant context for this request
-    setRequestTenantId(tenantId)
-
-    await next()
-  }
-}
-```
-
-## Real-Time Features Architecture
-
-### WebSocket Implementation
-
-For live collaboration (whiteboard, document editing):
-
-```typescript
-// Collaborative editing service with operational transformation
-import { Server } from 'socket.io'
-
-export class CollaborativeDocumentService {
-  private io: Server
-
-  public async handleDocumentEdit(documentId: string, operation: Operation, userId: string) {
-    // Transform operation based on current document state
-    const transformedOp = await this.transformOperation(operation, documentId)
-
-    // Apply operation to document
-    await Document.applyOperation(documentId, transformedOp)
-
-    // Broadcast to collaborators
-    this.io.to(`document-${documentId}`).emit('document-operation', {
-      operation: transformedOp,
-      userId,
-      timestamp: Date.now(),
-    })
-  }
-
-  private async transformOperation(operation: Operation, documentId: string): Promise<Operation> {
-    // Operational transformation algorithm for concurrent editing
-    const pendingOps = await this.getPendingOperations(documentId)
-    return this.applyTransformations(operation, pendingOps)
-  }
-}
-```
-
-### Server-Sent Events (SSE)
-
-For unidirectional real-time updates (notifications, progress):
-
-```typescript
-// Using AdonisJS Transmit for SSE
-import transmit from '@adonisjs/transmit/services/main'
-
-export class NotificationService {
-  public async sendNotification(userId: string, notification: Notification) {
-    // Send real-time notification via SSE
-    transmit.broadcast(`user/${userId}/notifications`, {
-      type: 'notification',
-      data: notification,
-    })
-
-    // Also persist for offline users
-    await Notification.create({ userId, ...notification })
-  }
-}
-```
-
-## Plugin System Architecture
-
-### Plugin Interface Definition
-
-WordPress-inspired but with modern TypeScript security:
-
-```typescript
-// Core plugin interface
-interface LMSPlugin {
-  name: string
-  version: string
-  author: string
-  license: string
-  dependencies: PluginDependency[]
-  permissions: PluginPermission[]
-
-  // Lifecycle hooks
-  initialize(): Promise<void>
-  activate?(): Promise<void>
-  deactivate?(): Promise<void>
-  uninstall?(): Promise<void>
-
-  // Extension points
-  getRoutes?(): Route[]
-  getMiddleware?(): Middleware[]
-  getViewComponents?(): ViewComponent[]
-  getDatabaseMigrations?(): Migration[]
-  getEventListeners?(): EventListener[]
-
-  // Configuration
-  getSettings?(): PluginSettings
-  validateSettings?(settings: unknown): Promise<boolean>
-}
-
-// Plugin security sandbox
-export class PluginSecurityService {
-  public async validatePlugin(plugin: LMSPlugin): Promise<ValidationResult> {
-    const checks = await Promise.all([
-      this.verifyCodeSignature(plugin),
-      this.scanDependencies(plugin),
-      this.validatePermissions(plugin),
-      this.checkAPICompliance(plugin),
-    ])
-
-    return this.aggregateResults(checks)
-  }
-
-  public createSandbox(plugin: LMSPlugin): PluginSandbox {
-    // Isolated execution environment with limited API access
-    return new PluginSandbox({
-      allowedAPIs: plugin.permissions,
-      memoryLimit: '256MB',
-      cpuLimit: '50%',
-      networkAccess: plugin.permissions.includes('network'),
-    })
-  }
-}
-```
-
-### Plugin Discovery and Management
-
-```typescript
-// Plugin registry and management
-export class PluginRegistry {
-  private plugins: Map<string, LoadedPlugin> = new Map()
-
-  public async discoverPlugins(): Promise<Plugin[]> {
-    // Scan plugins directory
-    const pluginDirs = await this.scanPluginDirectories()
-
-    // Load and validate plugin manifests
-    const plugins = await Promise.all(pluginDirs.map((dir) => this.loadPluginManifest(dir)))
-
-    return plugins.filter((p) => p !== null)
-  }
-
-  public async installPlugin(pluginId: string): Promise<void> {
-    const plugin = await this.downloadPlugin(pluginId)
-
-    // Security validation
-    const validation = await this.securityService.validatePlugin(plugin)
-    if (!validation.isValid) {
-      throw new PluginSecurityError(validation.errors)
-    }
-
-    // Install dependencies
-    await this.installDependencies(plugin)
-
-    // Run migrations
-    await this.runMigrations(plugin)
-
-    // Initialize plugin
-    await plugin.initialize()
-
-    // Register in system
-    this.plugins.set(plugin.name, plugin)
-  }
-}
-```
-
-## Essential Feature Roadmap
-
-### Completed Features (Phase 1 — Q1 2026)
-
-**User Management Module**:
-
-- ✅ Multi-role system (admin, instructor, student, guest)
-- ✅ Role-based access control (RBAC)
-- ✅ OAuth 2.0 social login (Google, GitHub)
-- ✅ MFA/2FA with TOTP and recovery codes
-- ✅ Profile management with avatar upload
-- ✅ User settings with linked social accounts
-
-**Course Management Module**:
-
-- ✅ Drag-and-drop course builder (content builder with modules)
-- ✅ Content organization (modules, lessons, activities)
-- ✅ Enrollment systems (self-enroll, manual, bulk, key-based, request-based)
-- ✅ Course categories and hierarchical organization
-- ✅ Course approval workflow
-- ✅ Course permissions and sharing
-- ✅ Course groups and groupings
-
-**Assessment Engine Module**:
-
-- ✅ Assignment creation and management
-- ✅ Multiple assignment types (essay, file_upload, online_text, offline)
-- ✅ Rubric support and grading criteria
-- ✅ Multiple grading types (points, percentage, letter, pass/fail)
-- ✅ Late submission policies and penalties
-- ✅ Multiple attempts per assignment
-
-**Gradebook Module**:
-
-- ✅ Category-based grading system
-- ✅ Weighted score calculations
-- ✅ Progress tracking dashboards (student and instructor views)
-- ✅ Grade overview across all courses
-- ✅ Assignment submission tracking
-- ✅ Feedback system with grader attribution
-
-**Security & GDPR Module**:
-
-- ✅ CSP headers, CORS, rate limiting
-- ✅ PII encryption at column level
-- ✅ Audit logging with admin page
-- ✅ GDPR terms consent versioning and re-consent flow
-- ✅ Data export (JSON) and account anonymization (right to be forgotten)
-- ✅ Custom error pages (404, 429, 500)
-
-**PWA & Accessibility**:
-
-- ✅ Service worker with workbox caching and offline fallback page
-- ✅ PWA install prompt and connectivity indicator
-- ✅ ESLint jsx-a11y linting and axe-core browser tests
-- ✅ Skip links and aria-live regions for screen readers
-
-### Planned Features (Phase 2 — Q2-Q3 2026)
-
-**User Management** (remaining):
-
-- [ ] SSO integration (SAML 2.0)
-- [ ] Bulk user import/management
-- [ ] Parent/guardian portal access
-
-**Course Management** (remaining):
-
-- [ ] Course templates and cloning
-
-**Assessment Engine** (remaining):
-
-- [ ] Quiz builder with question banks
-- [ ] Multiple question types (MCQ, essay, file upload, etc.)
-- [ ] Peer assessment capabilities
-- [ ] Grade export (CSV, PDF)
-- [ ] Parent portal access to grades
-
-**Communication Module**:
-
-- [ ] Discussion forums with threading
-- [ ] Direct messaging system
-- [ ] Announcements and news feed
-- [ ] Video conferencing integration (Zoom, Google Meet)
-- [ ] Email notifications
-- [ ] Push notifications
-
-**Calendar Module**:
-
-- [ ] Integrated scheduling system
-- [ ] Event management (assignments, quizzes, meetings)
-- [ ] Deadline reminders and notifications
-- [ ] Resource booking (rooms, equipment)
-
-### AI-Powered Features (Phase 2 — Q2-Q3 2026)
-
-**Content Generation** (addressing 47% CAGR in AI education):
-
-```typescript
-// AI content generation service
-export class AIContentService {
-  public async generateQuiz(
-    topic: string,
-    difficulty: 'easy' | 'medium' | 'hard',
-    questionCount: number
-  ): Promise<Quiz> {
-    const prompt = this.buildQuizPrompt(topic, difficulty, questionCount)
-
-    const response = await this.aiProvider.generate(prompt)
-
-    return {
-      title: `${topic} Quiz`,
-      questions: this.parseQuizResponse(response),
-      difficulty,
-      generatedAt: new Date(),
-    }
-  }
-
-  public async generateSummary(content: string): Promise<string> {
-    return await this.aiProvider.summarize(content, {
-      maxLength: 500,
-      style: 'educational',
-    })
-  }
-
-  public async generateLearningObjectives(content: string): Promise<string[]> {
-    const prompt = `Generate 3-5 SMART learning objectives for: ${content}`
-    const response = await this.aiProvider.generate(prompt)
-    return this.parseLearningObjectives(response)
-  }
-}
-```
-
-**Personalized Learning**:
-
-```typescript
-// Adaptive learning path engine
-export class AdaptiveLearningService {
-  public async generatePersonalizedPath(
-    studentId: string,
-    courseId: string
-  ): Promise<LearningPath> {
-    // Analyze student performance
-    const performance = await this.analyzePerformance(studentId, courseId)
-
-    // Get learning style preferences
-    const preferences = await this.getLearningPreferences(studentId)
-
-    // Generate adaptive path
-    const path = await this.aiProvider.generatePath({
-      performance,
-      preferences,
-      courseContent: await this.getCourseContent(courseId),
-    })
-
-    return path
-  }
-
-  public async recommendNextActivity(
-    studentId: string,
-    currentActivity: string
-  ): Promise<Activity> {
-    // AI-powered recommendation based on performance patterns
-    const recommendations = await this.aiProvider.recommend({
-      studentId,
-      currentActivity,
-      performanceHistory: await this.getPerformanceHistory(studentId),
-    })
-
-    return recommendations[0]
-  }
-}
-```
-
-**Automated Assessment**:
-
-```typescript
-// AI essay scoring service
-export class AutomatedAssessmentService {
-  public async scoreEssay(essay: string, rubric: Rubric): Promise<EssayScore> {
-    const analysis = await this.aiProvider.analyzeEssay(essay, {
-      grammar: true,
-      coherence: true,
-      contentQuality: true,
-      rubricAlignment: rubric,
-    })
-
-    return {
-      overallScore: analysis.score,
-      criteriaScores: analysis.criteriaBreakdown,
-      feedback: analysis.constructiveFeedback,
-      suggestions: analysis.improvementSuggestions,
-      confidence: analysis.confidenceLevel,
-    }
-  }
-
-  public async detectPlagiarism(
-    submission: string,
-    compareAgainst: string[]
-  ): Promise<PlagiarismReport> {
-    return await this.aiProvider.checkSimilarity(submission, compareAgainst)
-  }
-}
-```
-
-**Intelligent Tutoring**:
-
-```typescript
-// 24/7 AI tutoring chatbot
-export class AITutoringService {
-  public async handleStudentQuery(
-    query: string,
-    context: ConversationContext
-  ): Promise<TutoringResponse> {
-    const response = await this.aiProvider.generateTutoringResponse({
-      query,
-      context,
-      courseContent: context.currentLesson,
-      studentLevel: await this.assessStudentLevel(context.studentId),
-    })
-
-    return {
-      answer: response.text,
-      relatedResources: response.suggestedResources,
-      followUpQuestions: response.followUpQuestions,
-      confidence: response.confidence,
-    }
-  }
-}
-```
-
-### Mobile-First Design (Progressive Web App)
-
-**Offline Functionality**:
-
-```typescript
-// Service worker for offline support
-export class OfflineContentService {
-  public async downloadCourseForOffline(courseId: string): Promise<void> {
-    const content = await this.fetchCourseContent(courseId)
-
-    // Cache course materials
-    await this.cacheContent(content.videos, 'course-videos')
-    await this.cacheContent(content.documents, 'course-docs')
-    await this.cacheContent(content.images, 'course-images')
-
-    // Store course data in IndexedDB
-    await this.storeOfflineData(courseId, content.data)
-  }
-
-  public async syncOfflineProgress(): Promise<void> {
-    // Background sync when online
-    const pendingUpdates = await this.getPendingUpdates()
-
-    for (const update of pendingUpdates) {
-      await this.syncUpdate(update)
-    }
-  }
-}
-```
-
-**Touch-Optimized Interface**:
-
-- Gesture navigation (swipe, pinch, pull-to-refresh)
-- Thumb-friendly design patterns (bottom navigation)
-- Large touch targets (minimum 44x44px)
-- Responsive typography and spacing
-
-**Push Notifications**:
-
-```typescript
-// Web Push notification service
-export class PushNotificationService {
-  public async sendNotification(userId: string, notification: Notification): Promise<void> {
-    const subscription = await this.getSubscription(userId)
-
-    await webPush.sendNotification(subscription, {
-      title: notification.title,
-      body: notification.body,
-      icon: '/icon-192.png',
-      badge: '/badge-72.png',
-      data: notification.data,
-      actions: notification.actions,
-    })
-  }
-}
-```
-
-## Educational Standards Compliance
-
-### SCORM 2004 Implementation
-
-```typescript
-// SCORM API wrapper
-export class SCORMService {
-  public initializeSCO(scoId: string, studentId: string): SCORMAPI {
-    return {
-      Initialize: () => this.handleInitialize(scoId, studentId),
-      Terminate: () => this.handleTerminate(scoId, studentId),
-      GetValue: (element: string) => this.getValue(scoId, element),
-      SetValue: (element: string, value: string) => this.setValue(scoId, studentId, element, value),
-      Commit: () => this.commit(scoId, studentId),
-      GetLastError: () => this.getLastError(),
-      GetErrorString: (errorCode: string) => this.getErrorString(errorCode),
-      GetDiagnostic: (errorCode: string) => this.getDiagnostic(errorCode),
-    }
-  }
-
-  private async setValue(
-    scoId: string,
-    studentId: string,
-    element: string,
-    value: string
-  ): Promise<boolean> {
-    // Store SCORM data model values
-    await SCORMData.updateOrCreate({ scoId, studentId, element }, { value, updatedAt: new Date() })
-    return true
-  }
-}
-```
-
-### xAPI (Experience API) Implementation
-
-```typescript
-// xAPI statement tracking
-export class XAPIService {
-  public async trackStatement(
-    actor: Actor,
-    verb: Verb,
-    object: ActivityObject,
-    result?: Result,
-    context?: Context
-  ): Promise<void> {
-    const statement: XAPIStatement = {
-      actor: {
-        name: actor.name,
-        mbox: `mailto:${actor.email}`,
-        objectType: 'Agent',
-      },
-      verb: {
-        id: verb.id,
-        display: { 'en-US': verb.display },
-      },
-      object: {
-        id: object.id,
-        objectType: 'Activity',
-        definition: {
-          name: { 'en-US': object.name },
-          description: { 'en-US': object.description },
-          type: object.type,
-        },
-      },
-      result,
-      context,
-      timestamp: new Date().toISOString(),
-      stored: new Date().toISOString(),
-    }
-
-    // Store in Learning Record Store (LRS)
-    await this.lrs.storeStatement(statement)
-
-    // Emit for real-time analytics
-    await this.analyticsService.processStatement(statement)
-  }
-}
-
-// Example usage
-await xapiService.trackStatement(
-  { name: 'John Doe', email: 'john@example.com' },
-  { id: 'http://adlnet.gov/expapi/verbs/completed', display: 'completed' },
-  {
-    id: 'http://lms.example.com/course/intro-biology/module-1',
-    name: 'Cell Biology Module',
-    description: 'Introduction to cell structure',
-    type: 'http://adlnet.gov/expapi/activities/module',
-  },
-  {
-    score: { scaled: 0.85 },
-    completion: true,
-    duration: 'PT45M',
-  }
-)
-```
-
-### LTI 1.3 Integration
-
-```typescript
-// LTI 1.3 tool provider implementation
-export class LTIService {
-  public async handleLaunchRequest(request: LTILaunchRequest): Promise<LTIResponse> {
-    // Validate JWT token
-    const claims = await this.validateIdToken(request.id_token)
-
-    // Extract user and context
-    const user = await this.mapLTIUser(claims)
-    const context = await this.mapLTIContext(claims)
-
-    // Create or update session
-    const session = await this.createLTISession(user, context, claims)
-
-    // Return launch URL with session
-    return {
-      launchUrl: this.buildLaunchUrl(session),
-      sessionId: session.id,
-    }
-  }
-
-  public async handleGradePassback(
-    lineItemUrl: string,
-    studentId: string,
-    score: number
-  ): Promise<void> {
-    // Send grade back to LMS via LTI Assignment and Grade Services
-    await this.ltiAGS.publishScore(lineItemUrl, {
-      userId: studentId,
-      scoreGiven: score,
-      scoreMaximum: 100,
-      activityProgress: 'Completed',
-      gradingProgress: 'FullyGraded',
-      timestamp: new Date().toISOString(),
-    })
-  }
-
-  public async handleDeepLinking(request: DeepLinkingRequest): Promise<DeepLinkingResponse> {
-    // Return content items for deep linking
-    return {
-      contentItems: [
-        {
-          type: 'ltiResourceLink',
-          title: 'Interactive Quiz',
-          url: 'https://lms.example.com/quiz/123',
-          custom: {
-            quiz_id: '123',
-          },
-        },
-      ],
-    }
-  }
-}
-```
-
-### QTI 2.1 Assessment Interoperability
-
-```typescript
-// QTI question import/export service
-export class QTIService {
-  public async importQTI(qtiXml: string): Promise<Question[]> {
-    const doc = this.parseQTI(qtiXml)
-    const questions: Question[] = []
-
-    // Parse assessment items
-    for (const item of doc.assessmentItems) {
-      const question = await this.mapQTIItem(item)
-      questions.push(question)
-    }
-
-    return questions
-  }
-
-  public async exportQTI(questions: Question[]): Promise<string> {
-    const assessment = this.createQTIAssessment()
-
-    for (const question of questions) {
-      const item = this.mapQuestionToQTI(question)
-      assessment.addItem(item)
-    }
-
-    return assessment.toXML()
-  }
-
-  private mapQTIItem(item: QTIAssessmentItem): Question {
-    return {
-      type: this.mapQTIInteractionType(item.interaction),
-      title: item.title,
-      prompt: item.itemBody.content,
-      choices: this.extractChoices(item.interaction),
-      correctResponse: this.extractCorrectResponse(item.responseDeclaration),
-      metadata: {
-        qtiIdentifier: item.identifier,
-        qtiVersion: '2.1',
-      },
-    }
-  }
-}
-```
+## Feature Roadmap
+
+### Completed (Phase 1 — Q1 2026)
+
+- **User Management**: Multi-role RBAC, OAuth 2.0 (Google, GitHub), MFA/2FA with TOTP, profile management, user settings
+- **Course Management**: Drag-and-drop builder, content organization (modules/lessons/activities), enrollment systems (self/manual/bulk/key/request), categories, approval workflow, permissions, groups
+- **Assessment Engine**: Assignments (essay, file_upload, online_text, offline), rubrics, grading types (points/percentage/letter/pass-fail), late submission policies, multiple attempts
+- **Gradebook**: Category-based grading, weighted scores, progress dashboards, grade overview, submission tracking, feedback system
+- **Security & GDPR**: CSP/CORS/rate limiting, PII encryption, audit logging, terms consent versioning, data export, account anonymization, custom error pages
+- **PWA & Accessibility**: Service worker with offline fallback, install prompt, connectivity indicator, jsx-a11y linting, axe-core browser tests, skip links, aria-live regions
+
+### Planned (Phase 2 — Q2-Q3 2026)
+
+- **User Management**: SSO (SAML 2.0), bulk import, parent/guardian portal
+- **Course Management**: Templates and cloning
+- **Assessment**: Quiz builder with question banks, peer assessment, grade export (CSV/PDF)
+- **Communication**: Forums, messaging, announcements, video conferencing, email/push notifications
+- **Calendar**: Scheduling, event management, deadline reminders, resource booking
+- **AI Features**: Content generation, personalized learning paths, automated assessment, intelligent tutoring
+- **Standards**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1
+
+> See `docs/FUTURE_ARCHITECTURE.md` for detailed architecture specs and code examples for planned features.
 
 ## Frontend Architecture (Inertia + React)
 
@@ -1090,42 +336,11 @@ export class QTIService {
 
 ### Inertia.js Patterns
 
-**Page Components**: Located in `inertia/pages/`, they receive props from controllers:
+**Page Components**: Located in `inertia/pages/`, receive props from controllers via `inertia.render()`.
 
-```typescript
-interface Props {
-  user: User
-  // Props are passed from controller via inertia.render()
-}
+**Forms**: Use `useForm` hook from `@inertiajs/react`.
 
-export default function Dashboard({ user }: Props) {
-  // Component code
-}
-```
-
-**Forms**: Use `useForm` hook from `@inertiajs/react`:
-
-```typescript
-import { useForm } from '@inertiajs/react'
-
-const { data, setData, post, processing, errors } = useForm({
-  email: '',
-  password: '',
-})
-
-const handleSubmit = (e: FormEvent) => {
-  e.preventDefault()
-  post('/login')
-}
-```
-
-**Navigation**: Use `<Link>` component or `router` for client-side navigation:
-
-```typescript
-import { Link } from '@inertiajs/react'
-
-<Link href="/dashboard">Dashboard</Link>
-```
+**Navigation**: Use `<Link>` component or `router` for client-side navigation.
 
 ### Component Organization
 
@@ -1137,14 +352,7 @@ import { Link } from '@inertiajs/react'
 
 ### Routing Pattern
 
-Routes are defined in `start/routes.ts` with controller actions:
-
-```typescript
-router.get('/users', [UsersController, 'index']).as('users.index')
-router.post('/users', [UsersController, 'store']).as('users.store')
-```
-
-**Route Groups**: Used for applying middleware to multiple routes:
+Routes defined in `start/routes.ts` with controller actions. Use route groups for applying middleware:
 
 ```typescript
 router
@@ -1157,111 +365,37 @@ router
 
 ### Controller Pattern
 
-Controllers return Inertia responses for pages:
-
-```typescript
-import type { HttpContext } from '@adonisjs/core/http'
-
-export default class UsersController {
-  async index({ inertia }: HttpContext) {
-    const users = await User.query().preload('roles')
-
-    return inertia.render('users/index', {
-      users: users.serialize(),
-    })
-  }
-}
-```
+Controllers return Inertia responses: `inertia.render('page/name', { props })`.
 
 ### Models & Relationships
 
-Models use Lucid ORM with decorators:
-
-```typescript
-import { BaseModel, column, manyToMany } from '@adonisjs/lucid/orm'
-import type { ManyToMany } from '@adonisjs/lucid/types/relations'
-
-export default class User extends BaseModel {
-  @column({ isPrimary: true })
-  declare id: number
-
-  @manyToMany(() => Role, {
-    pivotTable: 'user_roles',
-  })
-  declare roles: ManyToMany<typeof Role>
-}
-```
+Lucid ORM with decorators (`@column`, `@manyToMany`, `@hasMany`, etc.).
 
 ### Validation
 
-VineJS validators in `app/validators/`:
-
-```typescript
-import vine from '@vinejs/vine'
-
-export const createUserValidator = vine.compile(
-  vine.object({
-    email: vine.string().email(),
-    password: vine.string().minLength(8),
-  })
-)
-```
-
-Use in controllers:
-
-```typescript
-const payload = await request.validateUsing(createUserValidator)
-```
+VineJS validators in `app/validators/`. Use in controllers: `await request.validateUsing(validator)`.
 
 ### Authentication & Authorization
 
-**Auth Middleware**: Protects routes requiring authentication
-
 - `middleware.auth()` - Requires authenticated user
 - `middleware.guest()` - Requires unauthenticated user
-
-**Role Middleware**: Custom RBAC implementation
-
 - `middleware.role({ roles: ['admin', 'manager'] })` - Requires specific roles
-- Defined in `app/middleware/role_middleware.ts`
-
-**Access User in Controllers**:
-
-```typescript
-async index({ auth }: HttpContext) {
-  const user = auth.user! // Guaranteed by auth middleware
-  const hasRole = await user.hasRole('admin')
-}
-```
+- Access user: `auth.user!` (guaranteed by auth middleware)
 
 ## Database Conventions
 
-1. **Migrations**: Timestamped files in `database/migrations/`
-   - Use `node ace make:migration` to create
-   - Always include `up()` and `down()` methods
-
-2. **Naming**:
-   - Tables: plural snake_case (`users`, `user_roles`, `courses`)
-   - Foreign keys: `{table}_id` (`user_id`, `role_id`, `tenant_id`)
-   - Pivot tables: alphabetically ordered (`role_user` not `user_role`)
-
+1. **Migrations**: Timestamped files in `database/migrations/`, always include `up()` and `down()`
+2. **Naming**: Tables plural snake_case, foreign keys `{table}_id`, pivot tables alphabetically ordered
 3. **Timestamps**: Most tables include `created_at` and `updated_at`
-
 4. **Multi-Tenancy**: All tenant-aware tables must include `tenant_id UUID NOT NULL`
-
-5. **Soft Deletes**: Consider using `deleted_at` for important data rather than hard deletes
+5. **Soft Deletes**: Use `deleted_at` for important data rather than hard deletes
 
 ## Testing
 
-### Testing Framework: Japa
-
-The project uses Japa as its testing framework with multiple test suites:
+### Framework: Japa
 
 ```bash
-# Run all tests
-bun test
-
-# Run specific test suite
+bun test                    # Run all tests
 node ace test functional    # API/Integration tests
 node ace test browser       # E2E browser tests
 node ace test unit          # Unit tests
@@ -1269,229 +403,78 @@ node ace test unit          # Unit tests
 
 ### Browser Testing (E2E)
 
-Browser tests use **@japa/browser-client**, which provides a Playwright-based testing solution officially integrated with AdonisJS.
-
-**Configuration**: Located in `tests/bootstrap.ts`:
-
-```typescript
-import { browserClient } from '@japa/browser-client'
-
-export const plugins: Config['plugins'] = [
-  assert(),
-  pluginAdonisJS(app),
-  browserClient({
-    runInSuites: ['browser'],
-    contextOptions: {
-      baseURL: 'http://localhost:3333',
-    },
-  }),
-]
-```
-
-**Browser Test Example**:
-
-```typescript
-import { test } from '@japa/runner'
-
-test.group('Authentication', () => {
-  test('user can login with valid credentials', async ({ browser, visit }) => {
-    const page = await visit('/login')
-
-    await page.locator('input[name="email"]').fill('student@example.com')
-    await page.locator('input[name="password"]').fill('password')
-    await page.locator('button[type="submit"]').click()
-
-    await page.waitForURL('/dashboard')
-    await page.locator('text=Welcome back').isVisible()
-  })
-})
-```
-
-**Available Browser Tests**:
-
-- `tests/browser/auth.spec.ts` - Authentication flows (login, register, logout)
-- `tests/browser/user_management.spec.ts` - Admin user management operations
-- `tests/browser/navigation.spec.ts` - Navigation and access control
-- `tests/browser/accessibility.spec.ts` - Automated a11y checks with axe-core on key pages
-
-**Browser Test Features**:
-
-- Full Playwright API access
-- Automatic server startup/shutdown
-- Screenshot capture on failure
-- Video recording support
-- Mobile device emulation
-- Network interception
-
-**Running Browser Tests**:
+Uses **@japa/browser-client** (Playwright-based). Configuration in `tests/bootstrap.ts`.
 
 ```bash
-# Run all browser tests
-node ace test browser
-
-# Run specific test file
-node ace test browser tests/browser/auth.spec.ts
-
-# Run with headed browser (visible UI)
-HEADLESS=false node ace test browser
-
-# Run with specific browser
-BROWSER=firefox node ace test browser  # chromium (default), firefox, webkit
+node ace test browser                              # All browser tests
+node ace test browser tests/browser/auth.spec.ts   # Specific test file
+HEADLESS=false node ace test browser               # Headed mode
+BROWSER=firefox node ace test browser              # Specific browser
 ```
-
-**Best Practices**:
-
-- Test critical user journeys end-to-end
-- Use data-testid attributes for stable selectors
-- Clean up test data in afterEach hooks
-- Keep tests isolated and independent
-- Use page objects for complex pages
-
-### API/Integration Testing
-
-Functional tests use Japa's HTTP client:
-
-```typescript
-test('can login with valid credentials', async ({ client }) => {
-  const response = await client.post('/login').json({
-    email: 'test@example.com',
-    password: 'password',
-  })
-
-  response.assertStatus(200)
-  response.assertBodyContains({ success: true })
-})
-```
-
-### Unit Testing
-
-Unit tests for models, services, and utilities:
-
-````typescript
-test('user can check if they have a role', async ({ assert }) => {
-  const user = await User.find(1)
-  const hasRole = await user.hasRole('admin')
-
-  assert.isTrue(hasRole)
-})
-
-## Common Development Patterns
 
 ### Adding a New Module/Feature
 
-1. **Create Migration**: `node ace make:migration create_courses_table`
-2. **Create Model**: `node ace make:model Course`
-3. **Create Controller**: `node ace make:controller CoursesController`
-4. **Create Validator**: `node ace make:validator course`
-5. **Define Routes**: Add to `start/routes.ts`
-6. **Create Inertia Pages**: Add in `inertia/pages/courses/`
-7. **Add UI Components**: Use shadcn/ui components from `inertia/components/ui/`
-8. **Write Tests**: Add integration tests
-
-### Working with Inertia Shared Data
-
-Shared data (available on all pages) is configured in `config/inertia.ts`:
-
-```typescript
-sharedData: {
-  auth: (ctx) => {
-    return {
-      user: ctx.auth.user,
-    }
-  },
-}
-````
-
-Access in any page component via props:
-
-```typescript
-interface SharedProps {
-  auth: {
-    user: User | null
-  }
-}
-```
+1. Create Migration: `node ace make:migration create_<table>_table`
+2. Create Model: `node ace make:model <Name>`
+3. Create Controller: `node ace make:controller <Name>Controller`
+4. Create Validator: `node ace make:validator <name>`
+5. Define Routes in `start/routes.ts`
+6. Create Inertia Pages in `inertia/pages/<name>/`
+7. Use shadcn/ui components from `inertia/components/ui/`
+8. Write Tests
 
 ## Production Build
 
 ```bash
-# Build the application
 bun run build
-
-# The build outputs to ./build/ directory
-cd build
-bun install --production
-node bin/server.js
+cd build && bun install --production && node bin/server.js
 ```
-
-The build process:
-
-1. Compiles TypeScript backend code
-2. Builds frontend assets with Vite (client + SSR bundles)
-3. Copies meta files (views, public assets)
 
 ## Environment Configuration
 
 Key environment variables:
 
 ```env
-# App
 PORT=3333
 HOST=localhost
 NODE_ENV=development
-APP_KEY=<generated-key>  # Generate with: node ace generate:key
+APP_KEY=<generated-key>          # node ace generate:key
 
-# Database (PostgreSQL)
+# Database — supported: postgres, mysql, sqlite
+DB_CONNECTION=postgres           # Engine selector
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=password
 DB_DATABASE=edonis_lms
+DB_FILENAME=./tmp/db.sqlite3     # SQLite only
 
-# Session
 SESSION_DRIVER=cookie
+CORS_ORIGIN=http://localhost:3333
+TERMS_VERSION=1.0               # Bump to trigger GDPR re-consent banner
 
-# CORS
-CORS_ORIGIN=http://localhost:3333  # Comma-separated for multiple origins
-
-# GDPR — Terms versioning (bump to trigger re-consent banner)
-TERMS_VERSION=1.0
-
-# OAuth 2.0 (optional — enables social login buttons)
+# OAuth 2.0 (optional)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_CALLBACK_URL=/auth/google/callback
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=/auth/github/callback
-
-# Supabase (optional)
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=<key>
-SUPABASE_SERVICE_KEY=<key>
-
-# AI Integration (future)
-OPENAI_API_KEY=<key>
-AI_PROVIDER=openai  # openai, anthropic, local
-
-# LTI Configuration (future)
-LTI_KEY=<key>
-LTI_SECRET=<secret>
 ```
 
 ## Important Development Notes
 
-- **HMR (Hot Module Replacement)**: Configured for controllers and middleware via `hot-hook` boundaries in `package.json`
-- **SSR**: Server-side rendering is enabled; changes to SSR entry require server restart
-- **Type Safety**: Use TypeScript everywhere; run `bun run typecheck` before committing
-- **Migrations**: Always create reversible migrations with proper `down()` methods
+- **HMR**: Configured for controllers and middleware via `hot-hook` boundaries in `package.json`
+- **SSR**: Changes to SSR entry require server restart
+- **Type Safety**: Run `bun run typecheck` before committing
+- **Migrations**: Always create reversible migrations with proper `down()` methods. Use `jsonColumn()` from `database/helpers/schema_helpers.ts` instead of `table.jsonb()` for cross-engine compatibility (preserves JSONB on PostgreSQL)
+- **JSON columns in models**: Always use `prepare`/`consume` with `typeof` guards (or `jsonColumnConfig` from `app/helpers/json_column.ts`) — PostgreSQL returns objects, MySQL/SQLite return strings
 - **Authorization**: Check both authentication AND authorization in protected routes
 - **Multi-Tenancy**: Always include `tenant_id` in tenant-aware queries
-- **Performance**: Consider query optimization and caching for high-traffic routes
 - **Security**: Sanitize user input, use parameterized queries, validate on both client and server
 - **Audit Logging**: Use `AuditService.logFromContext(ctx, { ... })` for all security-relevant actions
 - **PII Encryption**: Use `EncryptionService.encrypt()`/`decrypt()` or Lucid column `prepare`/`consume` for sensitive fields
 - **Rate Limiting**: All auth-related endpoints must have rate limiting via `@adonisjs/limiter`
 - **Accessibility**: Use `eslint-plugin-jsx-a11y` rules; all new pages should pass axe-core critical/serious checks
-- **GDPR**: Any new personal data field must be included in the data export (`AccountController.exportData`) and anonymized in account deletion
-- **PWA**: New client-side components that depend on browser APIs must handle SSR gracefully (return `null` on server)
+- **GDPR**: Any new personal data field must be included in `AccountController.exportData` and anonymized in account deletion
+- **PWA**: Client-side components using browser APIs must handle SSR gracefully (return `null` on server)
