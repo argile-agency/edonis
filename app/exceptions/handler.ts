@@ -75,16 +75,26 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     const code = (error as any)?.code ?? ''
 
     const patterns = [
+      // Universal / transport-level errors
       'econnrefused',
       'enotfound',
       'etimedout',
       'econnreset',
       'connection terminated',
       'connection refused',
-      'the database system is starting up',
-      'too many connections',
       'could not connect',
+      'too many connections',
+      // PostgreSQL-specific
+      'the database system is starting up',
       'no pg_hba.conf entry',
+      // MySQL-specific
+      'er_access_denied_error',
+      'er_dbaccess_denied_error',
+      'protocol_connection_lost',
+      // SQLite-specific
+      'sqlite_cantopen',
+      'sqlite_busy',
+      'unable to open database file',
     ]
 
     return patterns.some((p) => message.includes(p) || code.toLowerCase().includes(p))
@@ -201,10 +211,10 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     const code = (error as any)?.code ?? ''
 
     if (error instanceof AggregateError) {
-      return 'Plusieurs connexions à la base de données ont échoué simultanément. Vérifiez que PostgreSQL est démarré et accessible.'
+      return 'Plusieurs connexions à la base de données ont échoué simultanément. Vérifiez que le serveur de base de données est démarré et accessible.'
     }
     if (message.includes('econnrefused') || code === 'ECONNREFUSED') {
-      return 'La connexion à la base de données a été refusée. Vérifiez que PostgreSQL est démarré sur le bon hôte et port.'
+      return 'La connexion à la base de données a été refusée. Vérifiez que le serveur est démarré sur le bon hôte et port (DB_HOST, DB_PORT).'
     }
     if (message.includes('enotfound')) {
       return "L'hôte de la base de données est introuvable. Vérifiez la variable DB_HOST dans votre fichier .env."
@@ -212,11 +222,22 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     if (message.includes('etimedout')) {
       return 'La connexion à la base de données a expiré. Vérifiez le réseau et les paramètres de connexion.'
     }
-    if (message.includes('password authentication failed')) {
+    // PostgreSQL / MySQL auth errors
+    if (
+      message.includes('password authentication failed') ||
+      message.includes('access denied for user')
+    ) {
       return "L'authentification a échoué. Vérifiez DB_USER et DB_PASSWORD dans votre fichier .env."
     }
     if (message.includes('database') && message.includes('does not exist')) {
       return "La base de données spécifiée n'existe pas. Vérifiez DB_DATABASE dans votre fichier .env ou créez la base."
+    }
+    // SQLite-specific errors
+    if (message.includes('sqlite_cantopen') || message.includes('unable to open database file')) {
+      return "Impossible d'ouvrir le fichier SQLite. Vérifiez DB_FILENAME et les permissions du répertoire."
+    }
+    if (message.includes('sqlite_busy')) {
+      return 'La base de données SQLite est verrouillée par un autre processus.'
     }
 
     return ''

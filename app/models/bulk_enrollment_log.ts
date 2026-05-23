@@ -55,14 +55,22 @@ export default class BulkEnrollmentLog extends BaseModel {
   declare skippedRows: number
 
   @column({
-    prepare: (value: ErrorDetail[]) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: ErrorDetail[] | null) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare errorDetails: ErrorDetail[] | null
 
   @column({
-    prepare: (value: ImportOptions) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: ImportOptions | null) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare importOptions: ImportOptions | null
 

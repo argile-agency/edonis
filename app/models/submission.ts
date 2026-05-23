@@ -21,8 +21,12 @@ export default class Submission extends BaseModel {
   declare textContent: string | null
 
   @column({
-    prepare: (value: any) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare fileAttachments: string[] | null
 
@@ -51,14 +55,22 @@ export default class Submission extends BaseModel {
   declare feedback: string | null
 
   @column({
-    prepare: (value: any) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare feedbackAttachments: string[] | null
 
   @column({
-    prepare: (value: any) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare rubricScores: any | null
 

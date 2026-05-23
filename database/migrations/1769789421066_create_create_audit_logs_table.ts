@@ -1,4 +1,5 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { jsonColumn } from '../../database/helpers/schema_helpers.js'
 
 export default class extends BaseSchema {
   protected tableName = 'audit_logs'
@@ -17,11 +18,11 @@ export default class extends BaseSchema {
       table.string('action', 100).notNullable()
       table.string('resource_type', 100).notNullable()
       table.string('resource_id', 100).nullable()
-      table.jsonb('old_values').nullable()
-      table.jsonb('new_values').nullable()
+      jsonColumn(table, 'old_values').nullable()
+      jsonColumn(table, 'new_values').nullable()
       table.string('ip_address', 45).nullable()
       table.text('user_agent').nullable()
-      table.jsonb('metadata').nullable()
+      jsonColumn(table, 'metadata').nullable()
 
       table.timestamp('created_at').notNullable().defaultTo(this.now())
 

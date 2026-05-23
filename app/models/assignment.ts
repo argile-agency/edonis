@@ -56,8 +56,12 @@ export default class Assignment extends BaseModel {
   declare useRubric: boolean
 
   @column({
-    prepare: (value: any) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare rubricData: any | null
 

@@ -1,4 +1,5 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { jsonColumn, getClient } from '../../database/helpers/schema_helpers.js'
 
 export default class extends BaseSchema {
   protected tableName = 'courses'
@@ -37,7 +38,7 @@ export default class extends BaseSchema {
       table.string('level').nullable() // e.g., "Beginner", "Intermediate", "Advanced"
       table.string('language', 10).defaultTo('fr') // ISO 639-1 code
       table.integer('estimated_hours').unsigned().nullable()
-      table.jsonb('tags').nullable() // Array of tags for searchability
+      jsonColumn(table, 'tags').nullable() // Array of tags for searchability
 
       // Statistics (denormalized for performance)
       table.integer('enrolled_count').unsigned().defaultTo(0)
@@ -50,13 +51,25 @@ export default class extends BaseSchema {
       table.timestamp('archived_at').nullable()
     })
 
-    // Create index for search and filtering
-    this.schema.raw(`
-      CREATE INDEX idx_courses_search ON courses USING gin(to_tsvector('french', title || ' ' || COALESCE(description, '')))
-    `)
+    // Create full-text search index (engine-specific)
+    const client = getClient(this.schema)
+    if (client === 'pg') {
+      this.schema.raw(`
+        CREATE INDEX idx_courses_search ON courses USING gin(to_tsvector('french', title || ' ' || COALESCE(description, '')))
+      `)
+    } else if (client === 'mysql2') {
+      this.schema.raw('ALTER TABLE courses ADD FULLTEXT idx_courses_search (title, description)')
+    }
+    // SQLite: no full-text index needed, LIKE-based search works at small scale
   }
 
   async down() {
+    const client = getClient(this.schema)
+    if (client === 'pg') {
+      this.schema.raw('DROP INDEX IF EXISTS idx_courses_search')
+    } else if (client === 'mysql2') {
+      this.schema.raw('ALTER TABLE courses DROP INDEX idx_courses_search')
+    }
     this.schema.dropTable(this.tableName)
   }
 }

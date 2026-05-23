@@ -1,4 +1,5 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { jsonColumn } from '../../database/helpers/schema_helpers.js'
 
 export default class extends BaseSchema {
   protected tableName = 'roles'
@@ -9,7 +10,7 @@ export default class extends BaseSchema {
       table.string('name', 50).notNullable()
       table.string('slug', 50).notNullable().unique()
       table.text('description').nullable()
-      table.jsonb('permissions').nullable() // Pour stocker les permissions spécifiques
+      jsonColumn(table, 'permissions').nullable() // Pour stocker les permissions spécifiques
       table.boolean('is_system').defaultTo(true) // Rôles système non modifiables
 
       table.timestamp('created_at').notNullable()

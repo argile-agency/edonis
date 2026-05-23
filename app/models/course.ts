@@ -76,6 +76,11 @@ export default class Course extends BaseModel {
 
   @column({
     prepare: (value: string[] | null) => (value ? JSON.stringify(value) : null),
+    consume: (value: string | string[] | null) => {
+      if (!value) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare tags: string[] | null
 

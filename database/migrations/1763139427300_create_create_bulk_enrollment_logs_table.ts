@@ -1,4 +1,5 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { jsonColumn } from '../../database/helpers/schema_helpers.js'
 
 export default class extends BaseSchema {
   protected tableName = 'bulk_enrollment_logs'
@@ -33,11 +34,11 @@ export default class extends BaseSchema {
       table.integer('skipped_rows').defaultTo(0)
 
       // Error details (JSON)
-      table.jsonb('error_details').nullable()
+      jsonColumn(table, 'error_details').nullable()
       // Ex: [{"row": 5, "email": "test@test.com", "error": "User not found"}]
 
       // Import options (JSON)
-      table.jsonb('import_options').nullable()
+      jsonColumn(table, 'import_options').nullable()
       // Ex: {"auto_create_users": true, "auto_assign_groups": true, "default_role": "student"}
 
       // Status

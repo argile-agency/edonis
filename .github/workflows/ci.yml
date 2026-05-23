@@ -76,12 +76,39 @@ jobs:
         run: bun audit || true
 
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests (${{ matrix.db }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [postgres, mysql, sqlite]
+        include:
+          - db: postgres
+            db_connection: postgres
+            db_host: localhost
+            db_port: 5432
+            db_user: postgres
+            db_password: postgres
+            db_database: edonis_test
+          - db: mysql
+            db_connection: mysql
+            db_host: localhost
+            db_port: 3306
+            db_user: root
+            db_password: edonis_test_password
+            db_database: edonis_test
+          - db: sqlite
+            db_connection: sqlite
+            db_host: ''
+            db_port: ''
+            db_user: ''
+            db_password: ''
+            db_database: ''
 
     services:
       postgres:
-        image: postgres:16
+        image: ${{ matrix.db == 'postgres' && 'postgres:16' || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -94,12 +121,27 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      mysql:
+        image: ${{ matrix.db == 'mysql' && 'mysql:8.0' || '' }}
+        env:
+          MYSQL_ROOT_PASSWORD: edonis_test_password
+          MYSQL_DATABASE: edonis_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_DATABASE: edonis_test
+      DB_CONNECTION: ${{ matrix.db_connection }}
+      DB_HOST: ${{ matrix.db_host }}
+      DB_PORT: ${{ matrix.db_port }}
+      DB_USER: ${{ matrix.db_user }}
+      DB_PASSWORD: ${{ matrix.db_password }}
+      DB_DATABASE: ${{ matrix.db_database }}
+      DB_FILENAME: ./tmp/test.sqlite3
       NODE_ENV: test
       APP_KEY: test_app_key_for_ci_pipeline_runs_only
       PORT: 3333
@@ -118,6 +160,10 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Create tmp directory (SQLite)
+        if: matrix.db == 'sqlite'
+        run: mkdir -p tmp
 
       - name: Run database migrations
         run: node ace migration:run --force

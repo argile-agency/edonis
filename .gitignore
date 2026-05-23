@@ -38,3 +38,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Uploaded files (keep directory structure via .gitkeep)
 public/uploads/*
 !public/uploads/avatars/.gitkeep
+
+# SQLite database files
+tmp/*.sqlite3
+tmp/*.sqlite3-wal
+tmp/*.sqlite3-shm

@@ -42,8 +42,12 @@ export default class CourseContent extends BaseModel {
   declare externalUrl: string | null
 
   @column({
-    prepare: (value: any) => (value ? JSON.stringify(value) : null),
-    consume: (value: string) => (value ? JSON.parse(value) : null),
+    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
+    consume: (value: any) => {
+      if (value == null) return null
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    },
   })
   declare metadata: Record<string, any> | null
 

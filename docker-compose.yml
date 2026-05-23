@@ -1,5 +1,12 @@
 version: '3.8'
 
+# Usage: docker compose up <service>
+# Set DB_CONNECTION in .env to match your chosen engine:
+#   postgres → DB_CONNECTION=postgres (default)
+#   mysql    → DB_CONNECTION=mysql
+#   mariadb  → DB_CONNECTION=mysql (uses mysql2 driver)
+#   sqlite   → DB_CONNECTION=sqlite (no service needed)
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -19,6 +26,48 @@ services:
       timeout: 5s
       retries: 5
 
+  mysql:
+    image: mysql:8.0
+    container_name: edonis_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: edonis_dev_password
+      MYSQL_DATABASE: edonis_lms
+      MYSQL_USER: edonis
+      MYSQL_PASSWORD: edonis_dev_password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mariadb:
+    image: mariadb:11
+    container_name: edonis_mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: edonis_dev_password
+      MARIADB_DATABASE: edonis_lms
+      MARIADB_USER: edonis
+      MARIADB_PASSWORD: edonis_dev_password
+    ports:
+      - '3307:3306'
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  mariadb_data:
     driver: local

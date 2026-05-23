@@ -30,6 +30,7 @@ jobs:
           --health-retries 5
 
     env:
+      DB_CONNECTION: postgres
       DB_HOST: localhost
       DB_PORT: 5432
       DB_USER: postgres
@@ -93,7 +94,7 @@ jobs:
           retention-days: 7
 
   browser-tests-matrix:
-    name: Browser Tests (Multiple Browsers)
+    name: Browser Tests (${{ matrix.browser }} / ${{ matrix.db }})
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 30
@@ -102,10 +103,19 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+        db: [postgres]
+        include:
+          - db: postgres
+            db_connection: postgres
+          # Add mysql/sqlite to nightly E2E when stable:
+          # - db: mysql
+          #   db_connection: mysql
+          # - db: sqlite
+          #   db_connection: sqlite
 
     services:
       postgres:
-        image: postgres:16
+        image: ${{ matrix.db == 'postgres' && 'postgres:16' || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -119,6 +129,7 @@ jobs:
           --health-retries 5
 
     env:
+      DB_CONNECTION: ${{ matrix.db_connection }}
       DB_HOST: localhost
       DB_PORT: 5432
       DB_USER: postgres
