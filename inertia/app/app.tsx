@@ -10,7 +10,7 @@ import { Toaster } from 'sonner'
 import { PwaInstallPrompt } from '~/components/pwa-install-prompt'
 import { ConnectivityIndicator } from '~/components/connectivity-indicator'
 
-const appName = import.meta.env.VITE_APP_NAME || 'AdonisJS'
+const appName = import.meta.env.VITE_APP_NAME || 'Edonis LMS'
 
 createInertiaApp({
   progress: { color: '#5468FF' },
