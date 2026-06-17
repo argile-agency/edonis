@@ -63,7 +63,7 @@
     "vite-plugin-pwa": "^1.2.0"
   },
   "dependencies": {
-    "@adonisjs/ally": "^5.1.1",
+    "@adonisjs/ally": "^6.1.0",
     "@adonisjs/auth": "^9.4.0",
     "@adonisjs/core": "^6.18.0",
     "@adonisjs/cors": "^2.2.1",
