@@ -46,17 +46,35 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Goal**: Green CI, no `any` escape hatches, and a test suite that actually runs
 **Depends on**: Nothing (first phase)
 **Requirements**: DEBT-01, DEBT-02, DEBT-03
+
+> **Re-scoped 2026-10-09 during planning.** The original success criteria were written
+> before `af99ea1`. Two were already satisfied: `bun run lint` and `bun run typecheck`
+> both exit 0 today. Research then established three things the original scope missed:
+> (a) CI does **not** enforce lint — `ci.yml` sets `continue-on-error: true` — so "green
+> CI" is currently unfalsifiable; (b) the functional CI step is
+> `node ace test functional || echo "..."`, which always exits 0, and an empty Japa suite
+> exits 0 too; (c) `tests/functional/grades.spec.ts.skip` is not a disabled working test
+> but a non-compiling draft producing 15 TypeScript errors, with `@japa/api-client` not
+> installed and no `.env.test` to stop it wiping the dev database.
+> One of the 16 `as any` casts (`course.ts:272,276`) hides a **live runtime bug**:
+> `DateTime.fromJSDate()` applied to a Luxon `DateTime` returns an invalid DateTime, so
+> `Course.canEnroll()` has never enforced its enrollment date window.
+
 **Success Criteria** (what must be TRUE):
-  1. `bun run lint` exits 0 (currently 17 errors across 4 files)
+  1. A lint failure turns CI red — `continue-on-error` is gone from `ci.yml`
   2. `bun run typecheck` still exits 0 after removing all `as any` assertions
-  3. No `as any` remains in `app/` (currently 16 occurrences in 7 files)
-  4. `tests/functional/grades.spec.ts` is re-enabled and passing in CI
-**Plans**: TBD
+  3. `grep -rn "as any\|as never\|as unknown as\|@ts-expect-error" app/` returns 0, and a
+     re-introduced `as any` under `app/` fails `bun run lint`
+  4. `node ace test functional` runs real tests, and a failing assertion turns CI red
+  5. `Course.canEnroll()` enforces its date window, guarded by a unit test
+**Plans**: 5 plans in 3 waves
 
 Plans:
-- [ ] 01-01: Lint and formatting cleanup
-- [ ] 01-02: Replace `as any` with typed interfaces and generics
-- [ ] 01-03: Re-enable functional test suite in CI
+- [ ] 01-01-PLAN.md — Remove `as any` Clusters A–C (type-only, zero behaviour delta) [wave 1]
+- [ ] 01-02-PLAN.md — Fix the `canEnroll()` date-window runtime bug + unit test [wave 1]
+- [ ] 01-03-PLAN.md — Functional test infrastructure (`.env.test`, api-client, spec rewrite) [wave 1]
+- [ ] 01-04-PLAN.md — `jsonColumnConfig` dedup (7 safe sites) + `as any` ESLint guard [wave 2]
+- [ ] 01-05-PLAN.md — CI gate enforcement (lint + unit + functional) [wave 3]
 
 ### Phase 2: Security and Correctness Hardening
 **Goal**: Authorization and validation applied uniformly; no silent failures
@@ -261,7 +279,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Code Health Baseline | 0/3 | Ready to plan | - |
+| 1. Code Health Baseline | 0/5 | Planned (re-scoped) | - |
 | 2. Security and Correctness Hardening | 0/4 | Not started | - |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
