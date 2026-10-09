@@ -269,11 +269,11 @@ export default class Course extends BaseModel {
     }
 
     const now = DateTime.now()
-    if (this.startDate && DateTime.fromJSDate(this.startDate as any) > now) {
+    if (this.startDate && this.startDate > now) {
       return false
     }
 
-    if (this.endDate && DateTime.fromJSDate(this.endDate as any) < now) {
+    if (this.endDate && this.endDate < now) {
       return false
     }
 
