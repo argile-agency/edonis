@@ -15,8 +15,6 @@ export function jsonColumn(table: Knex.CreateTableBuilder, name: string) {
 /**
  * Returns the active database client identifier.
  */
-export function getClient(
-  schema: any
-): 'pg' | 'mysql2' | 'better-sqlite3' | string {
+export function getClient(schema: any): 'pg' | 'mysql2' | 'better-sqlite3' | string {
   return schema.client?.config?.client ?? ''
 }
