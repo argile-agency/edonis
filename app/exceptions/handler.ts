@@ -3,6 +3,40 @@ import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http'
 import logger from '@adonisjs/core/services/logger'
 
+/**
+ * Structural type guards for narrowing `unknown` errors without `any`.
+ * They check shape only, so they work for any error source (HTTP, DB
+ * drivers, limiter) without importing those packages.
+ */
+type ErrorWithCode = { code: string }
+type ErrorWithStatus = { status: number }
+type ErrorWithHeaders = { headers: Record<string, string | undefined> }
+
+function hasCode(error: unknown): error is ErrorWithCode {
+  return (
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+  )
+}
+
+function hasStatus(error: unknown): error is ErrorWithStatus {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof error.status === 'number'
+  )
+}
+
+function hasHeaders(error: unknown): error is ErrorWithHeaders {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'headers' in error &&
+    typeof error.headers === 'object' &&
+    error.headers !== null
+  )
+}
+
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
    * In debug mode, the exception handler will display verbose errors
@@ -25,8 +59,8 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     '429': (error, { inertia }) =>
       inertia.render('errors/too_many_requests', {
         error,
-        retryAfter: (error as any)?.headers?.['retry-after']
-          ? Number.parseInt((error as any).headers['retry-after'], 10)
+        retryAfter: hasHeaders(error)
+          ? Number.parseInt(error.headers['retry-after'] ?? '', 10) || undefined
           : undefined,
       }),
     '500..599': (error, { inertia }) =>
@@ -72,7 +106,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     }
 
     const message = (error as Error)?.message?.toLowerCase() ?? ''
-    const code = (error as any)?.code ?? ''
+    const code = hasCode(error) ? error.code : ''
 
     const patterns = [
       // Universal / transport-level errors
@@ -106,7 +140,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * In production, shows a clean generic error page.
    */
   private async renderEdgeErrorPage(ctx: HttpContext, error: unknown) {
-    const statusCode = (error as any)?.status ?? 500
+    const statusCode = hasStatus(error) ? error.status : 500
     const errorName = (error as Error)?.name ?? 'Error'
     const errorMessage = (error as Error)?.message ?? 'Unknown error'
     const errorStack = (error as Error)?.stack ?? ''
@@ -208,7 +242,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    */
   private getErrorHint(error: unknown): string {
     const message = (error as Error)?.message?.toLowerCase() ?? ''
-    const code = (error as any)?.code ?? ''
+    const code = hasCode(error) ? error.code : ''
 
     if (error instanceof AggregateError) {
       return 'Plusieurs connexions à la base de données ont échoué simultanément. Vérifiez que le serveur de base de données est démarré et accessible.'
