@@ -64,7 +64,7 @@ grep -rn "request\.\(only\|input\|all\)(" app/controllers | wc -l               
 **Per-spec CSRF gate (every spec that sends writes):**
 
 ```bash
-test "$(grep -c "withCsrfToken()" F)" -ge "$(grep -cE "client\.(post|put|patch|delete)\(" F)"   # wave 1: withCsrf( helper, strictly greater
+test "$(grep -c "withCsrfToken()" F)" -ge "$(grep -cE "client\.(post|put|patch|delete)\(" F)"   # wave 1 (02-02, 02-03): count withCsrf( instead, same -ge
 ```
 
 ---
