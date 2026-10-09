@@ -1,10 +1,12 @@
 ---
 phase: 1
 slug: code-health-baseline
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-10-09
+planned: 2026-10-09
+plans: [01-01, 01-02, 01-03, 01-04, 01-05]
 ---
 
 # Phase 1 — Validation Strategy
@@ -47,19 +49,27 @@ created: 2026-10-09
 
 ## Per-Task Verification Map
 
-> Task IDs are assigned by the planner. This table is the *requirement → proof* contract
-> the planner must satisfy; it is filled in with concrete task IDs once plans exist.
+> Filled in 2026-10-09 against the five committed plans. Every ❌ "Wave 0" item below is now
+> owned by a concrete task.
 
-| Req | Behaviour to prove | Test Type | Automated Command | Infra Exists | Status |
+| Req | Behaviour to prove | Test Type | Automated Command | Owner | Status |
 |---|---|---|---|---|---|
-| DEBT-01 | `bun run lint` exits 0 | static | `bun run lint` | ✅ | ✅ green (`af99ea1`) |
-| DEBT-01 | CI **enforces** lint (failure turns CI red) | CI config | `grep -c 'continue-on-error' .github/workflows/ci.yml` → 0 on the lint step | ❌ W0 | ⬜ pending |
-| DEBT-02 | No `as any` in `app/` | static | `bun run lint` (with new `no-restricted-syntax` rule) | ❌ W0 | ⬜ pending |
-| DEBT-02 | Typecheck still passes after cast removal | static | `bun run typecheck` | ✅ | ⬜ pending |
-| DEBT-02 | No grep-dodging variants substituted | static | `grep -rn "as any\|as never\|as unknown as\|@ts-expect-error" app/` → 0 | ✅ | ⬜ pending |
-| DEBT-02 (D) | `Course.canEnroll()` actually enforces the date window | unit | `node ace test unit` (new `tests/unit/course.spec.ts`) | ❌ W0 | ⬜ pending |
-| DEBT-03 | Functional suite runs ≥ 1 real test | functional | `node ace test functional` | ❌ W0 | ⬜ pending |
-| DEBT-03 | A red functional suite turns CI red | CI config | break an assertion, confirm CI fails; `ci.yml` has no `\|\| echo` no-op | ❌ W0 | ⬜ pending |
+| DEBT-01 | `bun run lint` exits 0 | static | `bun run lint` | baseline (`af99ea1`) | ✅ green |
+| DEBT-01 | CI **enforces** lint (failure turns CI red) | CI config | `grep -c 'continue-on-error' .github/workflows/ci.yml` → 0 | **01-05 T1**, proven **01-05 T2/T3** | ⬜ pending |
+| DEBT-02 | No `as any` in `app/` | static | `bun run lint` (with the `no-restricted-syntax` rule) | **01-01 T1–T3**, **01-02 T1**, rule in **01-04 T2** | ⬜ pending |
+| DEBT-02 | Typecheck still passes after cast removal | static | `bun run typecheck` | **01-01 T1–T3**, **01-02 T1** | ⬜ pending |
+| DEBT-02 | No grep-dodging variants substituted | static | `grep -rn "as any\|as never\|as unknown as\|@ts-expect-error" app/` → 0 | **01-04 T2** | ⬜ pending |
+| DEBT-02 | A re-introduced `as any` fails lint | static | insert a cast → `bun run lint` exits non-zero | **01-04 T2**, re-proven **01-05 T2** | ⬜ pending |
+| DEBT-02 (D) | `Course.canEnroll()` actually enforces the date window | unit | `node ace test unit` (`tests/unit/course.spec.ts`, 5 tests) | **01-02 T1** (RED observation mandatory) | ⬜ pending |
+| DEBT-02 (D) | Production impact of the window fix is understood | manual | row count + operator confirmation | **01-02 T2** (blocking checkpoint) | ⬜ pending |
+| DEBT-02 | Error-handler disclosure gate untouched | static | `git diff -U0 app/exceptions/handler.ts \| grep -E '^[-+].*(debug\|inProduction)'` → empty | **01-01 T2** | ⬜ pending |
+| DEBT-03 | Test DB is isolated from the dev DB | config | `grep '^DB_CONNECTION=' .env.test` → `sqlite`; `tmp/test.sqlite3` mtime after a run | **01-03 T1** | ⬜ pending |
+| DEBT-03 | Functional suite runs ≥ 1 real test | functional | `node ace test functional` → 4 passed, no `NO TESTS EXECUTED` | **01-03 T3** | ⬜ pending |
+| DEBT-03 | Non-enrolled student gets 403 (only automated authz check) | functional | `grep -c "assertStatus(403)" tests/functional/grades.spec.ts` ≥ 1 | **01-03 T3** | ⬜ pending |
+| DEBT-03 | No test triggers a full-HTML render (no Vite manifest exists) | functional | suite green while `test ! -f public/assets/.vite/manifest.json` | **01-03 T3** | ⬜ pending |
+| DEBT-03 | `unit` suite stays DB-free (migrate hook scoped to `functional`) | config | `node ace test unit` within its 2000ms timeout; hook inside `configureSuite` | **01-03 T2**, re-proven **01-05 T1** | ⬜ pending |
+| DEBT-03 | A red functional suite turns CI red | CI config | invert an assertion → non-zero locally, then a failed Actions run | **01-05 T1/T2/T3** | ⬜ pending |
+| — | 7 duplicated JSON column configs removed, 3 divergent ones preserved | static | `@column(jsonColumnConfig)` totals 1/2/1/3; `JSON.parse(value)` still 1 each in role/course/app_setting | **01-04 T1** | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -67,24 +77,31 @@ created: 2026-10-09
 
 ## Wave 0 Requirements
 
-Ordered — `.env.test` is a **data-safety prerequisite**, not a convenience.
+All seven are owned by a committed task. Ordered — `.env.test` remains a **data-safety
+prerequisite**, not a convenience.
 
-- [ ] `.env.test` — isolate the test database. **Do this first.** The draft spec calls
-      `User.query().delete()`; without env isolation that runs against the dev DB.
-      Needs its own throwaway `APP_KEY`. Confirm `.gitignore` coverage.
-- [ ] `bun add -d @japa/api-client` — not installed; blocks DEBT-03 entirely
-- [ ] `tests/bootstrap.ts` — register `apiClient` + the 3 AdonisJS api_client plugins;
-      add a `testUtils.db().migrate()` setup hook
-- [ ] `tests/functional/grades.spec.ts` — rewrite from scratch. The `.skip` draft produces
-      **15 TypeScript errors**; treat it as a requirements sketch, not a starting point
-- [ ] `tests/unit/` — create; needed for the `canEnroll()` regression test guarding Cluster D
-- [ ] `eslint.config.js` — add the `no-restricted-syntax` guard
-      (selector `TSAsExpression > TSAnyKeyword`, scoped to `app/**`; measured: catches
-      exactly 16, zero collateral — vs. `no-explicit-any` at 98 errors project-wide)
-- [ ] `.github/workflows/ci.yml` — remove `continue-on-error: true` from the lint step;
-      remove `|| echo "No functional tests found yet"` from the functional step
-
----
+- [x] `.env.test` — isolate the test database. **First task of 01-03.** Throwaway `APP_KEY`
+      asserted different from `.env`; `git check-ignore` asserted non-zero so it is tracked.
+      → **01-03 T1**
+- [x] `bun add -d @japa/api-client` — asserted into `devDependencies`, no postinstall.
+      → **01-03 T1**
+- [x] `tests/bootstrap.ts` — register `apiClient` + the 3 AdonisJS api_client plugins; add the
+      `testUtils.db().migrate()` hook **scoped to the `functional` suite via `configureSuite`**
+      (its teardown is `migration:reset`, a full schema drop, so it must not be runner-global).
+      → **01-03 T2**
+- [x] `tests/functional/grades.spec.ts` — rewritten from scratch; the `.skip` draft is treated as a
+      requirements sketch only and deleted. 7 un-ported scenarios preserved as `DEBT-10`.
+      → **01-03 T3**
+- [x] `tests/unit/` — created with `course.spec.ts`, the 5-test `canEnroll()` regression guard.
+      → **01-02 T1**
+- [x] `eslint.config.js` — `no-restricted-syntax`, selector `TSAsExpression > TSAnyKeyword`, scoped
+      to `app/**` (measured: exactly 16 hits, zero collateral, vs. 98 for `no-explicit-any`).
+      Lands in wave 2, **after** the casts are gone.
+      → **01-04 T2**
+- [x] `.github/workflows/ci.yml` — remove `continue-on-error: true` and the
+      `|| echo "No functional tests found yet"` no-op; split into enforced `unit` and `functional`
+      steps; rename `unit-tests` → `tests` including the `summary` job's `needs`.
+      → **01-05 T1**
 
 ## Manual-Only Verifications
 
@@ -108,12 +125,13 @@ Everything else in Phase 1 must be **type- and tooling-only, with zero behaviour
 
 ## Validation Sign-Off
 
-- [ ] All tasks have an automated verify command or a declared Wave 0 dependency
-- [ ] Sampling continuity: no 3 consecutive tasks without an automated verify
-- [ ] Wave 0 covers every ❌ reference in the verification map
-- [ ] No watch-mode flags in any command
-- [ ] Feedback latency < 20s for the per-task gate
-- [ ] Cluster D isolated into its own commit, manual data check recorded
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have an automated verify command or a declared Wave 0 dependency
+- [x] Sampling continuity: no 3 consecutive tasks without an automated verify
+- [x] Wave 0 covers every ❌ reference in the verification map
+- [x] No watch-mode flags in any command
+- [x] Feedback latency < 20s for the per-task gate (`bun run check`, added in 01-05 T1)
+- [x] Cluster D isolated into its own `fix(courses):` commit, manual data check recorded (01-02 T2)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-10-09 — 5 plans, 3 waves, 13 tasks. Revised after plan-check
+iteration 1 (3 blockers, 7 warnings resolved).

@@ -822,27 +822,47 @@ Phase 1 is a refactor, so the usual rename/migration categories apply:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All five were dispositioned during planning on 2026-10-09. Dispositions are recorded inline below.
 
 1. **How many existing courses would Cluster D actually affect?**
+   **(RESOLVED — planned as `01-02` Task 2, a blocking `checkpoint:human-verify`.)** The operator must
+   run the row count and explicitly confirm the behaviour change before merge; the count is recorded
+   in `01-02-SUMMARY.md` as a release note.
    - Known: the guards are dead today; fixing them activates both.
    - Unclear: how many rows have a future `start_date` or past `end_date`.
    - Recommendation: run `SELECT count(*) FROM courses WHERE (start_date > now()) OR (end_date < now())` before merging. If non-trivial, gate behind `checkpoint:human-verify`.
 
 2. **Is `tests/browser/grades.spec.ts` already red in CI?**
+   **(RESOLVED — scoped OUT, logged.)** That suite runs in `e2e.yml`, not `ci.yml`, so it is outside
+   Phase 1's gates. `01-05` Task 1 explicitly lists it as a logged follow-up and forbids drive-by
+   fixing it.
    - Known: it creates `student@edonis.test`, which `db:seed` already inserted into a `.unique()` column.
    - Unclear: whether `e2e.yml` has been passing.
    - Recommendation: check the Actions history. If red, it is a pre-existing failure, **not** something Phase 1 introduced — scope it explicitly in or out.
 
 3. **Should `tests/unit/` be created in Phase 1?**
+   **(RESOLVED — YES.)** Created in `01-02` Task 1 together with `tests/unit/course.spec.ts`, the
+   5-test regression guard for Cluster D. `01-05` Task 1 wires `node ace test unit` into CI as an
+   enforced step.
    - `adonisrc.ts` declares a `unit` suite but the directory does not exist. A `canEnroll()` unit test is the natural regression guard for Cluster D and needs no DB.
    - Recommendation: create it — it is ~15 lines and directly protects the phase's only behaviour change. DEBT-03's literal wording covers only the functional suite, so flag this as a small scope addition.
 
 4. **Should the 3 divergent JSON column blocks be unified eventually?**
+   **(RESOLVED — excluded from Phase 1, carried to Phase 2.)** `01-04` Task 1 names `role.ts`,
+   `course.ts` and `app_setting.ts` explicitly, asserts they are absent from `git diff --name-only`,
+   and logs them as a Phase 2 correctness candidate alongside DEBT-08.
    - Each hides a different latent issue (double-encoding, `JSON.parse('')` crash, `'null'` storage).
    - Recommendation: **out of scope for Phase 1.** Log as a Phase 2 (correctness) candidate alongside DEBT-08.
 
 5. **Should `@adonisjs/vite/vite_provider` be environment-scoped?**
+   **(RESOLVED — NO. Rejected outright, not merely deferred.)** The provider registers the
+   `@viteReactRefresh()` and `@vite([...])` Edge tags used at `resources/views/inertia_layout.edge`
+   lines 54 and 56. Scoping it out of `test` would make every full-HTML Inertia render throw an
+   unknown-tag error — converting a startup warning into a hard failure. `01-03` Task 2 explicitly
+   prohibits the change and asserts `adonisrc.ts` is unmodified. The sanctioned remedy for the
+   port-24678 warning is simply not running `bun run dev` during a test run.
    - It boots during tests (observed: port 24678 conflict + a re-optimize pass).
    - Recommendation: out of scope, but note it if functional tests prove slow or flaky in CI.
 
