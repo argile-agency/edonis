@@ -96,12 +96,23 @@ Plans:
 **Requirements**: DEBT-04, DEBT-05, DEBT-06, DEBT-07, DEBT-08, DEBT-09
 **Success Criteria** (what must be TRUE):
 
-  1. `app/policies/` exists and all resource-ownership checks route through it
-  2. Every controller action accepting user input has a validator (currently 5 validators for 16 controllers)
-  3. Enrollment counter mutations run inside a database transaction
-  4. Category tree building rejects cycles instead of looping
-  5. Decryption failures are logged and raised, never returned as raw values
+  1. `app/policies/` exists and all resource-ownership checks route through it:
+     `grep -rn "hasPermission(\|hasRole(\|instructorId ===\|isInstructor(\|\.roles\.some(" app/controllers` returns 0
+  2. Every action in the DEBT-05 inventory (17 actions) reads input only via `request.validateUsing()`:
+     `grep -rn "request\.\(only\|input\|all\)(" app/controllers` returns 0
+  3. Enrollment counter mutations run inside a transaction using atomic conditional increments, and
+     counters equal `COUNT(*)` of their source rows after any sequence of enrol/unenrol operations
+  4. Category update rejects a parent that is the category itself or a descendant; descendant
+     `path`/`depth` are recomputed on move
+  5. Decryption failures are logged and raised, never returned as raw values. Prerequisites: PII
+     columns can hold ciphertext, and existing rows are scanned/repaired before raising is enabled
   6. 2FA pending state has an explicit timeout and a documented recovery path
+
+> **Re-scoped 2026-10-09 after research** (`02-RESEARCH.md`). Criteria 1-5 were reworded to match
+> what the code actually does: category tree building cannot loop (the bug is that `update` creates
+> cycles), `decrypt` never throws (it returns `null`), and a transaction alone does not stop
+> over-capacity enrolment. Phase 2 requires Phase 1 to be executed first (test infrastructure and
+> the `canEnroll()` fix).
 
 **Plans**: TBD
 
