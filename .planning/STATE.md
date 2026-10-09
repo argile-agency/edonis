@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: GSD install verified at v1.42.3 across both runtime roots; planning
+last_updated: "2026-10-09T18:50:43.445Z"
+last_activity: 2026-10-09 -- Phase 1 planning complete
+progress:
+  total_phases: 12
+  completed_phases: 0
+  total_plans: 6
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -11,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 Phase: 1 of 12 (Code Health Baseline) — not started
 Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-10-09 — roadmap restructured with tech debt phases 1-3
+Status: Ready to execute
+Last activity: 2026-10-09 -- Phase 1 planning complete
 Last commit: 2026-05-27 (`742987c chore(security): remove obsolete root docs with test creds`)
 
 Next recommended run: `/gsd:plan-phase 1`
@@ -50,6 +66,7 @@ The roadmap was written as if phases 2 and 7 were greenfield. They are not:
 - `app/controllers/course_contents_controller.ts` (522 lines) already implements
   `builder`, `learn`, `outline`, module CRUD, content CRUD, `reorderModules`,
   `reorderContents`, `updateProgress`, `markComplete`, `getCourseProgress`.
+
 - Routes for all of the above are wired in `start/routes.ts` (lines ~292–345).
 - `inertia/pages/courses/builder.tsx` (454 lines), `learn.tsx`, `outline.tsx` exist.
 - `content_progress` model + migration exist.
@@ -81,26 +98,32 @@ completion triggers.
   the fix was the standard `{ null: 'ignore' }` rule option, **not** a rewrite
   to strict equality (which would have dropped `undefined` handling). The
   prettier error was auto-fixed.
+
 - **Refactor opportunity found while fixing lint:** `app/helpers/json_column.ts`
   exports `jsonColumnConfig`, but 8 `@column({ prepare, consume })` blocks
   duplicate it verbatim across `assignment.ts`, `bulk_enrollment_log.ts` (×2),
   `course_content.ts`, `submission.ts` (×3). Byte-identical logic, ~48 lines of
   duplication. Good candidate for a Phase 1 plan — deliberately *not* done as a
   drive-by.
+
 - `as any` occurrences: 16 across 7 files (`handler.ts` ×5, `user.ts` ×3,
   `course.ts` ×2, `course_category.ts` ×2, `course_contents_controller.ts` ×2,
   `cohort.ts` ×1, `dashboard_controller.ts` ×1).
+
 - Tests: 5 Playwright browser specs (`auth`, `grades`, `navigation`,
   `user_management`, `accessibility`). Functional tests are **disabled**
   (`tests/functional/grades.spec.ts.skip`). No unit tests.
+
 - `app/policies/` does **not exist** — authorization is scattered across
   middleware and inline controller checks.
+
 - `app/validators/` covers only 5 domains (auth, course, course_content,
   profile, user) out of 16 controllers.
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: -
 - Total execution time: 0 hours
@@ -112,6 +135,7 @@ completion triggers.
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: -
 - Trend: N/A (no completed plans under GSD yet)
 
@@ -128,6 +152,7 @@ Recent decisions affecting current work:
   after the ~4-month dormancy. Scope = tiers A (code health), B (stubbed
   features), C (hardening). Tier D (performance: indexes, N+1, role cache) is
   deliberately deferred until there is real traffic to measure.
+
 - 2026-10-09: Tech debt structured as integer phases 1-3 prepended to the
   roadmap, not as a separate milestone. GSD forbids decimal insertion before
   Phase 1, so the content phases were renumbered 1-9 -> 4-12. Safe because zero
@@ -142,6 +167,7 @@ Recent decisions affecting current work:
 - Phase 5 (ex-2, Builder UI) rescoped: upgrade of existing builder, not greenfield
 - Phase 10 (ex-7, Engagement Tracking) rescoped: backend already exists, gap is
   per-type triggers + teacher view
+
 - Phase 12 (ex-9, Permissions) now depends on the Phase 2 policy layer
 
 ### Pending Todos
@@ -149,6 +175,7 @@ Recent decisions affecting current work:
 - ~~`docs/DEPLOYMENT_TROUBLESHOOTING.md` untracked~~ — reviewed for secrets
   (only placeholders: `<votre-domaine>`, `m0n$Pa#sword` as an escaping example),
   committed 2026-10-09.
+
 - ~~Commit the 2026-10-09 planning restructure~~ — done 2026-10-09.
 - ~~Lint quick win~~ — done, `af99ea1`.
 - Dedupe the 8 inline JSON column configs onto `jsonColumnConfig` (see Health
@@ -159,9 +186,11 @@ Recent decisions affecting current work:
 - Active GSD install: `~/.claude/get-shit-done/` at **v1.42.3** (= npm latest,
   confirmed via `node ~/.claude/get-shit-done/bin/check-latest-version.cjs`).
   This is what the 67 `gsd-*` skills resolve against. No update needed.
+
 - **Resolved:** the second copy at `~/.config/opencode/get-shit-done/` was stale
   at v1.11.1 (old GSD v1 layout). It is now also at **v1.42.3**, so both runtime
   roots are aligned. No divergence left to work around.
+
 - **Correction to an earlier note:** `gsd-sdk` is not missing — in v1.42.3 the CLI
   is `~/.claude/get-shit-done/bin/gsd-tools.cjs`. The workflow docs still use the
   older `gsd-sdk query <x>` naming. Real commands include `phase`, `state`,
@@ -174,24 +203,31 @@ Recent decisions affecting current work:
 Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
 
 **Functional gaps (features that look shipped but are not):**
+
 - `evaluations_controller.ts` is a stub — returns `pendingEvaluations: []` and
   zeroed stats. Teachers cannot see work awaiting grading.
+
 - Contact form (`inertia/pages/pages/contact.tsx`) has UI but no backend action;
   the route maps to `PagesController.contact` which only renders.
 
 **Correctness / safety:**
+
 - Enrollment counters (`enrolledCount`, `currentEnrollments`) incremented manually
   without transactions — can drift.
+
 - `encryption_service.ts` returns the raw value when decryption fails, silently
   masking corruption.
+
 - Category tree building has no cycle detection — potential infinite loop.
 - Input validation coverage incomplete; authorization checks not applied uniformly.
 
 **Performance:**
+
 - N+1 / preload-before-filter in `courses_controller.ts` listing.
 - 4-level nested preload in course show.
 - Missing composite indexes on `(course_id, status)`, `(user_id, created_at)`,
   `(course_id, user_id)`, `(is_published, created_at)`.
+
 - Roles reloaded from DB on every request (no cache).
 
 ## Session Continuity
@@ -209,11 +245,14 @@ Resume file: None
    re-enable. **Rescope note:** the lint plan is now largely satisfied; the live
    work in that slot is the `jsonColumnConfig` dedup (8 call sites) plus keeping
    lint green in CI.
+
 2. `as any` removal: 16 occurrences across 7 files — `handler.ts` ×5, `user.ts`
    ×3, `course.ts` ×2, `course_category.ts` ×2, `course_contents_controller.ts`
    ×2, `cohort.ts` ×1, `dashboard_controller.ts` ×1.
+
 3. Re-enable `tests/functional/grades.spec.ts.skip`; there are still no unit
    tests at all.
+
 4. Do not start Phase 4 (Content Foundation) before Phases 1-3 — the debt-first
    ordering is a deliberate decision, see Decisions above.
 
