@@ -147,14 +147,16 @@ export default class User extends compose(BaseModel, AuthFinder) {
   // Helper methods
   async hasRole(roleSlug: string, _courseId?: number): Promise<boolean> {
     if (!this.roles || this.roles.length === 0) {
-      await this.load('roles' as any)
+      const self: User = this
+      await self.load('roles')
     }
     return this.roles.some((role) => role.slug === roleSlug)
   }
 
   async hasAnyRole(roleSlugs: string[]): Promise<boolean> {
     if (!this.roles || this.roles.length === 0) {
-      await this.load('roles' as any)
+      const self: User = this
+      await self.load('roles')
     }
     return this.roles.some((role) => roleSlugs.includes(role.slug))
   }
@@ -173,7 +175,8 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   async getRoleNames(): Promise<string[]> {
     if (!this.roles || this.roles.length === 0) {
-      await this.load('roles' as any)
+      const self: User = this
+      await self.load('roles')
     }
     return this.roles.map((role) => role.name)
   }
