@@ -3,6 +3,38 @@
 **Defined:** 2026-02-03
 **Core Value:** Easy course creation with seamless Moodle migration
 
+## Technical Debt Requirements
+
+*Added 2026-10-09. Sourced from `.planning/codebase/CONCERNS.md` and verified
+against the working tree. These gate the v1 content work (Phases 1-3).*
+
+### Code Health
+
+- [ ] **DEBT-01**: `bun run lint` exits 0 (17 errors today: `eqeqeq` in `bulk_enrollment_log.ts`, `course_content.ts`, `submission.ts`; prettier in `database/helpers/schema_helpers.ts`)
+- [ ] **DEBT-02**: No `as any` assertions remain in `app/` (16 today across 7 files), with `bun run typecheck` still passing
+- [ ] **DEBT-03**: Functional test suite is re-enabled (`tests/functional/grades.spec.ts.skip`) and runs in CI
+
+### Security and Correctness
+
+- [ ] **DEBT-04**: Resource-ownership authorization is centralized in `app/policies/` instead of inline controller checks
+- [ ] **DEBT-05**: Every controller action accepting user input has a validator (5 validators for 16 controllers today)
+- [ ] **DEBT-06**: Enrollment counter mutations (`enrolledCount`, `currentEnrollments`) run inside a database transaction
+- [ ] **DEBT-07**: Category tree building detects and rejects cycles instead of looping indefinitely
+- [ ] **DEBT-08**: Decryption failures are logged and raised, never silently returned as the raw value
+- [ ] **DEBT-09**: 2FA pending state has an explicit timeout and a documented recovery path (recovery codes or admin unlock)
+
+### Evaluations Module
+
+- [ ] **EVAL-01**: Teacher sees submissions awaiting grading, scoped to courses they instruct
+- [ ] **EVAL-02**: Evaluations dashboard reports accurate total / pending / graded counts
+- [ ] **EVAL-03**: Teacher can navigate from the evaluations list into the grading view
+
+### Contact Form
+
+- [ ] **CONTACT-01**: Contact form posts to a backend endpoint with server-side validation
+- [ ] **CONTACT-02**: Submission is persisted and notifies the configured address
+- [ ] **CONTACT-03**: Contact endpoint is rate-limited
+
 ## v1 Requirements
 
 Requirements for initial release. Each maps to roadmap phases.
@@ -129,60 +161,76 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 2 | Pending |
-| BUILD-02 | Phase 2 | Pending |
-| BUILD-03 | Phase 2 | Pending |
-| BUILD-04 | Phase 2 | Pending |
-| BUILD-05 | Phase 2 | Pending |
-| BUILD-06 | Phase 2 | Pending |
-| BUILD-07 | Phase 2 | Pending |
-| BUILD-08 | Phase 2 | Pending |
-| BUILD-09 | Phase 2 | Pending |
-| BUILD-10 | Phase 2 | Pending |
-| PAGE-01 | Phase 3 | Pending |
-| PAGE-02 | Phase 3 | Pending |
-| PAGE-03 | Phase 3 | Pending |
-| PAGE-04 | Phase 3 | Pending |
-| PAGE-05 | Phase 3 | Pending |
-| PAGE-06 | Phase 3 | Pending |
-| PAGE-07 | Phase 3 | Pending |
-| FILE-01 | Phase 4 | Pending |
-| FILE-02 | Phase 4 | Pending |
-| FILE-03 | Phase 4 | Pending |
-| FILE-04 | Phase 4 | Pending |
-| FILE-05 | Phase 4 | Pending |
-| FILE-06 | Phase 4 | Pending |
-| URL-01 | Phase 5 | Pending |
-| URL-02 | Phase 5 | Pending |
-| URL-03 | Phase 5 | Pending |
-| URL-04 | Phase 5 | Pending |
-| ASSIGN-01 | Phase 6 | Pending |
-| ASSIGN-02 | Phase 6 | Pending |
-| ASSIGN-03 | Phase 6 | Pending |
-| IMPORT-01 | Phase 8 | Pending |
-| IMPORT-02 | Phase 8 | Pending |
-| IMPORT-03 | Phase 8 | Pending |
-| IMPORT-04 | Phase 8 | Pending |
-| IMPORT-05 | Phase 8 | Pending |
-| IMPORT-06 | Phase 8 | Pending |
-| IMPORT-07 | Phase 8 | Pending |
-| IMPORT-08 | Phase 8 | Pending |
-| IMPORT-09 | Phase 8 | Pending |
-| IMPORT-10 | Phase 8 | Pending |
-| IMPORT-11 | Phase 8 | Pending |
-| TRACK-01 | Phase 7 | Pending |
-| TRACK-02 | Phase 7 | Pending |
-| TRACK-03 | Phase 7 | Pending |
-| TRACK-04 | Phase 7 | Pending |
-| PERM-01 | Phase 9 | Pending |
-| PERM-02 | Phase 9 | Pending |
-| PERM-03 | Phase 9 | Pending |
+| DEBT-01 | Phase 1 | Pending |
+| DEBT-02 | Phase 1 | Pending |
+| DEBT-03 | Phase 1 | Pending |
+| DEBT-04 | Phase 2 | Pending |
+| DEBT-05 | Phase 2 | Pending |
+| DEBT-06 | Phase 2 | Pending |
+| DEBT-07 | Phase 2 | Pending |
+| DEBT-08 | Phase 2 | Pending |
+| DEBT-09 | Phase 2 | Pending |
+| EVAL-01 | Phase 3 | Pending |
+| EVAL-02 | Phase 3 | Pending |
+| EVAL-03 | Phase 3 | Pending |
+| CONTACT-01 | Phase 3 | Pending |
+| CONTACT-02 | Phase 3 | Pending |
+| CONTACT-03 | Phase 3 | Pending |
+| BUILD-01 | Phase 5 | Pending |
+| BUILD-02 | Phase 5 | Pending |
+| BUILD-03 | Phase 5 | Pending |
+| BUILD-04 | Phase 5 | Pending |
+| BUILD-05 | Phase 5 | Pending |
+| BUILD-06 | Phase 5 | Pending |
+| BUILD-07 | Phase 5 | Pending |
+| BUILD-08 | Phase 5 | Pending |
+| BUILD-09 | Phase 5 | Pending |
+| BUILD-10 | Phase 5 | Pending |
+| PAGE-01 | Phase 6 | Pending |
+| PAGE-02 | Phase 6 | Pending |
+| PAGE-03 | Phase 6 | Pending |
+| PAGE-04 | Phase 6 | Pending |
+| PAGE-05 | Phase 6 | Pending |
+| PAGE-06 | Phase 6 | Pending |
+| PAGE-07 | Phase 6 | Pending |
+| FILE-01 | Phase 7 | Pending |
+| FILE-02 | Phase 7 | Pending |
+| FILE-03 | Phase 7 | Pending |
+| FILE-04 | Phase 7 | Pending |
+| FILE-05 | Phase 7 | Pending |
+| FILE-06 | Phase 7 | Pending |
+| URL-01 | Phase 8 | Pending |
+| URL-02 | Phase 8 | Pending |
+| URL-03 | Phase 8 | Pending |
+| URL-04 | Phase 8 | Pending |
+| ASSIGN-01 | Phase 9 | Pending |
+| ASSIGN-02 | Phase 9 | Pending |
+| ASSIGN-03 | Phase 9 | Pending |
+| IMPORT-01 | Phase 11 | Pending |
+| IMPORT-02 | Phase 11 | Pending |
+| IMPORT-03 | Phase 11 | Pending |
+| IMPORT-04 | Phase 11 | Pending |
+| IMPORT-05 | Phase 11 | Pending |
+| IMPORT-06 | Phase 11 | Pending |
+| IMPORT-07 | Phase 11 | Pending |
+| IMPORT-08 | Phase 11 | Pending |
+| IMPORT-09 | Phase 11 | Pending |
+| IMPORT-10 | Phase 11 | Pending |
+| IMPORT-11 | Phase 11 | Pending |
+| TRACK-01 | Phase 10 | Pending |
+| TRACK-02 | Phase 10 | Pending |
+| TRACK-03 | Phase 10 | Pending |
+| TRACK-04 | Phase 10 | Pending |
+| PERM-01 | Phase 12 | Pending |
+| PERM-02 | Phase 12 | Pending |
+| PERM-03 | Phase 12 | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 41
+- Technical debt requirements: 15 total (DEBT ×9, EVAL ×3, CONTACT ×3)
+- v1 content requirements: 41 total
+- Mapped to phases: 56
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-03 after roadmap creation*
+*Last updated: 2026-10-09 — technical debt requirements added, traceability renumbered for the 12-phase roadmap*
