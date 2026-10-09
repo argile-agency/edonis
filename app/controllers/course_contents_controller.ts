@@ -215,8 +215,8 @@ export default class CourseContentsController {
     } else {
       query = query.whereNull('parent_id')
     }
-    const maxOrderResult = await query.max('order as maxOrder')
-    const maxOrder = (maxOrderResult[0] as any)?.maxOrder as number | null
+    const maxOrderResult = await query.pojo<{ maxOrder: number | null }>().max('order as maxOrder')
+    const maxOrder = maxOrderResult[0]?.maxOrder ?? null
     const order = payload.order ?? (maxOrder || 0) + 1
 
     await CourseModule.create({
@@ -336,8 +336,9 @@ export default class CourseContentsController {
     // Get max order
     const maxOrderResult = await CourseContent.query()
       .where('module_id', payload.moduleId)
+      .pojo<{ maxOrder: number | null }>()
       .max('order as maxOrder')
-    const maxOrder = (maxOrderResult[0] as any)?.maxOrder as number | null
+    const maxOrder = maxOrderResult[0]?.maxOrder ?? null
     const order = payload.order ?? (maxOrder || 0) + 1
 
     await CourseContent.create({
