@@ -62,6 +62,24 @@ Authorization (DEBT-04): `@adonisjs/bouncer` is **not installed**, and `npm late
 
 ---
 
+## Architectural Responsibility Map
+
+| Capability | Primary Tier | Secondary Tier | Rationale |
+|------------|-------------|----------------|-----------|
+| Coarse role gate (admin / staff areas) | API: route middleware (`role_middleware.ts`) | — | Already correct and cheap. Keep it; policies do not replace it |
+| Resource-ownership decision ("may this user edit *this* course?") | API: `app/policies/*` (Bouncer) | Domain model (`Course.hasPermission`) as data helper | Single decision point that Phase 12 can extend. Controllers ask, never decide |
+| Scoping child ids to an authorized parent (module/content/permission/method/group ∈ course) | API: controller/service query (`where('course_id', course.id)`) | Policy | IDORs here come from **unscoped queries**, not missing policy calls. A policy check on the parent is useless if the child query is unscoped |
+| Showing/hiding UI affordances (`canEdit`, `canManage`) | API computes via `bouncer.allows()` → Inertia props | Browser renders | Browser must never be the decision point |
+| 403 rendering for Inertia requests | API: `app/exceptions/handler.ts` | Browser: `inertia/pages/errors/forbidden.tsx` | Bouncer's self-handling sends plain text, so the app handler must intercept |
+| Input shape/type validation | API: VineJS validators | Browser (UX only) | Server is authoritative |
+| Business-rule validation (capacity, enrolment window, cycle) | API: service layer (`EnrollmentService`, category helper) | DB constraints (unique keys already exist) | Needs DB state; not expressible in Vine schema alone |
+| Counter consistency | Database (atomic `UPDATE` in transaction) | Service | Only the DB can make increment + capacity check atomic |
+| PII encryption at rest | Data layer (Lucid `prepare`/`consume`) | `EncryptionService` | Already the design; Phase 2 changes failure semantics only |
+| 2FA pending state | API: session (encrypted cookie store) | — | Must not touch DB until login completes |
+| Break-glass 2FA reset | Ops: ace command | API: admin endpoint | Works when no admin can log in |
+
+---
+
 ## Roadmap Corrections (feed these into ROADMAP.md before planning)
 
 | Criterion as written | What the code actually shows | Recommended restatement |
@@ -88,7 +106,7 @@ Authorization (DEBT-04): `@adonisjs/bouncer` is **not installed**, and `npm late
 - **Multi-DB:** PG / MySQL / MariaDB / SQLite. Every SQL pattern below was chosen to work on all four. Note `forUpdate` is a no-op on SQLite.
 - **Multi-tenancy:** CLAUDE.md requires `tenant_id`, but **0 occurrences exist** in the schema or app. Not applicable this phase.
 - **Accessibility:** any new page (e.g. `errors/forbidden.tsx`) must pass axe-core critical/serious checks and use shadcn/ui.
-- **Project skills** (`.claude/skills/`): `design-to-code-react`, `ecoscore-calculator-engine`, `rgesn-audit-automation`, `skill-creator`, `wcag-compliance-checker`. Only `wcag-compliance-checker` is marginally relevant (the new 403 page). None constrain backend work.
+- **Project skills** (`.claude/skills/`): `design-to-code-react`, `ecoscore-calculator-engine`, `rgesn-audit-automation`, `skill-creator`, `wcag-compliance-checker`. SKILL.md files read: `wcag-compliance-checker` is an audit workflow (Playwright + axe-core + Vision report) and `design-to-code-react` is a Figma-to-React generator. **Neither imposes coding conventions.** The new `errors/forbidden.tsx` page is covered by the existing axe-core browser suite (`tests/browser/accessibility.spec.ts`); the wcag skill may optionally be used to audit it. No skill constrains the backend work.
 
 ---
 
@@ -104,24 +122,6 @@ Authorization (DEBT-04): `@adonisjs/bouncer` is **not installed**, and `npm late
 | DEBT-08 | Decryption failures logged and raised | `decrypt` returns `null`, never throws (verified). Blast radius via `consume` → `auth.check()`. `varchar(20)` overflow (110-char ciphertext measured). Sequenced widen → scan/repair → raise. See **DEBT-08 Findings**. |
 | DEBT-09 | 2FA pending state has timeout + documented recovery path | Current mechanism mapped. `{userId, expiresAt, attempts}` design. Per-user throttle. Audited admin reset + ace CLI reset + `docs/TWO_FACTOR_RECOVERY.md`. See **DEBT-09 Findings**. |
 </phase_requirements>
-
----
-
-## Architectural Responsibility Map
-
-| Capability | Primary Tier | Secondary Tier | Rationale |
-|------------|-------------|----------------|-----------|
-| Coarse role gate (admin / staff areas) | API: route middleware (`role_middleware.ts`) | — | Already correct and cheap. Keep it; policies do not replace it |
-| Resource-ownership decision ("may this user edit *this* course?") | API: `app/policies/*` (Bouncer) | Domain model (`Course.hasPermission`) as data helper | Single decision point that Phase 12 can extend. Controllers ask, never decide |
-| Scoping child ids to an authorized parent (module/content/permission/method/group ∈ course) | API: controller/service query (`where('course_id', course.id)`) | Policy | IDORs here come from **unscoped queries**, not missing policy calls. A policy check on the parent is useless if the child query is unscoped |
-| Showing/hiding UI affordances (`canEdit`, `canManage`) | API computes via `bouncer.allows()` → Inertia props | Browser renders | Browser must never be the decision point |
-| 403 rendering for Inertia requests | API: `app/exceptions/handler.ts` | Browser: `inertia/pages/errors/forbidden.tsx` | Bouncer's self-handling sends plain text, so the app handler must intercept |
-| Input shape/type validation | API: VineJS validators | Browser (UX only) | Server is authoritative |
-| Business-rule validation (capacity, enrolment window, cycle) | API: service layer (`EnrollmentService`, category helper) | DB constraints (unique keys already exist) | Needs DB state; not expressible in Vine schema alone |
-| Counter consistency | Database (atomic `UPDATE` in transaction) | Service | Only the DB can make increment + capacity check atomic |
-| PII encryption at rest | Data layer (Lucid `prepare`/`consume`) | `EncryptionService` | Already the design; Phase 2 changes failure semantics only |
-| 2FA pending state | API: session (encrypted cookie store) | — | Must not touch DB until login completes |
-| Break-glass 2FA reset | Ops: ace command | API: admin endpoint | Works when no admin can log in |
 
 ---
 
@@ -356,6 +356,8 @@ grep -rn "request\.\(only\|input\|all\)(" app/controllers   # must return 0 (val
 
 **No `transaction` call exists anywhere in `app/`** [VERIFIED: `grep -rn transaction app` → 0].
 
+**No bulk-import endpoint exists.** CONCERNS.md flags "Bulk Enrollment Import" as fragile, but only the `BulkEnrollmentLog` model exists; no controller, route or service references it [VERIFIED: `grep -rln BulkEnrollmentLog app start inertia` returns only the model]. There is no counter site to fix there.
+
 ### Why "wrap it in a transaction" is insufficient
 
 `method.currentEnrollments += 1; await method.save()` compiles to `UPDATE ... SET current_enrollments = <value read earlier>`. Two concurrent requests both read 9 (max 10), both pass `isAvailable()`, and both write 10, so **11 enrolments exist and the counter says 10**. A transaction at default isolation (READ COMMITTED on PG, REPEATABLE READ on MySQL) does not prevent this lost update. `forUpdate()` would, but **knex compiles it to `''` on SQLite** [VERIFIED].
@@ -381,7 +383,9 @@ await db.transaction(async (trx) => {
 ```
 - Lucid returns write-query results as an array: `return Array.isArray(rows) ? rows : [rows]` [VERIFIED: `lucid/build/src/orm/query_builder/index.js:124-133`], so `const [affected]` is the driver's affected-row count. That knex resolves `update`/`increment` to an affected-row **number** on `pg`, `mysql2` and `better-sqlite3` is [ASSUMED: knex documented behaviour; not executed per-driver here]. **Wave 0 should include a functional test that asserts `affected === 0` on a full method, run on the CI pg/mysql/sqlite matrix.**
 - `increment` on the model query builder skips model hooks and `updatedAt`; that is acceptable for counters.
-- The unique constraint `course_enrollments(course_id, user_id)` exists [VERIFIED: migration `1763139386345:53`]. Treat a unique violation inside the transaction as "already enrolled" instead of pre-checking (the pre-check is also racy).
+- The unique constraint `course_enrollments(course_id, user_id)` exists [VERIFIED: migration `1763139386345:53`]. Treat a unique violation as "already enrolled" instead of pre-checking (the pre-check is also racy). Two details are load-bearing:
+  - **Catch it *outside* the `db.transaction()` callback**, after the managed transaction has rolled back. On PostgreSQL a constraint error aborts the transaction; any further statement inside it fails with `current transaction is aborted`. Letting the error propagate out of the callback also rolls back the capacity increment.
+  - **Engine-specific error shapes** need one detector, e.g. `isUniqueViolation(err)`: PG `code === '23505'`; MySQL/MariaDB `code === 'ER_DUP_ENTRY'` (errno 1062); SQLite (`better-sqlite3`) `code === 'SQLITE_CONSTRAINT_UNIQUE'` [ASSUMED: driver error codes from training knowledge]. The CI-matrix test must enrol the same user twice and assert a clean "already enrolled" result on all three engines.
 
 ### Service shape
 
@@ -674,9 +678,14 @@ async reorderModules({ request, params, bouncer, response, session }: HttpContex
 // Source: http-server/build/index.js:283-292 (self-handled exceptions skip statusPages)
 import { errors as bouncerErrors } from '@adonisjs/bouncer'
 
-if (error instanceof bouncerErrors.E_AUTHORIZATION_FAILURE && ctx.request.header('x-inertia')) {
-  ctx.response.status(error.status)
-  return ctx.inertia.render('errors/forbidden', { message: error.getResponseMessage(ctx) })
+if (error instanceof bouncerErrors.E_AUTHORIZATION_FAILURE) {
+  // Inertia XHR *and* full-page browser navigations get the page; JSON clients
+  // (e.g. updateProgress / getCourseProgress fetch calls) keep Bouncer's JSON body.
+  const wantsJson = ctx.request.accepts(['html', 'json']) === 'json' && !ctx.request.header('x-inertia')
+  if (!wantsJson) {
+    ctx.response.status(error.status)
+    return ctx.inertia.render('errors/forbidden', { message: error.getResponseMessage(ctx) })
+  }
 }
 ```
 `errors` is exported from the package root (`export * as errors from './src/errors.js'`) [VERIFIED: bouncer@3.1.6 `build/index.d.ts`]. Phase 1 plan 01-01 rewrites this file's `as any` casts into type guards; **build on 01-01's version**.
@@ -766,7 +775,7 @@ The sketched plans **collide on the same files**, and `parallelization: true` in
 
 ### Pitfall 4: "Transactional" counters that still race
 **What goes wrong:** `trx` wraps `x += 1; save()`; concurrent enrolments still exceed `maxEnrollments`.
-**Avoid:** Conditional atomic `increment` + affected-row check. **Do not** cite a test as proof of race safety: under `withGlobalTransaction()` and SQLite, all queries in a test share one connection and run serially. Prove the invariant sequentially (fill to capacity → next enrol rejected; counter equals `COUNT(*)` after mixed ops) and argue race safety from the SQL.
+**Avoid:** Conditional atomic `increment` + affected-row check, with the unique-violation catch placed outside the transaction callback (PG aborts the transaction on constraint errors) and one cross-engine detector (`23505` / `ER_DUP_ENTRY` / `SQLITE_CONSTRAINT_UNIQUE`). **Do not** cite a test as proof of race safety: under `withGlobalTransaction()` and SQLite, all queries in a test share one connection and run serially. Prove the invariant sequentially (fill to capacity → next enrol rejected; counter equals `COUNT(*)` after mixed ops) and argue race safety from the SQL.
 
 ### Pitfall 5: Enabling raise-on-decrypt before data is clean
 **What goes wrong:** Users with a corrupt/plaintext PII cell are silently logged out (silent-auth swallows the error) or 500 on every page. The admin user list breaks.
