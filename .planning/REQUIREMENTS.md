@@ -13,6 +13,15 @@ against the working tree. These gate the v1 content work (Phases 1-3).*
 - [ ] **DEBT-01**: `bun run lint` exits 0 (17 errors today: `eqeqeq` in `bulk_enrollment_log.ts`, `course_content.ts`, `submission.ts`; prettier in `database/helpers/schema_helpers.ts`)
 - [ ] **DEBT-02**: No `as any` assertions remain in `app/` (16 today across 7 files), with `bun run typecheck` still passing
 - [ ] **DEBT-03**: Functional test suite is re-enabled (`tests/functional/grades.spec.ts.skip`) and runs in CI
+- [ ] **DEBT-10**: Functional coverage for gradebook *computation* (instructor matrix, grade categories, overall-grade arithmetic, missing submissions). Deferred from Phase 1, which covered access control only. Scenarios from the deleted `grades.spec.ts.skip` draft, each run as `withInertia()` requests on `route('grades.course')` / `route('grades.index')`:
+  - Student index: `grades.index` lists the student's enrolled courses with per-course grade summary
+  - Student own grades: a graded `Submission` (85/100, feedback "Good work!") appears in `props.grades` with matching `pointsEarned` and `feedback`
+  - Student isolation: with a second enrolled student, the student view returns only the caller's own grades (the draft only asserted `isInstructor: false`, which Phase 1 already covers)
+  - Instructor roster: with 2 enrolled students, `props.gradebook` has length 2
+  - Instructor matrix: with graded submissions of 90 and 75 on one assignment, each student's `gradebook[].grades[0].pointsEarned` matches
+  - Grade categories: two `GradeCategory` rows (Assignments w=50, Quizzes w=30, drop-lowest) are returned in `props.categories` ordered by `position`
+  - Overall-grade arithmetic: 80/100 + 40/50 across two categories gives `overallGrade 80`, `earnedPoints 120`, `totalPoints 150`
+  - Missing submissions: a published assignment with no submission gives `overallGrade null`, `earnedPoints 0`, `totalPoints 0`, `gradedCount 0`
 
 ### Security and Correctness
 
@@ -170,6 +179,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBT-07 | Phase 2 | Pending |
 | DEBT-08 | Phase 2 | Pending |
 | DEBT-09 | Phase 2 | Pending |
+| DEBT-10 | Backlog | Pending |
 | EVAL-01 | Phase 3 | Pending |
 | EVAL-02 | Phase 3 | Pending |
 | EVAL-03 | Phase 3 | Pending |
@@ -226,10 +236,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERM-03 | Phase 12 | Pending |
 
 **Coverage:**
-- Technical debt requirements: 15 total (DEBT ×9, EVAL ×3, CONTACT ×3)
+- Technical debt requirements: 16 total (DEBT ×10, EVAL ×3, CONTACT ×3)
 - v1 content requirements: 41 total
 - Mapped to phases: 56
-- Unmapped: 0
+- Backlog (not yet mapped to a phase): 1 (DEBT-10)
 
 ---
 *Requirements defined: 2026-02-03*
