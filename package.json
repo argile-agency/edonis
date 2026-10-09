@@ -37,6 +37,7 @@
     "@adonisjs/prettier-config": "^1.4.4",
     "@adonisjs/tsconfig": "^1.4.0",
     "@axe-core/playwright": "^4.11.0",
+    "@japa/api-client": "^3.2.1",
     "@japa/assert": "^4.0.1",
     "@japa/browser-client": "^2.1.1",
     "@japa/plugin-adonisjs": "^4.0.0",
