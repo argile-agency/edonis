@@ -922,24 +922,31 @@ export function readPending(raw: unknown, now: number):
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Each question below is settled by a named plan, task or decision. None blocks planning.
 
 1. **Q1: Production MariaDB `sql_mode`**
    - Known: prod is MariaDB via `mysql2`; phone/mobile_phone are `varchar(20)`; ciphertext is ~110 chars.
    - Unclear: whether writes error (strict) or truncate (non-strict).
    - Recommendation: run `SELECT @@sql_mode;` and `SELECT id, LENGTH(phone), LENGTH(mobile_phone) FROM users WHERE phone IS NOT NULL OR mobile_phone IS NOT NULL;` on prod before 02-04 executes. Read-only, user action.
+   - RESOLVED: plan 02-07 Task 1 is a blocking `checkpoint:human-action` that collects `sql_mode`, the length query and the per-environment `pii:scan` counts before any raise code is written. The raise itself sits behind `PII_DECRYPT_STRICT` (default off; 02-07 Task 2), so it cannot reach production before the operator opts in after a clean scan.
 2. **Q2: Undecryptable PII policy**
    - Known: scan can classify rows.
    - Unclear: null them (data loss, GDPR-neutral) or keep and block the user until an admin edits them?
    - Recommendation: default to report-only; `--null-undecryptable` requires explicit user consent.
+   - RESOLVED: plan 02-02 Task 2 ships `pii:scan` as report-only by default, with opt-in `--fix` and `--null-undecryptable` flags; every mutation is audited as `cli.pii.*`. Plan 02-07 Task 1 records the per-environment remedy (admin re-entry, or explicit consent to `--null-undecryptable`); no task ever runs that flag without consent.
 3. **Q3: Course-level roles for Phase 12**
    - Known: `course_enrollments.course_role` and `user_roles.course_id` exist but are ignored by authorization.
    - Recommendation: Phase 2 preserves current semantics (owner + `course_permissions`); record this as a Phase 12 decision.
+   - RESOLVED: deferred to Phase 12. `CoursePolicy` (plan 02-01) preserves current semantics, and `02-01-SUMMARY.md` records Q3 as a Phase 12 decision (02-01 `<output>`).
 4. **Q4: Approval-workflow bypass**
    - `createCourseValidator.status` lets teachers publish directly. Constrain `status` to `draft` for non-admins?
    - Recommendation: flag; do not change in Phase 2 without confirmation.
+   - RESOLVED (as a process decision; the product question stays open): deferred, pending a user decision. It is NOT accepted. Plan 02-11 leaves `status` validation unchanged, labels T-02-53 "deferred — pending user decision" in its `<deferred_open>` section, and records the question in `02-11-SUMMARY.md`. Plan 02-14's SUMMARY repeats it in the out-of-scope list, so the user is asked at phase close.
 5. **Q5: Behaviour changes AS2-AS5**
    - Recommendation: one `checkpoint:human-verify` in the 02-01 plan, listing the policy table.
+   - RESOLVED: superseded by user decision. Each behaviour change ships as its own isolated, revertable commit behind its own `checkpoint:human-verify`: AS2 → 02-09 Task 2, AS3 → 02-10 Task 3, AS4 → 02-05 Task 3, AS5 → 02-14 Task 3. Plan 02-01 ships behaviour-preserving policies only.
 
 ---
 

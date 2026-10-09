@@ -118,13 +118,15 @@ Plans:
 
 > Sliced by file ownership (fine granularity): same-wave plans share no files. Behaviour changes AS2–AS5
 > each ship as an isolated commit behind their own `checkpoint:human-verify`; the DEBT-08 raise is gated by a
-> blocking production check (Q1). Release ordering: 02-02 deployed + `pii:scan` clean before 02-07.
+> blocking production check (Q1) and an env flag (`PII_DECRYPT_STRICT`, default off). Release ordering: 02-02 deployed +
+> `pii:scan` (with `--fix` for legacy plaintext) before 02-07; strict mode enabled per environment only after a clean scan.
+> 02-01 registers Shield's CSRF test client (`.withCsrfToken()`), which every Phase 2 write test uses.
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Bouncer 3 foundation: CoursePolicy/EnrollmentPolicy (behaviour-preserving), Inertia 403 page, gradebook via policy, test factories [DEBT-04]
-- [ ] 02-02-PLAN.md — Widen phone/mobile_phone for ciphertext + `pii:scan` (report-only by default) [DEBT-08]
+- [ ] 02-01-PLAN.md — Bouncer 3 foundation: CSRF test harness + test factories, CoursePolicy/EnrollmentPolicy (behaviour-preserving), Inertia 403 page (axe-checked), gradebook via policy [DEBT-04]
+- [ ] 02-02-PLAN.md — Widen phone/mobile_phone for ciphertext + `pii:scan` (report-only by default, audited fixes) [DEBT-08]
 - [ ] 02-03-PLAN.md — 2FA pending state: 10-min expiry, 5-attempt lock, per-user throttle [DEBT-09]
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -132,7 +134,7 @@ Plans:
 - [ ] 02-04-PLAN.md — courses_controller onto CoursePolicy + A4 permission IDOR [DEBT-04]
 - [ ] 02-05-PLAN.md — enrollments_controller policies (A1 fix), validators V9–V12, A9 scoping, AS4 checkpoint [DEBT-04, DEBT-05]
 - [ ] 02-06-PLAN.md — Category cycle rejection + subtree path/depth recompute + integrity command [DEBT-07]
-- [ ] 02-07-PLAN.md — Q1 prod check, then decryption failures raise + silent-auth rethrow + 2FA decrypt audit [DEBT-08]
+- [ ] 02-07-PLAN.md — Q1 prod check, then decryption failures logged/never raw, raising behind `PII_DECRYPT_STRICT` + silent-auth rethrow + 2FA decrypt audit [DEBT-08]
 - [ ] 02-08-PLAN.md — Admin 2FA reset, `user:reset-2fa` break-glass CLI, recovery doc [DEBT-09]
 - [ ] 02-09-PLAN.md — AS2 gradebook access for admins / edit co-instructors (checkpoint) [DEBT-04]
 
@@ -141,7 +143,7 @@ Plans:
 - [ ] 02-10-PLAN.md — course_contents onto CoursePolicy, A2/A3/A5/A8 scoping, V17, AS3 checkpoint [DEBT-04, DEBT-05]
 - [ ] 02-11-PLAN.md — courses_controller validators V1–V7, V14 + form contract fixes + A9 [DEBT-05]
 - [ ] 02-12-PLAN.md — Listing/avatar/account validators + numeric route-param matchers [DEBT-05]
-- [ ] 02-13-PLAN.md — EnrollmentService: transactional atomic counters + `enrollment:recount` [DEBT-06]
+- [ ] 02-13-PLAN.md — EnrollmentService: transactional atomic counters + audited `enrollment:recount` [DEBT-06]
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
