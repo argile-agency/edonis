@@ -114,14 +114,38 @@ Plans:
 > over-capacity enrolment. Phase 2 requires Phase 1 to be executed first (test infrastructure and
 > the `canEnroll()` fix).
 
-**Plans**: TBD
+**Plans**: 14 plans in 4 waves
+
+> Sliced by file ownership (fine granularity): same-wave plans share no files. Behaviour changes AS2–AS5
+> each ship as an isolated commit behind their own `checkpoint:human-verify`; the DEBT-08 raise is gated by a
+> blocking production check (Q1). Release ordering: 02-02 deployed + `pii:scan` clean before 02-07.
 
 Plans:
+**Wave 1**
 
-- [ ] 02-01: Bouncer policy layer and route audit
-- [ ] 02-02: Validator coverage for remaining controllers
-- [ ] 02-03: Transactional enrollment counters and category cycle detection
-- [ ] 02-04: Encryption failure handling and 2FA state timeout
+- [ ] 02-01-PLAN.md — Bouncer 3 foundation: CoursePolicy/EnrollmentPolicy (behaviour-preserving), Inertia 403 page, gradebook via policy, test factories [DEBT-04]
+- [ ] 02-02-PLAN.md — Widen phone/mobile_phone for ciphertext + `pii:scan` (report-only by default) [DEBT-08]
+- [ ] 02-03-PLAN.md — 2FA pending state: 10-min expiry, 5-attempt lock, per-user throttle [DEBT-09]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-04-PLAN.md — courses_controller onto CoursePolicy + A4 permission IDOR [DEBT-04]
+- [ ] 02-05-PLAN.md — enrollments_controller policies (A1 fix), validators V9–V12, A9 scoping, AS4 checkpoint [DEBT-04, DEBT-05]
+- [ ] 02-06-PLAN.md — Category cycle rejection + subtree path/depth recompute + integrity command [DEBT-07]
+- [ ] 02-07-PLAN.md — Q1 prod check, then decryption failures raise + silent-auth rethrow + 2FA decrypt audit [DEBT-08]
+- [ ] 02-08-PLAN.md — Admin 2FA reset, `user:reset-2fa` break-glass CLI, recovery doc [DEBT-09]
+- [ ] 02-09-PLAN.md — AS2 gradebook access for admins / edit co-instructors (checkpoint) [DEBT-04]
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-10-PLAN.md — course_contents onto CoursePolicy, A2/A3/A5/A8 scoping, V17, AS3 checkpoint [DEBT-04, DEBT-05]
+- [ ] 02-11-PLAN.md — courses_controller validators V1–V7, V14 + form contract fixes + A9 [DEBT-05]
+- [ ] 02-12-PLAN.md — Listing/avatar/account validators + numeric route-param matchers [DEBT-05]
+- [ ] 02-13-PLAN.md — EnrollmentService: transactional atomic counters + `enrollment:recount` [DEBT-06]
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-14-PLAN.md — Admin participants via service, COUNT(*) invariant, AS5 checkpoint, `check:debt` gates [DEBT-06]
 
 ### Phase 3: Complete Stubbed Features
 
@@ -348,7 +372,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 0/5 | Planned (re-scoped) | - |
-| 2. Security and Correctness Hardening | 0/4 | Not started | - |
+| 2. Security and Correctness Hardening | 0/14 | Planned | - |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
@@ -363,4 +387,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 ---
 *Roadmap created: 2026-02-03*
 *Restructured: 2026-10-09 — tech debt phases 1-3 prepended, content phases renumbered 1-9 -> 4-12, phases 5 and 10 rescoped against verified codebase reality*
-*Total phases: 12 | Total plans: 30 (estimated)*
+*Total phases: 12 | Total plans: 40 (estimated)*
