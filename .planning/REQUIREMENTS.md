@@ -20,7 +20,7 @@ against the working tree. These gate the v1 content work (Phases 1-3).*
 - [ ] **DEBT-05**: Every controller action accepting user input has a validator (5 validators for 16 controllers today)
 - [ ] **DEBT-06**: Enrollment counter mutations (`enrolledCount`, `currentEnrollments`) run inside a database transaction
 - [ ] **DEBT-07**: Category tree building detects and rejects cycles instead of looping indefinitely
-- [ ] **DEBT-08**: Decryption failures are logged and raised, never silently returned as the raw value
+- [ ] **DEBT-08**: Decryption failures are logged and never returned raw in all modes; raises when PII_DECRYPT_STRICT=true
 - [ ] **DEBT-09**: 2FA pending state has an explicit timeout and a documented recovery path (recovery codes or admin unlock)
 
 ### Evaluations Module

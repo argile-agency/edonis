@@ -104,8 +104,8 @@ Plans:
      counters equal `COUNT(*)` of their source rows after any sequence of enrol/unenrol operations
   4. Category update rejects a parent that is the category itself or a descendant; descendant
      `path`/`depth` are recomputed on move
-  5. Decryption failures are logged and raised, never returned as raw values. Prerequisites: PII
-     columns can hold ciphertext, and existing rows are scanned/repaired before raising is enabled
+  5. Decryption failures are logged and never returned raw in all modes; raises when
+     PII_DECRYPT_STRICT=true. Prerequisites: PII columns can hold ciphertext, and existing rows are scanned/repaired before raising is enabled
   6. 2FA pending state has an explicit timeout and a documented recovery path
 
 > **Re-scoped 2026-10-09 after research** (`02-RESEARCH.md`). Criteria 1-5 were reworded to match
