@@ -147,3 +147,7 @@ None.
 
 - Task 1: RED `549c8f8` (`test(...)`), then GREEN `6b78edc` (`feat(...)`).
 - Task 2: RED `fbf3745` (`test(...)`, where only the unenrol-decrement test failed). Every other HTTP behaviour already held through the old pre-checks; the tests guard against regressions. GREEN `fa373bd` (`fix(...)`), plus `bc5abee` for the command.
+
+## Self-Check: PASSED
+
+All 6 created files exist; commits 549c8f8, 6b78edc, fbf3745, fa373bd, bc5abee are on the branch.
