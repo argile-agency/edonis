@@ -12,4 +12,7 @@
 |
 */
 
-export const policies = {}
+export const policies = {
+  CoursePolicy: () => import('#policies/course_policy'),
+  EnrollmentPolicy: () => import('#policies/enrollment_policy'),
+}
