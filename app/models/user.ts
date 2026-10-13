@@ -4,6 +4,7 @@ import { compose } from '@adonisjs/core/helpers'
 import { BaseModel, beforeSave, column, manyToMany } from '@adonisjs/lucid/orm'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import type { ManyToMany } from '@adonisjs/lucid/types/relations'
+import type { LucidRow } from '@adonisjs/lucid/types/model'
 import Role from '#models/role'
 import EncryptionService from '#services/encryption_service'
 
@@ -42,13 +43,15 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column({
     prepare: (value: string | null) => EncryptionService.encrypt(value),
-    consume: (value: string | null) => EncryptionService.decrypt(value),
+    consume: (value: string | null, attribute: string, model: LucidRow) =>
+      EncryptionService.decrypt(value, { column: attribute, id: model.$primaryKeyValue }),
   })
   declare phone: string | null
 
   @column({
     prepare: (value: string | null) => EncryptionService.encrypt(value),
-    consume: (value: string | null) => EncryptionService.decrypt(value),
+    consume: (value: string | null, attribute: string, model: LucidRow) =>
+      EncryptionService.decrypt(value, { column: attribute, id: model.$primaryKeyValue }),
   })
   declare mobilePhone: string | null
 
@@ -69,13 +72,15 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column({
     prepare: (value: string | null) => EncryptionService.encrypt(value),
-    consume: (value: string | null) => EncryptionService.decrypt(value),
+    consume: (value: string | null, attribute: string, model: LucidRow) =>
+      EncryptionService.decrypt(value, { column: attribute, id: model.$primaryKeyValue }),
   })
   declare address: string | null
 
   @column({
     prepare: (value: string | null) => EncryptionService.encrypt(value),
-    consume: (value: string | null) => EncryptionService.decrypt(value),
+    consume: (value: string | null, attribute: string, model: LucidRow) =>
+      EncryptionService.decrypt(value, { column: attribute, id: model.$primaryKeyValue }),
   })
   declare identificationNumber: string | null
 
