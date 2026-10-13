@@ -110,31 +110,49 @@ test.group('CoursePolicy / EnrollmentPolicy - decision matrix', (group) => {
     assert.isFalse(await coursePolicy(owner).allows('learn', course))
   })
 
-  test('viewGradebook: owner and enrolled users; admin is NOT bypassed', async ({ assert }) => {
+  test('viewGradebook: owner, edit-permission holders, enrolled users and admin', async ({
+    assert,
+  }) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner)
     const enrolled = await createUser({ roles: ['student'] })
     const outsider = await createUser({ roles: ['student'] })
+    const editor = await createUser({ roles: ['teacher'] })
+    const viewer = await createUser({ roles: ['teacher'] })
     const admin = await createUser({ roles: ['admin'] })
     await enrollUser(course, enrolled)
+    await grantPermission(course, editor, 'edit')
+    await grantPermission(course, viewer, 'view')
 
     assert.isTrue(await coursePolicy(owner).allows('viewGradebook', course))
     assert.isTrue(await coursePolicy(enrolled).allows('viewGradebook', course))
     assert.isFalse(await coursePolicy(outsider).allows('viewGradebook', course))
-    // AS2 has not shipped: an admin who neither owns nor is enrolled is denied.
-    assert.isFalse(await coursePolicy(admin).allows('viewGradebook', course))
+    // AS2: an edit co-instructor and an admin (neither owner nor enrolled) are allowed.
+    assert.isTrue(await coursePolicy(editor).allows('viewGradebook', course))
+    assert.isTrue(await coursePolicy(admin).allows('viewGradebook', course))
+    // A view-only collaborator who is not enrolled is still denied.
+    assert.isFalse(await coursePolicy(viewer).allows('viewGradebook', course))
   })
 
-  test('viewGradebookAsInstructor: owner only; admin is NOT bypassed', async ({ assert }) => {
+  test('viewGradebookAsInstructor: owner, edit-permission holders and admin', async ({
+    assert,
+  }) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner)
     const enrolled = await createUser({ roles: ['student'] })
+    const editor = await createUser({ roles: ['teacher'] })
+    const viewer = await createUser({ roles: ['teacher'] })
     const admin = await createUser({ roles: ['admin'] })
     await enrollUser(course, enrolled)
+    await grantPermission(course, editor, 'edit')
+    await grantPermission(course, viewer, 'view')
 
     assert.isTrue(await coursePolicy(owner).allows('viewGradebookAsInstructor', course))
     assert.isFalse(await coursePolicy(enrolled).allows('viewGradebookAsInstructor', course))
-    assert.isFalse(await coursePolicy(admin).allows('viewGradebookAsInstructor', course))
+    // AS2: edit co-instructors and admins get the instructor view.
+    assert.isTrue(await coursePolicy(editor).allows('viewGradebookAsInstructor', course))
+    assert.isTrue(await coursePolicy(admin).allows('viewGradebookAsInstructor', course))
+    assert.isFalse(await coursePolicy(viewer).allows('viewGradebookAsInstructor', course))
   })
 
   test('enroll: follows Course.canEnroll()', async ({ assert }) => {

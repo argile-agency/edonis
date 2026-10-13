@@ -18,24 +18,15 @@ async function isEnrolled(user: User, course: Course): Promise<boolean> {
 }
 
 /**
- * Course-level authorization. Every rule is behaviour-preserving: it encodes
- * the inline checks that used to live in the controllers, with no widening.
+ * Course-level authorization. Rules encode the inline checks that used to
+ * live in the controllers; the gradebook rules are widened by AS2 (plan 02-09).
  */
 export default class CoursePolicy extends BasePolicy {
   /**
    * Admin bypass. Runs before the guest check, so `user` may be null.
    */
-  async before(user: User | null, action: string): Promise<AuthorizerResponse | undefined> {
+  async before(user: User | null, _action: string): Promise<AuthorizerResponse | undefined> {
     if (!user) {
-      return undefined
-    }
-
-    /**
-     * Deliberate exclusion: today admins are DENIED a course gradebook they
-     * neither own nor are enrolled in. Plan 02-09 (AS2) removes this
-     * exclusion only after user confirmation.
-     */
-    if (action === 'viewGradebook' || action === 'viewGradebookAsInstructor') {
       return undefined
     }
 
@@ -85,17 +76,20 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
-   * Owner or enrolled user. Admins are NOT bypassed (see `before`).
+   * Owner, `edit` (or higher) permission holders, or enrolled users (admins
+   * pass via `before`). A `view`-only collaborator must be enrolled.
    */
   async viewGradebook(user: User, course: Course): Promise<AuthorizerResponse> {
-    return course.instructorId === user.id || isEnrolled(user, course)
+    return (await course.hasPermission(user.id, 'edit')) || isEnrolled(user, course)
   }
 
   /**
-   * Owner only. Admins are NOT bypassed (see `before`).
+   * Owner or `edit` (or higher) permission holders (admins pass via
+   * `before`). Decides whether the gradebook renders the instructor view,
+   * which exposes every enrolled student's grades, name and email.
    */
-  viewGradebookAsInstructor(user: User, course: Course): AuthorizerResponse {
-    return course.instructorId === user.id
+  async viewGradebookAsInstructor(user: User, course: Course): Promise<AuthorizerResponse> {
+    return course.hasPermission(user.id, 'edit')
   }
 
   /**
