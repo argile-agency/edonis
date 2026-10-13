@@ -38,7 +38,8 @@ decisions:
   - "courseIndexQueryValidator accepts '' for status and category, because the listing page sends ?search=&status=&category= by default"
   - "rejectCourseValidator.reason is required (minLength 1, maxLength 2000), because the approval-queue dialog cannot submit an empty reason"
   - "addParticipantValidator.userId uses the Lucid exists rule, so an unknown user id is a validation error instead of a foreign-key 500"
-  - "Q4 / T-02-53 (teacher can create a course as published) is deferred pending a user decision. createCourseValidator.status is unchanged"
+  - "Q4 / T-02-53 (teacher can create a course as published) is deferred — pending user decision. createCourseValidator.status is unchanged"
+  - "DEBT-05 is not marked complete in REQUIREMENTS.md: it also spans 02-12 and 02-14, which have not run yet"
 metrics:
   duration: "~35 min"
   completed: 2026-10-13
@@ -64,7 +65,7 @@ Enrollment methods and groups can no longer reference another course's group or 
 
 ## Open decision for the user
 
-**Q4 / T-02-53: deferred, pending user decision. It is NOT accepted.**
+**Q4 / T-02-53: deferred — pending user decision. It is NOT accepted.**
 
 > Should non-admin course creation be forced to `draft` (approval required), or may teachers keep publishing directly?
 
@@ -108,7 +109,10 @@ Today `createCourseValidator.status` accepts `draft | published | archived` from
 - Full functional suite: `PORT=3411 DB_FILENAME=./tmp/test-02-11.sqlite3 node ace test functional` passed 90 of 90.
   - Vite logged `Port 24678 is already in use` from another process. It was harmless and the suite still passed.
 - `authorization_courses.spec.ts` (02-04): green after Task 1 and after Task 2.
-- `bun run typecheck` and `bun run lint` exit 0.
+- `bun run typecheck` and `bun run lint` exit 0 (the lint exit code was measured after the last change).
+- No other consumer of the narrowed course contract:
+  - `createCourseValidator` / `updateCourseValidator` are used only in `courses_controller.ts`.
+  - No browser spec selects the old hard-coded category options.
 - `validation.spec.ts` gates:
   - 13 `withCsrfToken()` for 13 `client.<verb>(` writes.
   - 0 `assertStatus(500)`.
@@ -179,3 +183,12 @@ None.
 ## Threat Flags
 
 None. No new endpoint or trust boundary. The `create` / `edit` pages now also receive category `{id, name}` pairs, which the listing page already exposes.
+
+## Self-Check: PASSED
+
+- **Files exist** (confirmed by `git diff --name-only 074f1a7 HEAD`):
+  - `app/validators/course_admin.ts`, `app/validators/enrollment_method.ts` and `app/validators/course_group.ts`
+  - `tests/functional/validation.spec.ts`
+  - this SUMMARY
+  - the modified `course.ts`, `courses_controller.ts`, `create.tsx`, `edit.tsx` and `settings.tsx`
+- **Commits exist on the branch** (confirmed by `git log 074f1a7..HEAD`): `6582310`, `d32811c`, `0189011`, `a5339df`.
