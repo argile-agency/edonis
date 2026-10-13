@@ -13,6 +13,7 @@ import {
   updateCourseValidator,
   createCoursePermissionValidator,
 } from '#validators/course'
+import { scopeVisibleCourses } from '#policies/course_policy'
 
 export default class CoursesController {
   /**
@@ -26,38 +27,22 @@ export default class CoursesController {
     const category = request.input('category')
     const search = request.input('search')
 
-    const isAdmin = await user.hasRole('admin')
-    const isManager = await user.hasRole('manager')
-    const isTeacher = await user.hasRole('teacher')
+    const query = Course.query().preload('instructor')
 
-    let query = Course.query().preload('instructor')
-
-    // Filter based on user role
-    if (!isAdmin) {
-      if (isManager || isTeacher) {
-        // Managers/Teachers see their courses and courses they have permissions for
-        query = query.where((builder) => {
-          builder.where('instructor_id', user.id).orWhereHas('permissions', (permQuery) => {
-            permQuery.where('user_id', user.id)
-          })
-        })
-      } else {
-        // Students see only published public courses
-        query = query.where('status', 'published').where('visibility', 'public')
-      }
-    }
+    // Restrict to the courses this user may see (mutates `query` in place)
+    await scopeVisibleCourses(query, user)
 
     // Apply filters
     if (status && status !== 'all') {
-      query = query.where('status', status)
+      query.where('status', status)
     }
 
     if (category && category !== '' && category !== 'all') {
-      query = query.where('category_id', Number(category))
+      query.where('category_id', Number(category))
     }
 
     if (search) {
-      query = query.where((builder) => {
+      query.where((builder) => {
         builder
           .whereILike('title', `%${search}%`)
           .orWhereILike('description', `%${search}%`)
@@ -109,7 +94,7 @@ export default class CoursesController {
   /**
    * Display a single course
    */
-  async show({ inertia, params, auth, response }: HttpContext) {
+  async show({ inertia, params, auth, bouncer }: HttpContext) {
     const user = auth.user!
     const course = await Course.query()
       .where('id', params.id)
@@ -132,15 +117,10 @@ export default class CoursesController {
       })
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canView = isAdmin || (await course.hasPermission(user.id, 'view'))
+    await bouncer.with('CoursePolicy').authorize('view', course)
 
-    if (!canView && course.visibility !== 'public') {
-      return response.forbidden('You do not have permission to view this course')
-    }
-
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
+    const canEdit = await bouncer.with('CoursePolicy').allows('edit', course)
+    const canManage = await bouncer.with('CoursePolicy').allows('manage', course)
 
     // Check if user is enrolled
     const enrollment = await CourseEnrollment.query()
@@ -162,16 +142,10 @@ export default class CoursesController {
   /**
    * Display the form for editing a course
    */
-  async edit({ inertia, params, auth, response }: HttpContext) {
-    const user = auth.user!
+  async edit({ inertia, params, bouncer }: HttpContext) {
     const course = await Course.query().where('id', params.id).preload('instructor').firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit this course')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', course)
 
     return inertia.render('courses/edit', {
       course: course.serialize(),
@@ -181,16 +155,10 @@ export default class CoursesController {
   /**
    * Handle the update of a course
    */
-  async update({ request, response, params, auth, session }: HttpContext) {
-    const user = auth.user!
+  async update({ request, response, params, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit this course')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', course)
 
     const payload = await request.validateUsing(updateCourseValidator)
     await course
@@ -208,16 +176,10 @@ export default class CoursesController {
   /**
    * Delete a course
    */
-  async destroy({ params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async destroy({ params, response, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const isOwner = await course.isInstructor(user.id)
-
-    if (!isAdmin && !isOwner) {
-      return response.forbidden('You do not have permission to delete this course')
-    }
+    await bouncer.with('CoursePolicy').authorize('delete', course)
 
     await course.delete()
 
@@ -228,16 +190,10 @@ export default class CoursesController {
   /**
    * Publish a course
    */
-  async publish({ params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async publish({ params, response, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to publish this course')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     await course.publish()
 
@@ -248,16 +204,10 @@ export default class CoursesController {
   /**
    * Archive a course
    */
-  async archive({ params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async archive({ params, response, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to archive this course')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     await course.archive()
 
@@ -268,16 +218,10 @@ export default class CoursesController {
   /**
    * Add a permission to a course (co-instructor, TA, etc.)
    */
-  async addPermission({ request, response, params, auth, session }: HttpContext) {
-    const user = auth.user!
+  async addPermission({ request, response, params, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage course permissions')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     const payload = await request.validateUsing(createCoursePermissionValidator)
 
@@ -293,17 +237,11 @@ export default class CoursesController {
   /**
    * Remove a permission from a course
    */
-  async removePermission({ response, params, auth, session }: HttpContext) {
-    const user = auth.user!
+  async removePermission({ response, params, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.courseId)
     const permission = await CoursePermission.findOrFail(params.permissionId)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage course permissions')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     await permission.delete()
 
@@ -314,8 +252,7 @@ export default class CoursesController {
   /**
    * Display enrollment methods management page for a course
    */
-  async manageEnrollmentMethods({ params, inertia, auth, response }: HttpContext) {
-    const user = auth.user!
+  async manageEnrollmentMethods({ params, inertia, bouncer }: HttpContext) {
     const course = await Course.query()
       .where('id', params.id)
       .preload('enrollmentMethods', (query) => {
@@ -326,12 +263,7 @@ export default class CoursesController {
       })
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage enrollment methods')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     return inertia.render('courses/enrollment-methods', {
       course: course.serialize(),
@@ -343,16 +275,10 @@ export default class CoursesController {
   /**
    * Create a new enrollment method for a course
    */
-  async createEnrollmentMethod({ params, request, auth, response, session }: HttpContext) {
-    const user = auth.user!
+  async createEnrollmentMethod({ params, request, bouncer, response, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage enrollment methods')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     const data = request.only([
       'methodType',
@@ -386,19 +312,13 @@ export default class CoursesController {
   /**
    * Update an enrollment method
    */
-  async updateEnrollmentMethod({ params, request, auth, response, session }: HttpContext) {
-    const user = auth.user!
+  async updateEnrollmentMethod({ params, request, bouncer, response, session }: HttpContext) {
     const method = await CourseEnrollmentMethod.query()
       .where('id', params.methodId)
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await method.course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage enrollment methods')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', method.course)
 
     const data = request.only([
       'name',
@@ -429,19 +349,13 @@ export default class CoursesController {
   /**
    * Delete an enrollment method
    */
-  async deleteEnrollmentMethod({ params, auth, response, session }: HttpContext) {
-    const user = auth.user!
+  async deleteEnrollmentMethod({ params, bouncer, response, session }: HttpContext) {
     const method = await CourseEnrollmentMethod.query()
       .where('id', params.methodId)
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await method.course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage enrollment methods')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', method.course)
 
     await method.delete()
 
@@ -452,8 +366,7 @@ export default class CoursesController {
   /**
    * Display groups management page for a course
    */
-  async manageGroups({ params, inertia, auth, response }: HttpContext) {
-    const user = auth.user!
+  async manageGroups({ params, inertia, bouncer }: HttpContext) {
     const course = await Course.query()
       .where('id', params.id)
       .preload('groupings', (query) => {
@@ -470,12 +383,7 @@ export default class CoursesController {
       })
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage course groups')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     return inertia.render('courses/groups', {
       course: course.serialize(),
@@ -487,16 +395,10 @@ export default class CoursesController {
   /**
    * Create a grouping
    */
-  async createGrouping({ params, request, auth, response, session }: HttpContext) {
-    const user = auth.user!
+  async createGrouping({ params, request, bouncer, response, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage course groups')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     const { name, description } = request.only(['name', 'description'])
 
@@ -513,16 +415,10 @@ export default class CoursesController {
   /**
    * Create a group
    */
-  async createGroup({ params, request, auth, response, session }: HttpContext) {
-    const user = auth.user!
+  async createGroup({ params, request, bouncer, response, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canManage = isAdmin || (await course.hasPermission(user.id, 'manage'))
-
-    if (!canManage) {
-      return response.forbidden('You do not have permission to manage course groups')
-    }
+    await bouncer.with('CoursePolicy').authorize('manage', course)
 
     const { name, description, groupingId, maxMembers, isVisibleToStudents, enableGroupMessaging } =
       request.only([
@@ -551,13 +447,8 @@ export default class CoursesController {
   /**
    * Display course approval queue (admin only)
    */
-  async approvalQueue({ inertia, auth, response }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can access the approval queue')
-    }
+  async approvalQueue({ inertia, bouncer }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const pendingCourses = await Course.query()
       .where('approval_status', 'pending_approval')
@@ -612,13 +503,9 @@ export default class CoursesController {
   /**
    * Approve a course
    */
-  async approveCourse({ params, auth, response, session }: HttpContext) {
+  async approveCourse({ params, auth, bouncer, response, session }: HttpContext) {
     const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can approve courses')
-    }
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
     await course.approve(user.id)
@@ -630,13 +517,9 @@ export default class CoursesController {
   /**
    * Reject a course
    */
-  async rejectCourse({ params, request, auth, response, session }: HttpContext) {
+  async rejectCourse({ params, request, auth, bouncer, response, session }: HttpContext) {
     const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can reject courses')
-    }
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const { reason } = request.only(['reason'])
     const course = await Course.findOrFail(params.id)
@@ -649,13 +532,8 @@ export default class CoursesController {
   /**
    * Admin: List all courses for management
    */
-  async adminIndex({ inertia, auth, response }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can access this page')
-    }
+  async adminIndex({ inertia, bouncer }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const courses = await Course.query()
       .preload('instructor')
@@ -678,13 +556,8 @@ export default class CoursesController {
   /**
    * Admin: Show course participants
    */
-  async showParticipants({ params, inertia, auth, response }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can access this page')
-    }
+  async showParticipants({ params, inertia, bouncer }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
     const enrollments = await CourseEnrollment.query()
@@ -734,13 +607,9 @@ export default class CoursesController {
   /**
    * Admin: Add participant to course
    */
-  async addParticipant({ params, request, auth, response, session }: HttpContext) {
+  async addParticipant({ params, request, auth, bouncer, response, session }: HttpContext) {
     const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can add participants')
-    }
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const { userId, courseRole } = request.only(['userId', 'courseRole'])
     const course = await Course.findOrFail(params.id)
@@ -765,13 +634,8 @@ export default class CoursesController {
   /**
    * Admin: Remove participant from course
    */
-  async removeParticipant({ params, auth, response, session }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can remove participants')
-    }
+  async removeParticipant({ params, bouncer, response, session }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const enrollment = await CourseEnrollment.query()
       .where('id', params.enrollmentId)
@@ -791,13 +655,8 @@ export default class CoursesController {
   /**
    * Admin: Show course settings
    */
-  async showSettings({ params, inertia, auth, response }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can access this page')
-    }
+  async showSettings({ params, inertia, bouncer }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
     const categories = await CourseCategory.query().orderBy('name', 'asc')
@@ -815,13 +674,8 @@ export default class CoursesController {
   /**
    * Admin: Update course settings
    */
-  async updateSettings({ params, request, auth, response, session }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can update course settings')
-    }
+  async updateSettings({ params, request, bouncer, response, session }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
     const payload = await request.validateUsing(updateCourseValidator)
@@ -852,13 +706,8 @@ export default class CoursesController {
   /**
    * Admin: Archive course
    */
-  async archiveCourse({ params, auth, response, session }: HttpContext) {
-    const user = auth.user!
-    const isAdmin = await user.hasRole('admin')
-
-    if (!isAdmin) {
-      return response.forbidden('Only administrators can archive courses')
-    }
+  async archiveCourse({ params, bouncer, response, session }: HttpContext) {
+    await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
     await course.archive()
