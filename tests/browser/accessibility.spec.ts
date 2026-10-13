@@ -172,6 +172,8 @@ test.group('Accessibility', () => {
 
     const bodyText = await page.locator('body').innerText()
     assert.include(bodyText, '403')
+    // Proves the Inertia errors/forbidden page rendered, not the Edge fallback
+    assert.include(bodyText, 'Accès refusé')
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
