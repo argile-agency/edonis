@@ -10,9 +10,9 @@ against the working tree. These gate the v1 content work (Phases 1-3).*
 
 ### Code Health
 
-- [ ] **DEBT-01**: `bun run lint` exits 0 (17 errors today: `eqeqeq` in `bulk_enrollment_log.ts`, `course_content.ts`, `submission.ts`; prettier in `database/helpers/schema_helpers.ts`)
-- [ ] **DEBT-02**: No `as any` assertions remain in `app/` (16 today across 7 files), with `bun run typecheck` still passing
-- [ ] **DEBT-03**: Functional test suite is re-enabled (`tests/functional/grades.spec.ts.skip`) and runs in CI
+- [x] **DEBT-01**: `bun run lint` exits 0 (17 errors today: `eqeqeq` in `bulk_enrollment_log.ts`, `course_content.ts`, `submission.ts`; prettier in `database/helpers/schema_helpers.ts`)
+- [x] **DEBT-02**: No `as any` assertions remain in `app/` (16 today across 7 files), with `bun run typecheck` still passing
+- [x] **DEBT-03**: Functional test suite is re-enabled (`tests/functional/grades.spec.ts.skip`) and runs in CI
 - [ ] **DEBT-10**: Functional coverage for gradebook *computation* (instructor matrix, grade categories, overall-grade arithmetic, missing submissions). Deferred from Phase 1, which covered access control only. Scenarios from the deleted `grades.spec.ts.skip` draft, each run as `withInertia()` requests on `route('grades.course')` / `route('grades.index')`:
   - Student index: `grades.index` lists the student's enrolled courses with per-course grade summary
   - Student own grades: a graded `Submission` (85/100, feedback "Good work!") appears in `props.grades` with matching `pointsEarned` and `feedback`
@@ -170,9 +170,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | Phase 1 | Pending |
-| DEBT-02 | Phase 1 | Pending |
-| DEBT-03 | Phase 1 | Pending |
+| DEBT-01 | Phase 1 | Complete |
+| DEBT-02 | Phase 1 | Complete |
+| DEBT-03 | Phase 1 | Complete |
 | DEBT-04 | Phase 2 | Pending |
 | DEBT-05 | Phase 2 | Pending |
 | DEBT-06 | Phase 2 | Pending |
@@ -236,6 +236,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERM-03 | Phase 12 | Pending |
 
 **Coverage:**
+
 - Technical debt requirements: 16 total (DEBT ×10, EVAL ×3, CONTACT ×3)
 - v1 content requirements: 41 total
 - Mapped to phases: 56
