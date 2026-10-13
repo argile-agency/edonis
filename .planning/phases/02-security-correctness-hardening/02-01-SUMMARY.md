@@ -106,7 +106,7 @@ This plan installs Bouncer 3.1.6 and adds `CoursePolicy` and `EnrollmentPolicy`,
 
 ## Forbidden-page axe case
 
-The test `forbidden page has no critical a11y violations` has been added to `tests/browser/accessibility.spec.ts`. It picks its course with Lucid: a course the seeded student neither owns nor is enrolled in. With the current seeders that is 6 courses minus the 3 the student is enrolled in. If no such course exists, it fails with `assert.fail` and a message naming the seeders. It never skips.
+The test `forbidden page has no critical a11y violations` has been added to `tests/browser/accessibility.spec.ts`. It picks its course with Lucid: a course the seeded student neither owns nor is enrolled in. With the current seeders that is 6 courses minus the 3 the student is enrolled in. If no such course exists, it fails with `assert.fail` and a message naming the seeders. It never skips. Besides `403`, it asserts the page heading `Accès refusé`. That rules out the Edge `server_error` fallback, which would also show `403` if the Inertia render failed.
 
 **I could not run it locally.** Port 3333 is held by the user's running dev server (`bin/server.js`, PID 7773). The browser client's `baseURL` is hard-coded to `http://localhost:3333` in `tests/bootstrap.ts`, which this plan must not change further. The run would therefore have hit the dev server and its database, not the test server. Playwright chromium is installed. The e2e run in CI (`.github/workflows/e2e.yml`, seeded, port 3333) is the authoritative proof on the PR.
 
