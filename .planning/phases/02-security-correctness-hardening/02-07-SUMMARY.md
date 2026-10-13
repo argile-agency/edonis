@@ -65,7 +65,7 @@ The user does not yet understand what the production checks involve and answered
 | Production `node ace pii:scan` | **NOT run** (not yet run) |
 | Remedy for legacy-plaintext / undecryptable rows in production | **None chosen** |
 | Consent for `node ace pii:scan --fix` or `--null-undecryptable` | **None given, for any environment.** Neither flag was run anywhere during this plan. |
-| Dev `node ace pii:scan` (read-only, no flags, dev Postgres `localhost:54322`) | `ok=0 legacy-plaintext=0 undecryptable=0 empty=16`, exit 0. **Dev is clean.** |
+| Dev `node ace pii:scan` (read-only, no flags, dev Postgres `localhost:54322`) | `ok=0 legacy-plaintext=0 undecryptable=0 empty=16`, exit 0. **Dev is clean.** (Obtained with the checkpoint answer, before this continuation; not re-run by this executor.) |
 
 **Correction to 02-02-SUMMARY.md:** 02-02 reported the dev PostgreSQL as unreachable because it tried port `5432`. The dev database listens on port **`54322`** (the Supabase local port, as in `.env.example`'s commented Supabase block). The scan above was run against `54322`.
 
@@ -107,7 +107,7 @@ After an `APP_KEY` rotation, every 2FA user shows up as `user.2fa.decrypt_failed
 |---|---|---|
 | Local dev (`.env`) | unset (= off) | `grep -c PII_DECRYPT .env` is 0. Dev scan is clean (`undecryptable=0` on `localhost:54322`), so dev **may** be switched to `true`. It was not changed here, because the executor does not edit real `.env` files. |
 | Test suites (`.env.test`) | unset | `.env.test` not edited. Specs toggle the flag with `env.set` and restore it (unit: `finally`; functional: `group.each.teardown`). |
-| CI (`.github/workflows/ci.yml`, `e2e.yml`) | unset | `grep -c PII_DECRYPT` is 0 in all workflow files |
+| CI (`.github/workflows/ci.yml`, `e2e.yml`) | unset | `grep -c PII_DECRYPT` is 0 in all workflow files, and no workflow derives `.env` from `.env.example` (no `cp .env.example`), so the unit spec's "flag unset" precondition holds in CI |
 | Production (demo.edonis.org) | **must stay unset/false** | No production `pii:scan`, `sql_mode` or length check yet (Task 1 SKIP) |
 
 ## `pii.spec.ts` conversion
