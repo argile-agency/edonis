@@ -68,11 +68,12 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
-   * Enrolled users only (admins pass via `before`). The owner is NOT granted
-   * access unless enrolled: widening this is AS3 (plan 02-10).
+   * Enrolled users, plus the owner and `edit` (or higher) permission holders
+   * so they can preview the player and outline (AS3, plan 02-10). Admins pass
+   * via `before`. Gates learn, outline and progress tracking.
    */
   async learn(user: User, course: Course): Promise<AuthorizerResponse> {
-    return isEnrolled(user, course)
+    return (await course.hasPermission(user.id, 'edit')) || isEnrolled(user, course)
   }
 
   /**
@@ -93,8 +94,8 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
-   * Not called anywhere until AS4 (plan 02-05) is confirmed. Admins bypass
-   * it via `before`.
+   * Whether the course accepts enrolments (AS4, plan 02-05); checked by the
+   * enrolment controller. Admins bypass it via `before`.
    */
   enroll(_user: User, course: Course): AuthorizerResponse {
     return course.canEnroll()

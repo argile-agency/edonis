@@ -1,10 +1,10 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import ContentProgress from '#models/content_progress'
-import CourseEnrollment from '#models/course_enrollment'
 import {
   createModuleValidator,
   updateModuleValidator,
@@ -13,14 +13,21 @@ import {
   reorderModulesValidator,
   reorderContentsValidator,
   updateProgressValidator,
+  learnQueryValidator,
 } from '#validators/course_content'
+import { wouldCreateCycle } from '../helpers/category_tree.js'
+
+/**
+ * Flash shown when a module parent is outside the course, the module itself,
+ * or one of its descendants.
+ */
+const PARENT_ERROR = 'Module parent invalide.'
 
 export default class CourseContentsController {
   /**
    * Display course content builder for instructors
    */
-  async builder({ inertia, params, auth, response }: HttpContext) {
-    const user = auth.user!
+  async builder({ inertia, params, bouncer }: HttpContext) {
     const course = await Course.query()
       .where('id', params.id)
       .preload('modules', (moduleQuery) => {
@@ -38,12 +45,7 @@ export default class CourseContentsController {
       })
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', course)
 
     return inertia.render('courses/builder', {
       course: course.serialize(),
@@ -54,9 +56,9 @@ export default class CourseContentsController {
   /**
    * Display course player/viewer for students
    */
-  async learn({ inertia, params, auth, response, request }: HttpContext) {
+  async learn({ inertia, params, auth, response, request, bouncer }: HttpContext) {
     const user = auth.user!
-    const contentId = request.input('content')
+    const { content: contentId } = await request.validateUsing(learnQueryValidator)
 
     const course = await Course.query()
       .where('id', params.id)
@@ -79,21 +81,19 @@ export default class CourseContentsController {
       })
       .firstOrFail()
 
-    // Check enrollment
-    const enrollment = await CourseEnrollment.query()
-      .where('course_id', course.id)
-      .where('user_id', user.id)
-      .first()
-    if (!enrollment && !(await user.hasRole('admin'))) {
+    // Not allowed to learn: back to the course page (enrolment happens there)
+    if (await bouncer.with('CoursePolicy').denies('learn', course)) {
       return response.redirect().toRoute('courses.show', { id: course.id })
     }
 
     // Get current content or first available content
     let currentContent: CourseContent | null = null
     if (contentId) {
+      // Scoped to this course: another course's content id is a 404
       currentContent = await CourseContent.query()
         .where('id', contentId)
         .where('is_published', true)
+        .whereHas('module', (moduleQuery) => moduleQuery.where('course_id', course.id))
         .firstOrFail()
     } else {
       // Find first available content
@@ -146,7 +146,7 @@ export default class CourseContentsController {
   /**
    * Display course outline
    */
-  async outline({ inertia, params, auth }: HttpContext) {
+  async outline({ inertia, params, auth, bouncer }: HttpContext) {
     const user = auth.user!
     const course = await Course.query()
       .where('id', params.id)
@@ -168,6 +168,8 @@ export default class CourseContentsController {
           })
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', course)
 
     // Get all user's progress
     const allContentIds: number[] = []
@@ -196,16 +198,22 @@ export default class CourseContentsController {
   /**
    * Create a new module
    */
-  async createModule({ request, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async createModule({ request, response, session, bouncer }: HttpContext) {
     const payload = await request.validateUsing(createModuleValidator)
 
     const course = await Course.findOrFail(payload.courseId)
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
+    await bouncer.with('CoursePolicy').authorize('edit', course)
 
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
+    // The parent must be a module of the same course
+    if (payload.parentId) {
+      const parent = await CourseModule.query()
+        .where('id', payload.parentId)
+        .where('course_id', course.id)
+        .first()
+      if (!parent) {
+        session.flash('error', PARENT_ERROR)
+        return response.redirect().back()
+      }
     }
 
     // Get max order for this level
@@ -233,21 +241,36 @@ export default class CourseContentsController {
   /**
    * Update a module
    */
-  async updateModule({ request, params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async updateModule({ request, params, response, session, bouncer }: HttpContext) {
     const module = await CourseModule.query()
       .where('id', params.moduleId)
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
     const payload = await request.validateUsing(updateModuleValidator)
+
+    // The new parent must be a module of the same course, and neither the
+    // module itself nor one of its descendants
+    if (payload.parentId !== undefined && payload.parentId !== null) {
+      const parent = await CourseModule.query()
+        .where('id', payload.parentId)
+        .where('course_id', module.courseId)
+        .first()
+
+      const courseModules = await CourseModule.query()
+        .where('course_id', module.courseId)
+        .select('id', 'parent_id')
+      const parentById = new Map<number, number | null>(
+        courseModules.map((m) => [m.id, m.parentId])
+      )
+
+      if (!parent || wouldCreateCycle(parentById, module.id, payload.parentId)) {
+        session.flash('error', PARENT_ERROR)
+        return response.redirect().back()
+      }
+    }
 
     await module
       .merge({
@@ -268,19 +291,13 @@ export default class CourseContentsController {
   /**
    * Delete a module
    */
-  async deleteModule({ params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async deleteModule({ params, response, session, bouncer }: HttpContext) {
     const module = await CourseModule.query()
       .where('id', params.moduleId)
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
     await module.delete()
 
@@ -291,22 +308,22 @@ export default class CourseContentsController {
   /**
    * Reorder modules
    */
-  async reorderModules({ request, params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async reorderModules({ request, params, response, session, bouncer }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', course)
 
     const payload = await request.validateUsing(reorderModulesValidator)
 
-    for (const item of payload.modules) {
-      await CourseModule.query().where('id', item.id).update({ order: item.order })
-    }
+    // Ids outside this course match no row and are ignored
+    await db.transaction(async (trx) => {
+      for (const item of payload.modules) {
+        await CourseModule.query({ client: trx })
+          .where('id', item.id)
+          .where('course_id', course.id)
+          .update({ order: item.order })
+      }
+    })
 
     session.flash('success', 'Modules réordonnés avec succès')
     return response.redirect().back()
@@ -317,8 +334,7 @@ export default class CourseContentsController {
   /**
    * Create a new content item
    */
-  async createContent({ request, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async createContent({ request, response, session, bouncer }: HttpContext) {
     const payload = await request.validateUsing(createContentValidator)
 
     const module = await CourseModule.query()
@@ -326,12 +342,7 @@ export default class CourseContentsController {
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
     // Get max order
     const maxOrderResult = await CourseContent.query()
@@ -356,19 +367,13 @@ export default class CourseContentsController {
   /**
    * Update a content item
    */
-  async updateContent({ request, params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async updateContent({ request, params, response, session, bouncer }: HttpContext) {
     const content = await CourseContent.query()
       .where('id', params.contentId)
       .preload('module', (query) => query.preload('course'))
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await content.module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', content.module.course)
 
     const payload = await request.validateUsing(updateContentValidator)
 
@@ -392,19 +397,13 @@ export default class CourseContentsController {
   /**
    * Delete a content item
    */
-  async deleteContent({ params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async deleteContent({ params, response, session, bouncer }: HttpContext) {
     const content = await CourseContent.query()
       .where('id', params.contentId)
       .preload('module', (query) => query.preload('course'))
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await content.module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', content.module.course)
 
     await content.delete()
 
@@ -415,25 +414,25 @@ export default class CourseContentsController {
   /**
    * Reorder content items
    */
-  async reorderContents({ request, params, response, auth, session }: HttpContext) {
-    const user = auth.user!
+  async reorderContents({ request, params, response, session, bouncer }: HttpContext) {
     const module = await CourseModule.query()
       .where('id', params.moduleId)
       .preload('course')
       .firstOrFail()
 
-    const isAdmin = await user.hasRole('admin')
-    const canEdit = isAdmin || (await module.course.hasPermission(user.id, 'edit'))
-
-    if (!canEdit) {
-      return response.forbidden('You do not have permission to edit course content')
-    }
+    await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
     const payload = await request.validateUsing(reorderContentsValidator)
 
-    for (const item of payload.contents) {
-      await CourseContent.query().where('id', item.id).update({ order: item.order })
-    }
+    // Ids outside this module match no row and are ignored
+    await db.transaction(async (trx) => {
+      for (const item of payload.contents) {
+        await CourseContent.query({ client: trx })
+          .where('id', item.id)
+          .where('module_id', module.id)
+          .update({ order: item.order })
+      }
+    })
 
     session.flash('success', 'Contenu réordonné avec succès')
     return response.redirect().back()
@@ -444,9 +443,14 @@ export default class CourseContentsController {
   /**
    * Update user progress on content
    */
-  async updateProgress({ request, params, auth, response }: HttpContext) {
+  async updateProgress({ request, params, auth, response, bouncer }: HttpContext) {
     const user = auth.user!
-    const content = await CourseContent.findOrFail(params.contentId)
+    const content = await CourseContent.query()
+      .where('id', params.contentId)
+      .preload('module', (query) => query.preload('course'))
+      .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', content.module.course)
 
     const progress = await ContentProgress.getOrCreate(user.id, content.id)
     const payload = await request.validateUsing(updateProgressValidator)
@@ -470,9 +474,14 @@ export default class CourseContentsController {
   /**
    * Mark content as complete
    */
-  async markComplete({ params, auth, response, session }: HttpContext) {
+  async markComplete({ params, auth, response, session, bouncer }: HttpContext) {
     const user = auth.user!
-    const content = await CourseContent.findOrFail(params.contentId)
+    const content = await CourseContent.query()
+      .where('id', params.contentId)
+      .preload('module', (query) => query.preload('course'))
+      .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', content.module.course)
 
     const progress = await ContentProgress.getOrCreate(user.id, content.id)
     await progress.markAsCompleted()
@@ -484,7 +493,7 @@ export default class CourseContentsController {
   /**
    * Get user's overall course progress
    */
-  async getCourseProgress({ params, auth, response }: HttpContext) {
+  async getCourseProgress({ params, auth, response, bouncer }: HttpContext) {
     const user = auth.user!
     const course = await Course.query()
       .where('id', params.id)
@@ -494,6 +503,8 @@ export default class CourseContentsController {
         })
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', course)
 
     // Get all content IDs
     const allContentIds: number[] = []

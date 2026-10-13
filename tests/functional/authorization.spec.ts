@@ -96,7 +96,9 @@ test.group('CoursePolicy / EnrollmentPolicy - decision matrix', (group) => {
     assert.isFalse(await coursePolicy(teacher).allows('administer'))
   })
 
-  test('learn: enrolled users and admin; a non-enrolled owner is denied', async ({ assert }) => {
+  test('learn: enrolled users, admin and the owner (AS3); outsiders are denied', async ({
+    assert,
+  }) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner)
     const enrolled = await createUser({ roles: ['student'] })
@@ -107,7 +109,7 @@ test.group('CoursePolicy / EnrollmentPolicy - decision matrix', (group) => {
     assert.isTrue(await coursePolicy(enrolled).allows('learn', course))
     assert.isFalse(await coursePolicy(outsider).allows('learn', course))
     assert.isTrue(await coursePolicy(admin).allows('learn', course))
-    assert.isFalse(await coursePolicy(owner).allows('learn', course))
+    assert.isTrue(await coursePolicy(owner).allows('learn', course))
   })
 
   test('viewGradebook: owner, edit-permission holders, enrolled users and admin', async ({
