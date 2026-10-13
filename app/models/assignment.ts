@@ -99,7 +99,7 @@ export default class Assignment extends BaseModel {
   @belongsTo(() => Course)
   declare course: BelongsTo<typeof Course>
 
-  @belongsTo(() => CourseModule)
+  @belongsTo(() => CourseModule, { foreignKey: 'moduleId' })
   declare module: BelongsTo<typeof CourseModule>
 
   @belongsTo(() => GradeCategory)
