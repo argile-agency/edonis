@@ -1,33 +1,15 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import CourseCategory from '#models/course_category'
-import vine from '@vinejs/vine'
+import {
+  createCategoryValidator,
+  updateCategoryValidator,
+  reorderCategoriesValidator,
+} from '#validators/category'
+import { recomputeSubtree, wouldCreateCycle } from '../helpers/category_tree.js'
 
-// Validators
-const createCategoryValidator = vine.compile(
-  vine.object({
-    name: vine.string().trim().minLength(2).maxLength(255),
-    slug: vine.string().trim().minLength(2).maxLength(255),
-    description: vine.string().trim().optional(),
-    parentId: vine.number().optional(),
-    sortOrder: vine.number().optional(),
-    isVisible: vine.boolean().optional(),
-    icon: vine.string().trim().optional(),
-    color: vine.string().trim().optional(),
-  })
-)
-
-const updateCategoryValidator = vine.compile(
-  vine.object({
-    name: vine.string().trim().minLength(2).maxLength(255).optional(),
-    slug: vine.string().trim().minLength(2).maxLength(255).optional(),
-    description: vine.string().trim().optional(),
-    parentId: vine.number().optional().nullable(),
-    sortOrder: vine.number().optional(),
-    isVisible: vine.boolean().optional(),
-    icon: vine.string().trim().optional(),
-    color: vine.string().trim().optional(),
-  })
-)
+const CYCLE_ERROR =
+  'Une catégorie ne peut pas être placée sous elle-même ou sous une de ses sous-catégories.'
 
 export default class CategoriesController {
   /**
@@ -141,29 +123,61 @@ export default class CategoriesController {
     const category = await CourseCategory.findOrFail(params.id)
     const data = await request.validateUsing(updateCategoryValidator)
 
-    // Recalculate depth and path if parent changed
-    if (data.parentId !== undefined) {
-      if (data.parentId === null) {
-        category.depth = 0
-        category.path = `/${data.slug || category.slug}`
-      } else {
-        const parent = await CourseCategory.findOrFail(data.parentId)
-        category.depth = parent.depth + 1
-        category.path = `${parent.path}/${data.slug || category.slug}`
-      }
+    // Load the whole hierarchy once: used for the cycle check and the subtree recompute.
+    const all = await CourseCategory.query().select('id', 'parent_id', 'slug')
+    const parentById = new Map<number, number | null>(all.map((c) => [c.id, c.parentId]))
+
+    // Refuse the category itself or one of its descendants as the new parent:
+    // the whole subtree would vanish from the tree while still holding courses.
+    if (
+      data.parentId !== undefined &&
+      data.parentId !== null &&
+      wouldCreateCycle(parentById, category.id, data.parentId)
+    ) {
+      session.flash('error', CYCLE_ERROR)
+      return response.redirect().back()
     }
 
-    category.merge(data)
-    await category.save()
+    const parentChanged = data.parentId !== undefined
+    const slugChanged = data.slug !== undefined
 
-    // Update children paths if slug changed
-    if (data.slug) {
-      const children = await CourseCategory.query().where('parent_id', category.id)
-      for (const child of children) {
-        child.path = `${category.path}/${child.slug}`
-        await child.save()
+    await db.transaction(async (trx) => {
+      // Recompute the node's own depth and path when its parent or slug changes
+      if (parentChanged || slugChanged) {
+        const parentId = parentChanged ? data.parentId : category.parentId
+        const slug = data.slug ?? category.slug
+
+        if (parentId === null || parentId === undefined) {
+          category.depth = 0
+          category.path = `/${slug}`
+        } else {
+          const parent = await CourseCategory.findOrFail(parentId, { client: trx })
+          category.depth = parent.depth + 1
+          category.path = `${parent.path}/${slug}`
+        }
       }
-    }
+
+      category.useTransaction(trx)
+      category.merge(data)
+      await category.save()
+
+      // Keep every descendant consistent (grandchildren included), atomically
+      if (parentChanged || slugChanged) {
+        const nodes = all.map((c) => ({ id: c.id, parentId: c.parentId, slug: c.slug }))
+        const descendants = recomputeSubtree(
+          nodes,
+          category.id,
+          category.path ?? `/${category.slug}`,
+          category.depth
+        )
+
+        for (const d of descendants) {
+          await CourseCategory.query({ client: trx })
+            .where('id', d.id)
+            .update({ path: d.path, depth: d.depth })
+        }
+      }
+    })
 
     session.flash('success', 'Catégorie mise à jour avec succès.')
 
@@ -206,15 +220,17 @@ export default class CategoriesController {
    * Reorder categories
    */
   async reorder({ request, response, session }: HttpContext) {
-    const { categoryIds } = request.only(['categoryIds'])
+    const { categoryIds } = await request.validateUsing(reorderCategoriesValidator)
 
-    for (const [index, categoryId] of categoryIds.entries()) {
-      const category = await CourseCategory.find(categoryId)
-      if (category) {
-        category.sortOrder = index
-        await category.save()
+    await db.transaction(async (trx) => {
+      for (const [index, categoryId] of categoryIds.entries()) {
+        const category = await CourseCategory.find(categoryId, { client: trx })
+        if (category) {
+          category.sortOrder = index
+          await category.save()
+        }
       }
-    }
+    })
 
     session.flash('success', 'Ordre des catégories mis à jour.')
 
