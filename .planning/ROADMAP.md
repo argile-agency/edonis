@@ -136,12 +136,12 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-04-PLAN.md — courses_controller onto CoursePolicy + A4 permission IDOR [DEBT-04]
-- [ ] 02-05-PLAN.md — enrollments_controller policies (A1 fix), validators V9–V12, A9 scoping, AS4 checkpoint [DEBT-04, DEBT-05]
-- [ ] 02-06-PLAN.md — Category cycle rejection + subtree path/depth recompute + integrity command [DEBT-07]
-- [ ] 02-07-PLAN.md — Q1 prod check, then decryption failures logged/never raw, raising behind `PII_DECRYPT_STRICT` + silent-auth rethrow + 2FA decrypt audit [DEBT-08]
-- [ ] 02-08-PLAN.md — Admin 2FA reset, `user:reset-2fa` break-glass CLI, recovery doc [DEBT-09]
-- [ ] 02-09-PLAN.md — AS2 gradebook access for admins / edit co-instructors (checkpoint) [DEBT-04]
+- [x] 02-04-PLAN.md — courses_controller onto CoursePolicy + A4 permission IDOR [DEBT-04]
+- [x] 02-05-PLAN.md — enrollments_controller policies (A1 fix), validators V9–V12, A9 scoping, AS4 checkpoint [DEBT-04, DEBT-05]
+- [x] 02-06-PLAN.md — Category cycle rejection + subtree path/depth recompute + integrity command [DEBT-07]
+- [x] 02-07-PLAN.md — Q1 prod check, then decryption failures logged/never raw, raising behind `PII_DECRYPT_STRICT` + silent-auth rethrow + 2FA decrypt audit [DEBT-08]
+- [x] 02-08-PLAN.md — Admin 2FA reset, `user:reset-2fa` break-glass CLI, recovery doc [DEBT-09]
+- [x] 02-09-PLAN.md — AS2 gradebook access for admins / edit co-instructors (checkpoint) [DEBT-04]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -379,7 +379,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
-| 2. Security and Correctness Hardening | 3/14 | In Progress|  |
+| 2. Security and Correctness Hardening | 9/14 | In Progress|  |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
