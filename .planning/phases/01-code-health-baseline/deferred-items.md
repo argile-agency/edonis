@@ -25,3 +25,13 @@ Out-of-scope discoveries logged during execution. Not fixed; tracked for a futur
   This is harmless today because `Number.parseInt` coerces its argument to a string at
   runtime. Worth widening to `string | number | undefined` (with an explicit `String(...)`)
   when item 1 is fixed.
+
+## From 01-04
+
+### 3. Three divergent JSON column hooks intentionally NOT deduplicated (Phase 2 correctness candidate, alongside DEBT-08)
+
+These look like `jsonColumnConfig` but have different null/empty semantics. Swapping them onto the shared config changes runtime behaviour, so do not "finish the job" without a data audit and backfill plan:
+
+- **`app/models/role.ts` (`permissions`)**: `prepare` returns the value unchanged when `typeof value === 'string'`. `jsonColumnConfig` would `JSON.stringify` an already-serialized string, which **double-encodes** it.
+- **`app/models/course.ts` (`tags`)**: uses falsy checks (`if (!value) return null`) instead of `!= null`. `jsonColumnConfig` would reach `JSON.parse('')` on an empty-string column value and throw a **`SyntaxError` at read time**.
+- **`app/models/app_setting.ts` (`socialLinks`)**: `prepare` has no null check and currently stores the literal string `'null'`. `jsonColumnConfig` would store SQL `NULL` instead, a **stored-value change** that needs a backfill.
