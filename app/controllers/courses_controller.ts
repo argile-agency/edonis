@@ -18,7 +18,43 @@ import {
   rejectCourseValidator,
   addParticipantValidator,
 } from '#validators/course_admin'
+import {
+  createEnrollmentMethodValidator,
+  updateEnrollmentMethodValidator,
+} from '#validators/enrollment_method'
+import { createGroupingValidator, createGroupValidator } from '#validators/course_group'
 import { scopeVisibleCourses } from '#policies/course_policy'
+
+/**
+ * Validated date → DateTime. `undefined` (field absent) stays `undefined` and
+ * `null` (field cleared) stays `null`.
+ */
+function toDateTime(value: Date | null | undefined): DateTime | null | undefined {
+  if (value === undefined || value === null) return value
+  return DateTime.fromJSDate(value)
+}
+
+/**
+ * Drops keys whose value is `undefined`, so absent fields are never written.
+ */
+function omitUndefined<T extends Record<string, unknown>>(values: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined)
+  ) as Partial<T>
+}
+
+/**
+ * True when no group is referenced, or when the referenced group belongs to
+ * the given course.
+ */
+async function isGroupOfCourse(
+  groupId: number | null | undefined,
+  courseId: number
+): Promise<boolean> {
+  if (!groupId) return true
+  const group = await CourseGroup.query().where('id', groupId).where('course_id', courseId).first()
+  return group !== null
+}
 
 export default class CoursesController {
   /**
@@ -298,30 +334,24 @@ export default class CoursesController {
 
     await bouncer.with('CoursePolicy').authorize('manage', course)
 
-    const data = request.only([
-      'methodType',
-      'name',
-      'isEnabled',
-      'sortOrder',
-      'maxEnrollments',
-      'defaultRole',
-      'enrollmentStartDate',
-      'enrollmentEndDate',
-      'enrollmentDurationDays',
-      'enrollmentKey',
-      'keyCaseSensitive',
-      'requiresApproval',
-      'approvalMessage',
-      'welcomeMessage',
-      'autoAssignGroupId',
-      'sendWelcomeEmail',
-      'notifyInstructor',
-    ])
+    const payload = await request.validateUsing(createEnrollmentMethodValidator)
 
-    await CourseEnrollmentMethod.create({
-      courseId: course.id,
-      ...data,
-    })
+    // The auto-assign group must belong to this course (A9)
+    if (!(await isGroupOfCourse(payload.autoAssignGroupId, course.id))) {
+      session.flash('error', 'Groupe invalide pour ce cours.')
+      return response.redirect().back()
+    }
+
+    const { enrollmentStartDate, enrollmentEndDate, ...fields } = payload
+
+    await CourseEnrollmentMethod.create(
+      omitUndefined({
+        ...fields,
+        courseId: course.id,
+        enrollmentStartDate: toDateTime(enrollmentStartDate),
+        enrollmentEndDate: toDateTime(enrollmentEndDate),
+      })
+    )
 
     session.flash('success', 'Enrollment method created successfully')
     return response.redirect().toRoute('courses.enrollment-methods.index', { id: course.id })
@@ -338,26 +368,24 @@ export default class CoursesController {
 
     await bouncer.with('CoursePolicy').authorize('manage', method.course)
 
-    const data = request.only([
-      'name',
-      'isEnabled',
-      'sortOrder',
-      'maxEnrollments',
-      'defaultRole',
-      'enrollmentStartDate',
-      'enrollmentEndDate',
-      'enrollmentDurationDays',
-      'enrollmentKey',
-      'keyCaseSensitive',
-      'requiresApproval',
-      'approvalMessage',
-      'welcomeMessage',
-      'autoAssignGroupId',
-      'sendWelcomeEmail',
-      'notifyInstructor',
-    ])
+    const payload = await request.validateUsing(updateEnrollmentMethodValidator)
 
-    method.merge(data)
+    // The auto-assign group must belong to the method's own course (A9)
+    if (!(await isGroupOfCourse(payload.autoAssignGroupId, method.courseId))) {
+      session.flash('error', 'Groupe invalide pour ce cours.')
+      return response.redirect().back()
+    }
+
+    const { enrollmentStartDate, enrollmentEndDate, ...fields } = payload
+
+    // Absent fields are left untouched; an explicit null clears the column
+    method.merge(
+      omitUndefined({
+        ...fields,
+        enrollmentStartDate: toDateTime(enrollmentStartDate),
+        enrollmentEndDate: toDateTime(enrollmentEndDate),
+      })
+    )
     await method.save()
 
     session.flash('success', 'Enrollment method updated successfully')
@@ -418,12 +446,12 @@ export default class CoursesController {
 
     await bouncer.with('CoursePolicy').authorize('manage', course)
 
-    const { name, description } = request.only(['name', 'description'])
+    const { name, description } = await request.validateUsing(createGroupingValidator)
 
     await CourseGrouping.create({
       courseId: course.id,
       name,
-      description,
+      description: description ?? null,
     })
 
     session.flash('success', 'Grouping created successfully')
@@ -439,19 +467,25 @@ export default class CoursesController {
     await bouncer.with('CoursePolicy').authorize('manage', course)
 
     const { name, description, groupingId, maxMembers, isVisibleToStudents, enableGroupMessaging } =
-      request.only([
-        'name',
-        'description',
-        'groupingId',
-        'maxMembers',
-        'isVisibleToStudents',
-        'enableGroupMessaging',
-      ])
+      await request.validateUsing(createGroupValidator)
+
+    // The grouping must belong to this course (A9)
+    if (groupingId) {
+      const grouping = await CourseGrouping.query()
+        .where('id', groupingId)
+        .where('course_id', course.id)
+        .first()
+
+      if (!grouping) {
+        session.flash('error', 'Regroupement invalide pour ce cours.')
+        return response.redirect().back()
+      }
+    }
 
     await CourseGroup.create({
       courseId: course.id,
       name,
-      description,
+      description: description ?? null,
       groupingId: groupingId || null,
       maxMembers: maxMembers || null,
       isVisibleToStudents: isVisibleToStudents ?? true,
