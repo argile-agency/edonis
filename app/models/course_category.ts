@@ -72,10 +72,16 @@ export default class CourseCategory extends BaseModel {
 
     const parts: string[] = [this.slug]
     let current: CourseCategory = this
+    // Visited set: corrupt (cyclic) parent data must fail loudly, not loop forever.
+    const seen = new Set<number>([this.id])
 
     while (current.parentId) {
       await current.load('parent')
       current = current.parent
+      if (seen.has(current.id)) {
+        throw new Error('Category hierarchy contains a cycle at category ' + current.id)
+      }
+      seen.add(current.id)
       parts.unshift(current.slug)
     }
 
