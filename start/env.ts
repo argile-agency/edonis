@@ -61,4 +61,19 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   TERMS_VERSION: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | PII decryption failure mode
+  |----------------------------------------------------------
+  |
+  | true: an encrypted PII cell that cannot be decrypted raises
+  | DecryptionException (500 page).
+  | unset/false (default): the failure is logged and the field
+  | reads as null. The raw value is never returned in either mode.
+  |
+  | Enable per environment only after `node ace pii:scan` reports
+  | no undecryptable rows there.
+  */
+  PII_DECRYPT_STRICT: Env.schema.boolean.optional(),
 })

@@ -2,7 +2,9 @@ import { randomBytes } from 'node:crypto'
 import * as OTPAuth from 'otpauth'
 import QRCode from 'qrcode'
 import encryption from '@adonisjs/core/services/encryption'
+import logger from '@adonisjs/core/services/logger'
 import User from '#models/user'
+import AuditService from '#services/audit_service'
 
 export default class TwoFactorService {
   /**
@@ -38,7 +40,11 @@ export default class TwoFactorService {
     if (!user.twoFactorSecret) return false
 
     const decryptedSecret = encryption.decrypt<string>(user.twoFactorSecret)
-    if (!decryptedSecret) return false
+    if (!decryptedSecret) {
+      // verifyToken is synchronous: report fire-and-forget. The report never rejects.
+      void TwoFactorService.reportDecryptFailure(user.id, 'secret')
+      return false
+    }
 
     const totp = new OTPAuth.TOTP({
       issuer: 'Edonis LMS',
@@ -73,7 +79,10 @@ export default class TwoFactorService {
     if (!user.twoFactorRecoveryCodes) return false
 
     const decryptedCodes = encryption.decrypt<string>(user.twoFactorRecoveryCodes)
-    if (!decryptedCodes) return false
+    if (!decryptedCodes) {
+      await TwoFactorService.reportDecryptFailure(user.id, 'recovery_codes')
+      return false
+    }
 
     const codes: string[] = JSON.parse(decryptedCodes)
     const normalizedCode = code.toUpperCase().trim()
@@ -87,6 +96,36 @@ export default class TwoFactorService {
     await user.save()
 
     return true
+  }
+
+  /**
+   * Logs and audits a 2FA secret / recovery-code decryption failure (for
+   * example after an APP_KEY rotation). Only the user id and the field name
+   * are recorded, never the stored value. Independent of PII_DECRYPT_STRICT:
+   * the 2FA check always fails closed.
+   *
+   * Never rejects: an audit write error is logged and swallowed, so callers
+   * can fire it without awaiting.
+   */
+  private static async reportDecryptFailure(
+    userId: number,
+    field: 'secret' | 'recovery_codes'
+  ): Promise<void> {
+    logger.error({ userId, field }, '2FA decryption failed')
+    try {
+      await AuditService.log({
+        userId,
+        action: 'user.2fa.decrypt_failed',
+        resourceType: 'User',
+        resourceId: userId,
+        metadata: { field },
+      })
+    } catch (error) {
+      logger.error(
+        { userId, field, error: (error as Error).message },
+        '2FA decryption failure audit write failed'
+      )
+    }
   }
 
   /**
