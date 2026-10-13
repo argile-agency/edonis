@@ -3,7 +3,15 @@ import Course from '#models/course'
 import CourseEnrollment from '#models/course_enrollment'
 import CourseEnrollmentMethod from '#models/course_enrollment_method'
 import CourseEnrollmentRequest from '#models/course_enrollment_request'
+import CourseGroup from '#models/course_group'
+import CourseGroupMember from '#models/course_group_member'
 import User from '#models/user'
+import {
+  enrollManualValidator,
+  enrollSelfValidator,
+  enrollWithKeyValidator,
+  requestEnrollmentValidator,
+} from '#validators/enrollment'
 import { DateTime } from 'luxon'
 
 export default class EnrollmentsController {
@@ -49,13 +57,20 @@ export default class EnrollmentsController {
   /**
    * Enroll with a key
    */
-  async enrollWithKey({ request, auth, response, session }: HttpContext) {
-    const { enrollmentKey, enrollmentMethodId } = request.only([
-      'enrollmentKey',
-      'enrollmentMethodId',
-    ])
+  async enrollWithKey({ params, request, auth, response, session }: HttpContext) {
+    const { enrollmentKey, enrollmentMethodId } =
+      await request.validateUsing(enrollWithKeyValidator)
 
-    const method = await CourseEnrollmentMethod.findOrFail(enrollmentMethodId)
+    // Scoped to the course in the URL (A9)
+    const method = await CourseEnrollmentMethod.query()
+      .where('id', enrollmentMethodId)
+      .where('course_id', params.id)
+      .first()
+
+    if (!method) {
+      session.flash('error', "Méthode d'inscription invalide.")
+      return response.redirect().back()
+    }
 
     // Validate method is available
     if (!method.isAvailable()) {
@@ -109,10 +124,7 @@ export default class EnrollmentsController {
 
     // Auto-assign to group if configured
     if (method.autoAssignGroupId) {
-      const CourseGroupMemberModule = await import('#models/course_group_member')
-      const CourseGroupMember = CourseGroupMemberModule.default
-      const CourseGroupModule = await import('#models/course_group')
-      const group = await CourseGroupModule.default.findOrFail(method.autoAssignGroupId)
+      const group = await CourseGroup.findOrFail(method.autoAssignGroupId)
 
       if (group.canAddMembers()) {
         await CourseGroupMember.create({
@@ -143,10 +155,19 @@ export default class EnrollmentsController {
   /**
    * Self-enroll (open enrollment)
    */
-  async enrollSelf({ request, auth, response, session }: HttpContext) {
-    const { enrollmentMethodId } = request.only(['enrollmentMethodId'])
+  async enrollSelf({ params, request, auth, response, session }: HttpContext) {
+    const { enrollmentMethodId } = await request.validateUsing(enrollSelfValidator)
 
-    const method = await CourseEnrollmentMethod.findOrFail(enrollmentMethodId)
+    // Scoped to the course in the URL (A9)
+    const method = await CourseEnrollmentMethod.query()
+      .where('id', enrollmentMethodId)
+      .where('course_id', params.id)
+      .first()
+
+    if (!method) {
+      session.flash('error', "Méthode d'inscription invalide.")
+      return response.redirect().back()
+    }
 
     // Validate method
     if (!method.isAvailable()) {
@@ -207,13 +228,21 @@ export default class EnrollmentsController {
   /**
    * Request enrollment (requires approval)
    */
-  async requestEnrollment({ request, auth, response, session }: HttpContext) {
-    const { enrollmentMethodId, requestMessage } = request.only([
-      'enrollmentMethodId',
-      'requestMessage',
-    ])
+  async requestEnrollment({ params, request, auth, response, session }: HttpContext) {
+    const { enrollmentMethodId, requestMessage } = await request.validateUsing(
+      requestEnrollmentValidator
+    )
 
-    const method = await CourseEnrollmentMethod.findOrFail(enrollmentMethodId)
+    // Scoped to the course in the URL (A9)
+    const method = await CourseEnrollmentMethod.query()
+      .where('id', enrollmentMethodId)
+      .where('course_id', params.id)
+      .first()
+
+    if (!method) {
+      session.flash('error', "Méthode d'inscription invalide.")
+      return response.redirect().back()
+    }
 
     // Validate method
     if (!method.isAvailable()) {
@@ -269,23 +298,37 @@ export default class EnrollmentsController {
   /**
    * Manual enrollment by instructor/admin
    */
-  async enrollManual({ params, request, auth, response, session }: HttpContext) {
+  async enrollManual({ params, request, auth, bouncer, response, session }: HttpContext) {
     const course = await Course.findOrFail(params.id)
 
-    // Check permissions
-    const canManage = await course.hasPermission(auth.user!.id, 'manage')
-    if (!canManage && !auth.user!.roles.some((r) => r.slug === 'admin')) {
-      return response.forbidden("Vous n'avez pas la permission d'inscrire des utilisateurs.")
+    await bouncer.with('CoursePolicy').authorize('manage', course)
+
+    const { userIds, courseRole, enrollmentMethodId, groupId } =
+      await request.validateUsing(enrollManualValidator)
+
+    // Method and group must both belong to this course (A9)
+    let method: CourseEnrollmentMethod | null = null
+    if (enrollmentMethodId) {
+      method = await CourseEnrollmentMethod.query()
+        .where('id', enrollmentMethodId)
+        .where('course_id', course.id)
+        .first()
+
+      if (!method) {
+        session.flash('error', "Méthode d'inscription invalide.")
+        return response.redirect().back()
+      }
     }
 
-    const { userIds, courseRole, enrollmentMethodId, groupId } = request.only([
-      'userIds',
-      'courseRole',
-      'enrollmentMethodId',
-      'groupId',
-    ])
+    let group: CourseGroup | null = null
+    if (groupId) {
+      group = await CourseGroup.query().where('id', groupId).where('course_id', course.id).first()
 
-    const method = await CourseEnrollmentMethod.find(enrollmentMethodId)
+      if (!group) {
+        session.flash('error', 'Groupe invalide pour ce cours.')
+        return response.redirect().back()
+      }
+    }
 
     const enrolledUsers: string[] = []
     const errors: string[] = []
@@ -319,12 +362,7 @@ export default class EnrollmentsController {
         })
 
         // Add to group if specified
-        if (groupId) {
-          const CourseGroupMemberModule = await import('#models/course_group_member')
-          const CourseGroupMember = CourseGroupMemberModule.default
-          const CourseGroupModule = await import('#models/course_group')
-          const group = await CourseGroupModule.default.findOrFail(groupId)
-
+        if (group) {
           if (group.canAddMembers()) {
             await CourseGroupMember.create({
               groupId: group.id,
@@ -367,7 +405,7 @@ export default class EnrollmentsController {
   /**
    * Unenroll a user
    */
-  async unenroll({ params, auth, response, session }: HttpContext) {
+  async unenroll({ params, bouncer, response, session }: HttpContext) {
     const enrollment = await CourseEnrollment.query()
       .where('id', params.enrollmentId)
       .preload('course')
@@ -375,14 +413,8 @@ export default class EnrollmentsController {
 
     const course = enrollment.course
 
-    // Check permissions (can unenroll self, or instructor/admin can unenroll others)
-    const isSelf = enrollment.userId === auth.user!.id
-    const canManage = await course.hasPermission(auth.user!.id, 'manage')
-    const isAdmin = auth.user!.roles.some((r) => r.slug === 'admin')
-
-    if (!isSelf && !canManage && !isAdmin) {
-      return response.forbidden("Vous n'avez pas la permission de désinscrire cet utilisateur.")
-    }
+    // Self, `manage` on the course, or admin (A1: no unloaded `roles` access)
+    await bouncer.with('EnrollmentPolicy').authorize('unenroll', enrollment)
 
     await enrollment.delete()
 
