@@ -88,6 +88,15 @@ The plan widens `users.phone` and `users.mobile_phone` to `varchar(512)` so they
 - **TDD on Task 1:** the round-trip test cannot fail on SQLite before the migration, because SQLite does not enforce varchar length. The plan states this, so Task 1 is a single `fix(...)` commit.
 - **Worktree setup:** `node_modules` and `.env` are symlinked from the main checkout (both gitignored, not committed). `tests/bootstrap.ts`, `adonisrc.ts`, `.env.test`, `package.json` and `config/shield.ts` were not touched.
 
+## Requirement Status
+
+- **DEBT-08: partial.** This plan covers widen + scan, steps 1–2 of 3. Do NOT mark DEBT-08 complete until plan 02-07 ships the strict-decryption step.
+
+## Open Items for the Orchestrator
+
+- **CI Node version is unpinned.** The workflows use `oven-sh/setup-bun@v1` with no `actions/setup-node`, so `node ace ...` runs on the runner image's default Node. If that resolves to Node 24.x, every `node ace` call fails at command loading (see Environment notes), including `node ace test`. The pg/mysql matrix proof would then never reach `pii.spec.ts`. CI belongs to Phase 1 and was not edited here. Pin Node 22 in CI, or fix the jsonschema/Node 24 incompatibility.
+- The CSRF gate from Task 1's `<verify>` was run: `withCsrf(` count 1 ≥ `client.<write>(` count 1.
+
 ## Deferred Issues (out of scope)
 
 - `ProfileController.update` writes its `user.profile.update` audit row with `oldValues`/`newValues = user.serialize()`. That puts the decrypted phone, mobile phone, address and identification number into `audit_logs` in plaintext. This predates this plan, and a later plan should strip PII fields from that audit payload.
