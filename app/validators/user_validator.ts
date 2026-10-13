@@ -18,7 +18,9 @@ export const createUserValidator = vine.compile(
     locale: vine.string().trim().maxLength(10).optional(),
     timezone: vine.string().trim().maxLength(50).optional(),
     isActive: vine.boolean().optional(),
-    roleIds: vine.array(vine.number()).optional(),
+    roleIds: vine
+      .array(vine.number().positive().exists({ table: 'roles', column: 'id' }))
+      .optional(),
   })
 )
 
@@ -39,7 +41,9 @@ export const updateUserValidator = vine.compile(
     locale: vine.string().trim().maxLength(10).optional(),
     timezone: vine.string().trim().maxLength(50).optional(),
     isActive: vine.boolean().optional(),
-    roleIds: vine.array(vine.number()).optional(),
+    roleIds: vine
+      .array(vine.number().positive().exists({ table: 'roles', column: 'id' }))
+      .optional(),
   })
 )
 

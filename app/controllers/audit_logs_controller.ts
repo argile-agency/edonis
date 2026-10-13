@@ -1,5 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
 import AuditLog from '#models/audit_log'
+import { auditLogIndexQueryValidator } from '#validators/listing'
 
 export default class AuditLogsController {
   /**
@@ -7,13 +9,14 @@ export default class AuditLogsController {
    * GET /admin/audit-logs
    */
   async index({ inertia, request }: HttpContext) {
-    const page = request.input('page', 1)
+    const q = await request.validateUsing(auditLogIndexQueryValidator)
+    const page = q.page ?? 1
     const limit = 30
-    const action = request.input('action', '')
-    const userId = request.input('userId', '')
-    const resourceType = request.input('resourceType', '')
-    const dateFrom = request.input('dateFrom', '')
-    const dateTo = request.input('dateTo', '')
+    const action = q.action ?? ''
+    const userId = q.userId ? String(q.userId) : ''
+    const resourceType = q.resourceType ?? ''
+    const dateFrom = q.dateFrom ? (DateTime.fromJSDate(q.dateFrom).toSQLDate() ?? '') : ''
+    const dateTo = q.dateTo ? (DateTime.fromJSDate(q.dateTo).toSQLDate() ?? '') : ''
 
     const query = AuditLog.query().preload('user').orderBy('created_at', 'desc')
 
@@ -21,8 +24,8 @@ export default class AuditLogsController {
       query.where('action', 'like', `%${action}%`)
     }
 
-    if (userId) {
-      query.where('user_id', userId)
+    if (q.userId) {
+      query.where('user_id', q.userId)
     }
 
     if (resourceType) {

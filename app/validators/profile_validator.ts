@@ -4,8 +4,7 @@ import vine from '@vinejs/vine'
  * Validator pour la mise à jour du profil par l'utilisateur lui-même.
  * Exclut isActive et roleIds pour empêcher l'auto-escalade de privilèges.
  *
- * Note : les champs File (avatar) ne passent pas par ce validateur,
- * ils sont traités via request.file() dans le contrôleur.
+ * Note : l'avatar ne passe pas par ce validateur, voir updateAvatarValidator.
  */
 export const updateProfileValidator = vine.compile(
   vine.object({
@@ -38,6 +37,15 @@ export const updatePasswordValidator = vine.compile(
     newPassword: vine.string().minLength(8).maxLength(255).confirmed({
       confirmationField: 'newPasswordConfirmation',
     }),
+  })
+)
+
+/**
+ * Validator pour l'upload de l'avatar (mêmes limites qu'avant : 2 Mo, images uniquement).
+ */
+export const updateAvatarValidator = vine.compile(
+  vine.object({
+    avatar: vine.file({ size: '2mb', extnames: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }),
   })
 )
 
