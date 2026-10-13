@@ -410,7 +410,7 @@ test('student cannot access users list', async ({ client }) => {
 ### Phase 3
 
 - [ ] Authentification OAuth (Google, Microsoft)
-- [ ] Authentification à deux facteurs (2FA)
+- [x] Authentification à deux facteurs (2FA) — voir [TWO_FACTOR_RECOVERY.md](./TWO_FACTOR_RECOVERY.md)
 - [ ] Logs d'audit détaillés
 - [ ] API REST publique pour intégrations
 - [ ] Notifications email pour événements utilisateur
