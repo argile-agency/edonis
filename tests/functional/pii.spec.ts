@@ -1,27 +1,11 @@
 import { test } from '@japa/runner'
-import type { ApiRequest } from '@japa/api-client'
 import type { Assert } from '@japa/assert'
 import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import encryption from '@adonisjs/core/services/encryption'
-import Tokens from 'csrf'
 import User from '#models/user'
 import AuditLog from '#models/audit_log'
 import PiiScanService, { classifyPiiValue, PII_COLUMNS } from '#services/pii_scan_service'
-
-/**
- * Spec-local CSRF helper: does exactly what `@adonisjs/shield`'s
- * `shieldApiClient().withCsrfToken()` does (session `csrf-secret` + matching
- * `x-csrf-token` header). Temporary: plan 02-07 replaces every call with
- * `.withCsrfToken()` once `shieldApiClient()` is registered in bootstrap.
- */
-function withCsrf<T extends ApiRequest>(request: T): T {
-  const tokens = new Tokens()
-  const secret = tokens.secretSync()
-  return request
-    .withSession({ 'csrf-secret': secret })
-    .header('x-csrf-token', tokens.create(secret))
-}
 
 function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}@test.com`
@@ -53,9 +37,8 @@ test.group('PII - column capacity', (group) => {
 
     // Do not follow the redirect: the target page would render the full
     // Inertia HTML layout, which requires a built Vite manifest.
-    const response = await withCsrf(
-      client.post(route('user.profile.update')).loginAs(user).redirects(0)
-    ).form({
+    const request = client.post(route('user.profile.update')).withCsrfToken()
+    const response = await request.loginAs(user).redirects(0).form({
       email: user.email,
       firstName: 'Pii',
       lastName: 'Tester',
