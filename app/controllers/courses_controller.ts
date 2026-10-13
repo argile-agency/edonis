@@ -239,9 +239,14 @@ export default class CoursesController {
    */
   async removePermission({ response, params, bouncer, session }: HttpContext) {
     const course = await Course.findOrFail(params.courseId)
-    const permission = await CoursePermission.findOrFail(params.permissionId)
 
     await bouncer.with('CoursePolicy').authorize('manage', course)
+
+    // Scope to the authorized course: a permission row of another course is a 404
+    const permission = await CoursePermission.query()
+      .where('id', params.permissionId)
+      .where('course_id', course.id)
+      .firstOrFail()
 
     await permission.delete()
 
