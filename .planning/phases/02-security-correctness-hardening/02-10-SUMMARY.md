@@ -90,6 +90,11 @@ Test isolation: `@japa/api-client` reads `process.env.HOST`/`PORT` (`build/index
 
 **Outline-link grep (step 2):** `grep -rn "outline" inertia/pages/courses/show.tsx inertia/pages/courses/index.tsx` returns only `<Badge variant="outline">` / `<Button variant="outline">` styling hits. Neither page links to `/courses/:id/outline`. The only link to the outline anywhere in `inertia/` is inside `inertia/pages/courses/learn.tsx:279`, which only users allowed to learn can reach. No non-enrolled "preview" link would break.
 
+**Side effects to weigh:**
+- Owners and editors can now open the learn player without enrolling.
+- Opening it creates `content_progress` rows for them through `getOrCreate`/`markAsStarted`, so a future teacher completion view (Phase 10) may need to exclude instructors.
+- A `view`-only collaborator must still be enrolled to see the outline.
+
 If the user rejects AS3: `git revert --no-edit d4bab03`, then re-run the full functional suite. Tasks 1's scoping fixes and the comment fix stay.
 
 ## Deviations from Plan
