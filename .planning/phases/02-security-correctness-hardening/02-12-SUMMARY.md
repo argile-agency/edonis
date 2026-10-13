@@ -34,7 +34,7 @@ decisions:
   - "roleIds uses the Lucid exists({ table: 'roles', column: 'id' }) object form; no controller fallback was needed"
   - "Avatar validation runs before the try/catch so ValidationError is not swallowed by the generic upload-error flash"
 metrics:
-  duration: ~25min
+  duration: 12min (base commit 19:28:23 to SUMMARY commit 19:40:40)
   completed: 2026-10-13
   tasks: 3
   files: 10
@@ -61,7 +61,11 @@ Admin listings now take only bounded, typed filters (`limit` capped at 100, stri
 - Full functional suite (`PORT=3412 DB_FILENAME=./tmp/test-02-12.sqlite3 node ace test functional`): **83 passed**, exit 0
 - `validation_listing.spec.ts`: 9 tests. CSRF gate holds (4 `withCsrfToken()` / 4 writes). `assertStatus(500)` count is 0. No Vite manifest was created.
 - The Vite `WebSocket server error: Port 24678 is already in use` warning appeared on every run. It was non-fatal: no run failed and none needed serializing.
-- The api client honoured `PORT`/`DB_FILENAME` from `process.env` (the suites ran in parallel with other executors without collisions).
+- Test isolation was checked in source, not only inferred from the absence of collisions:
+  - `tests/bootstrap.ts` registers `apiClient()` with no `baseURL` (the `localhost:3333` value belongs to `browserClient`, browser suite only).
+  - `@japa/api-client` `request()` (build/index.js:659-661) then builds the base URL from `process.env.HOST` + `process.env.PORT`.
+  - `config/database.ts:38` reads `env.get('DB_FILENAME', ...)`, and `.env.test` sets `DB_CONNECTION=sqlite`.
+  - So every run used port 3412 and `./tmp/test-02-12.sqlite3`, which was deleted afterwards.
 
 ## Verified API signatures
 
@@ -148,5 +152,7 @@ Task 3 is `tdd="true"`, but Tasks 1–2 implement the behaviour before the spec 
 
 ## Self-Check: PASSED
 
-- FOUND: app/validators/listing.ts, app/validators/account.ts, tests/functional/validation_listing.spec.ts
-- FOUND commits: c32ac78, 7f8277b, d2f4d8c
+Checked with `ls` and `git log`:
+- FOUND (ls): app/validators/listing.ts, app/validators/account.ts, tests/functional/validation_listing.spec.ts, this SUMMARY
+- FOUND (git log): c32ac78, 7f8277b, d2f4d8c, afcd323 (initial SUMMARY commit)
+- REQUIREMENTS.md was not touched. DEBT-05 is shared with other plans in this wave, so marking it complete is left to the orchestrator.
