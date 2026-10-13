@@ -3,6 +3,7 @@ import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import CourseModule from '#models/course_module'
 import ContentProgress from '#models/content_progress'
+import { jsonColumnConfig } from '../helpers/json_column.js'
 
 export type ContentType = 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz'
 export type CompletionType = 'manual' | 'view' | 'submit' | 'grade'
@@ -41,14 +42,7 @@ export default class CourseContent extends BaseModel {
   @column()
   declare externalUrl: string | null
 
-  @column({
-    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare metadata: Record<string, any> | null
 
   @column()
