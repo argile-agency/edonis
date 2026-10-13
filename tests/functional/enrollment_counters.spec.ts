@@ -12,6 +12,7 @@ import CapacityReachedException from '#exceptions/capacity_reached_exception'
 import AlreadyEnrolledException from '#exceptions/already_enrolled_exception'
 import { isUniqueViolation } from '../../app/helpers/db_errors.js'
 import {
+  assertNotCsrfRejected,
   createCourse,
   createEnrollmentMethod,
   createGroup,
@@ -318,5 +319,152 @@ test.group('EnrollmentService - counter invariants', (group) => {
     )
     assert.isFalse(isUniqueViolation({ code: '23503' }))
     assert.isFalse(isUniqueViolation(null))
+  })
+})
+
+test.group('Enrollments - HTTP counters', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('self enrolment fills a max=1 method, then refuses with the capacity flash', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const method = await createEnrollmentMethod(course, { methodType: 'self', maxEnrollments: 1 })
+    const first = await createUser({ roles: ['student'] })
+    const second = await createUser({ roles: ['student'] })
+    const url = route('enrollments.enroll-self', { id: course.id })
+
+    const firstReq = client.post(url).withCsrfToken()
+    const firstRes = await firstReq
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(first)
+      .redirects(0)
+
+    firstRes.assertStatus(302)
+    assertNotCsrfRejected(assert, firstRes)
+    firstRes.assertHeader('location', route('courses.show', { id: course.id }))
+    assert.equal(await enrolledCount(course.id), 1)
+    assert.equal(await currentEnrollments(method.id), 1)
+
+    const secondReq = client.post(url).withCsrfToken()
+    const secondRes = await secondReq
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(second)
+      .redirects(0)
+
+    secondRes.assertStatus(302)
+    assert.equal(
+      secondRes.flashMessage('error'),
+      "Cette méthode d'inscription n'est plus disponible."
+    )
+    assert.isNull(
+      await CourseEnrollment.query().where('course_id', course.id).where('user_id', second.id).first()
+    )
+    assert.equal(await enrolledCount(course.id), 1)
+    assert.equal(await currentEnrollments(method.id), 1)
+  })
+
+  test('self enrolling twice on an unlimited method shows the already-enrolled flash', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const method = await createEnrollmentMethod(course, {
+      methodType: 'self',
+      maxEnrollments: null,
+    })
+    const student = await createUser({ roles: ['student'] })
+    const url = route('enrollments.enroll-self', { id: course.id })
+
+    const firstReq = client.post(url).withCsrfToken()
+    const firstRes = await firstReq
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(student)
+      .redirects(0)
+
+    firstRes.assertStatus(302)
+    assertNotCsrfRejected(assert, firstRes)
+    firstRes.assertHeader('location', route('courses.show', { id: course.id }))
+    assert.equal(await enrolledCount(course.id), 1)
+    assert.equal(await currentEnrollments(method.id), 1)
+
+    const againReq = client.post(url).withCsrfToken()
+    const againRes = await againReq
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(student)
+      .redirects(0)
+
+    againRes.assertStatus(302)
+    assert.equal(againRes.flashMessage('error'), 'Vous êtes déjà inscrit à ce cours.')
+    const rows = await CourseEnrollment.query()
+      .where('course_id', course.id)
+      .where('user_id', student.id)
+    assert.lengthOf(rows, 1)
+    assert.equal(await enrolledCount(course.id), 1)
+    assert.equal(await currentEnrollments(method.id), 1)
+  })
+
+  test('manual enrolment counts only the new users and names the already-enrolled one', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const a = await createUser({ roles: ['student'] })
+    const b = await createUser({ roles: ['student'] })
+    const already = await createUser({ roles: ['student'], fullName: 'Already Enrolled Student' })
+    await EnrollmentService.enroll({
+      courseId: course.id,
+      userId: already.id,
+      courseRole: 'student',
+      enrolledBy: owner.id,
+    })
+    const before = await enrolledCount(course.id)
+
+    const url = route('enrollments.enroll-manual', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ userIds: [a.id, b.id, already.id] })
+      .loginAs(owner)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.equal(await enrolledCount(course.id), before + 2)
+    assert.equal(
+      await enrolledCount(course.id),
+      await countRows('course_enrollments', 'course_id', course.id)
+    )
+    assert.include(response.flashMessage('warning'), 'Already Enrolled Student est déjà inscrit')
+  })
+
+  test('a student unenrolling decrements the course and method counters', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const method = await createEnrollmentMethod(course, { methodType: 'self' })
+    const student = await createUser({ roles: ['student'] })
+    const other = await createUser({ roles: ['student'] })
+    const enrollment = await enrollVia(course, method, student.id)
+    await enrollVia(course, method, other.id)
+
+    const url = route('enrollments.unenroll', { enrollmentId: enrollment.id })
+    const request = client.delete(url).withCsrfToken()
+    const response = await request.loginAs(student).redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.isNull(await CourseEnrollment.find(enrollment.id))
+    assert.equal(await enrolledCount(course.id), 1)
+    assert.equal(await currentEnrollments(method.id), 1)
   })
 })
