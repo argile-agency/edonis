@@ -7,6 +7,7 @@ import {
   updateProfileValidator,
   updatePasswordValidator,
   updateSettingsValidator,
+  updateAvatarValidator,
 } from '#validators/profile_validator'
 import { validateEmailUnique } from '#validators/user_validator'
 import AuditService from '#services/audit_service'
@@ -94,22 +95,11 @@ export default class ProfileController {
     const { request, response, session, auth } = ctx
     const user = auth.user!
 
+    // Validated outside the try block so a ValidationError is not swallowed by
+    // the generic upload-error catch and reaches the client as inputErrorsBag.avatar.
+    const { avatar } = await request.validateUsing(updateAvatarValidator)
+
     try {
-      const avatar = request.file('avatar', {
-        size: '2mb',
-        extnames: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      })
-
-      if (!avatar) {
-        session.flash('error', 'Aucun fichier sélectionné')
-        return response.redirect().back()
-      }
-
-      if (!avatar.isValid) {
-        session.flash('error', avatar.errors.map((e) => e.message).join(', '))
-        return response.redirect().back()
-      }
-
       // Delete old avatar file if exists
       if (user.avatarUrl) {
         await this.deleteAvatarFile(user.avatarUrl)

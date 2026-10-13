@@ -34,6 +34,24 @@ const SocialAuthController = () => import('#controllers/social_auth_controller')
 const AccountController = () => import('#controllers/account_controller')
 const AuditLogsController = () => import('#controllers/audit_logs_controller')
 
+/*
+|--------------------------------------------------------------------------
+| Global route param matchers
+|--------------------------------------------------------------------------
+| Every resource id is an integer primary key. Matching these params as
+| numbers means a non-numeric id (e.g. /courses/abc) matches no route and
+| returns a 404, instead of reaching an integer column and raising a DB
+| cast error (500 on PostgreSQL). Matched params are cast to numbers.
+| `:provider` (OAuth) is a string and must never get a numeric matcher.
+*/
+router.where('id', router.matchers.number())
+router.where('courseId', router.matchers.number())
+router.where('moduleId', router.matchers.number())
+router.where('contentId', router.matchers.number())
+router.where('enrollmentId', router.matchers.number())
+router.where('methodId', router.matchers.number())
+router.where('permissionId', router.matchers.number())
+
 router.get('/', [HomeController, 'index']).as('home')
 
 // Component Showcase (development)

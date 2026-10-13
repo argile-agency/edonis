@@ -1,20 +1,14 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { randomBytes } from 'node:crypto'
 import { DateTime } from 'luxon'
-import vine from '@vinejs/vine'
 import hash from '@adonisjs/core/services/hash'
 import app from '@adonisjs/core/services/app'
 import env from '#start/env'
 import AuditLog from '#models/audit_log'
 import AuditService from '#services/audit_service'
+import { passwordConfirmValidator } from '#validators/account'
 import { unlink } from 'node:fs/promises'
 import { join } from 'node:path'
-
-const passwordConfirmValidator = vine.compile(
-  vine.object({
-    password: vine.string().minLength(1),
-  })
-)
 
 export default class AccountController {
   /**
