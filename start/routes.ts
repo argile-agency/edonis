@@ -9,7 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
-import { loginThrottle, registerThrottle, passwordThrottle } from './limiter.js'
+import { loginThrottle, registerThrottle, passwordThrottle, twoFactorThrottle } from './limiter.js'
 
 const UsersController = () => import('#controllers/users_controller')
 const AuthController = () => import('#controllers/auth_controller')
@@ -108,10 +108,12 @@ router
   .post('/two-factor/challenge', [TwoFactorController, 'verifyChallenge'])
   .as('two-factor.verify')
   .use(loginThrottle)
+  .use(twoFactorThrottle)
 router
   .post('/two-factor/challenge/recovery', [TwoFactorController, 'verifyRecovery'])
   .as('two-factor.recovery')
   .use(loginThrottle)
+  .use(twoFactorThrottle)
 
 /*
 |--------------------------------------------------------------------------
