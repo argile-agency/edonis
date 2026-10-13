@@ -8,6 +8,7 @@ import {
   validateEmailUnique,
   validateStudentIdUnique,
 } from '#validators/user_validator'
+import { userIndexQueryValidator } from '#validators/listing'
 import AuditService from '#services/audit_service'
 import TwoFactorAdminService from '#services/two_factor_admin_service'
 
@@ -17,11 +18,12 @@ export default class UsersController {
    * GET /admin/users
    */
   async index({ inertia, request }: HttpContext) {
-    const page = request.input('page', 1)
-    const limit = request.input('limit', 20)
-    const search = request.input('search', '')
-    const roleFilter = request.input('role', '')
-    const status = request.input('status', '')
+    const q = await request.validateUsing(userIndexQueryValidator)
+    const page = q.page ?? 1
+    const limit = q.limit ?? 20
+    const search = q.search ?? ''
+    const roleFilter = q.role ?? ''
+    const status = q.status ?? ''
 
     const query = User.query().preload('roles').orderBy('created_at', 'desc')
 
