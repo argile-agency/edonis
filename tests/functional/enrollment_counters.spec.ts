@@ -35,15 +35,18 @@ async function countRows(table: string, column: string, id: number): Promise<num
 }
 
 async function enrolledCount(courseId: number): Promise<number> {
-  return Number((await Course.findOrFail(courseId)).enrolledCount)
+  const course = await Course.findOrFail(courseId)
+  return Number(course.enrolledCount)
 }
 
 async function currentEnrollments(methodId: number): Promise<number> {
-  return Number((await CourseEnrollmentMethod.findOrFail(methodId)).currentEnrollments)
+  const method = await CourseEnrollmentMethod.findOrFail(methodId)
+  return Number(method.currentEnrollments)
 }
 
 async function currentMembers(groupId: number): Promise<number> {
-  return Number((await CourseGroup.findOrFail(groupId)).currentMembers)
+  const groupRow = await CourseGroup.findOrFail(groupId)
+  return Number(groupRow.currentMembers)
 }
 
 async function captureError(fn: () => Promise<unknown>): Promise<unknown> {
@@ -237,13 +240,12 @@ test.group('EnrollmentService - counter invariants', (group) => {
 
     const auditRowsFor = async () => {
       const rows = await AuditLog.query().where('action', 'cli.enrollment.recount')
-      return rows.filter((row) =>
-        ours({ table: row.resourceType, id: Number(row.resourceId) })
-      )
+      return rows.filter((row) => ours({ table: row.resourceType, id: Number(row.resourceId) }))
     }
 
     // Dry run: report only
-    const dryDiffs = (await EnrollmentService.recount({ dryRun: true })).filter(ours)
+    const dryReport = await EnrollmentService.recount({ dryRun: true })
+    const dryDiffs = dryReport.filter(ours)
     assert.lengthOf(dryDiffs, 3)
     assert.deepInclude(dryDiffs, {
       table: 'courses',
@@ -272,7 +274,8 @@ test.group('EnrollmentService - counter invariants', (group) => {
     assert.lengthOf(await auditRowsFor(), 0)
 
     // Real run: repair and audit
-    const diffs = (await EnrollmentService.recount({ dryRun: false })).filter(ours)
+    const report = await EnrollmentService.recount({ dryRun: false })
+    const diffs = report.filter(ours)
     assert.lengthOf(diffs, 3)
     assert.equal(
       await enrolledCount(course.id),
