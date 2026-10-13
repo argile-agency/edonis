@@ -198,7 +198,8 @@ test.group('PII - scan', (group) => {
     assert.equal(classificationOf(rescan.rows, b.id), 'ok')
     assert.equal(classificationOf(rescan.rows, c.id), 'undecryptable')
 
-    assert.equal((await User.findOrFail(b.id)).phone, '0699999999')
+    const reloadedB = await User.findOrFail(b.id)
+    assert.equal(reloadedB.phone, '0699999999')
 
     const [rawA, rawB, rawC] = await rawPhones(ids)
     assert.equal(rawA.phone, cipherA)
