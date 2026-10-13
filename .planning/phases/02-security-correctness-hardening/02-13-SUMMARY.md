@@ -151,3 +151,11 @@ None.
 ## Self-Check: PASSED
 
 All 6 created files exist; commits 549c8f8, 6b78edc, fbf3745, fa373bd, bc5abee are on the branch.
+
+## Requirement status
+
+DEBT-06 stays open in REQUIREMENTS.md: plan 02-14 also lists it, and `courses_controller.ts` `addParticipant`/`removeParticipant` still do read-modify-write counter updates until 02-14 routes them through EnrollmentService.
+
+## Coverage note
+
+Run serially, the HTTP capacity test is answered by the retained `isAvailable()` pre-check. The controller mapping from `CapacityReachedException` to the flash only fires under a real race. The service tests cover the exception itself; no HTTP test exercises that mapping.
