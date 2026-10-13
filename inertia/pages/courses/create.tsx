@@ -14,8 +14,17 @@ import {
 } from '~/components/ui/select'
 import { ChevronLeft } from 'lucide-react'
 
-export default function CreateCourse() {
-  const { data, setData, post, processing, errors } = useForm({
+interface Category {
+  id: number
+  name: string
+}
+
+interface Props {
+  categories: Category[]
+}
+
+export default function CreateCourse({ categories = [] }: Props) {
+  const { data, setData, post, transform, processing, errors } = useForm({
     code: '',
     title: '',
     description: '',
@@ -26,7 +35,7 @@ export default function CreateCourse() {
     allowEnrollment: true,
     startDate: '',
     endDate: '',
-    category: '',
+    categoryId: '' as number | '',
     level: '',
     language: 'fr',
     estimatedHours: '',
@@ -36,20 +45,21 @@ export default function CreateCourse() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
 
-    // Transform data before sending
-    const payload: any = {
-      ...data,
-      maxStudents: data.maxStudents ? Number(data.maxStudents) : undefined,
-      estimatedHours: data.estimatedHours ? Number(data.estimatedHours) : undefined,
-      tags: data.tags
-        ? data.tags
+    // Transform data before sending (the second argument of `post` is options, not data)
+    transform((formData) => ({
+      ...formData,
+      maxStudents: formData.maxStudents ? Number(formData.maxStudents) : undefined,
+      estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : undefined,
+      categoryId: formData.categoryId === '' ? null : Number(formData.categoryId),
+      tags: formData.tags
+        ? formData.tags
             .split(',')
             .map((tag) => tag.trim())
             .filter(Boolean)
         : undefined,
-    }
+    }))
 
-    post('/courses', payload)
+    post('/courses')
   }
 
   return (
@@ -189,22 +199,25 @@ export default function CreateCourse() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie</Label>
+                    <Label htmlFor="categoryId">Catégorie</Label>
                     <Select
-                      value={data.category}
-                      onValueChange={(value) => setData('category', value)}
+                      value={data.categoryId.toString()}
+                      onValueChange={(value) => setData('categoryId', Number(value) || '')}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Computer Science">Informatique</SelectItem>
-                        <SelectItem value="Mathematics">Mathématiques</SelectItem>
-                        <SelectItem value="Science">Sciences</SelectItem>
-                        <SelectItem value="Language">Langues</SelectItem>
-                        <SelectItem value="Business">Commerce</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {errors.categoryId && (
+                      <p className="text-sm text-red-500">{errors.categoryId}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -37,19 +37,25 @@ interface Course {
   allowEnrollment: boolean
   startDate: string | null
   endDate: string | null
-  category: string | null
+  categoryId: number | null
   level: string | null
   language: string
   estimatedHours: number | null
   tags: string[] | null
 }
 
-interface Props {
-  course: Course
+interface Category {
+  id: number
+  name: string
 }
 
-export default function EditCourse({ course }: Props) {
-  const { data, setData, put, processing, errors } = useForm({
+interface Props {
+  course: Course
+  categories: Category[]
+}
+
+export default function EditCourse({ course, categories = [] }: Props) {
+  const { data, setData, put, transform, processing, errors } = useForm({
     code: course.code || '',
     title: course.title || '',
     description: course.description || '',
@@ -60,7 +66,7 @@ export default function EditCourse({ course }: Props) {
     allowEnrollment: course.allowEnrollment,
     startDate: course.startDate || '',
     endDate: course.endDate || '',
-    category: course.category || '',
+    categoryId: (course.categoryId ?? '') as number | '',
     level: course.level || '',
     language: course.language || 'fr',
     estimatedHours: course.estimatedHours?.toString() || '',
@@ -70,20 +76,21 @@ export default function EditCourse({ course }: Props) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
 
-    // Transform data before sending
-    const payload: any = {
-      ...data,
-      maxStudents: data.maxStudents ? Number(data.maxStudents) : undefined,
-      estimatedHours: data.estimatedHours ? Number(data.estimatedHours) : undefined,
-      tags: data.tags
-        ? data.tags
+    // Transform data before sending (the second argument of `put` is options, not data)
+    transform((formData) => ({
+      ...formData,
+      maxStudents: formData.maxStudents ? Number(formData.maxStudents) : undefined,
+      estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : undefined,
+      categoryId: formData.categoryId === '' ? null : Number(formData.categoryId),
+      tags: formData.tags
+        ? formData.tags
             .split(',')
             .map((tag) => tag.trim())
             .filter(Boolean)
-        : undefined,
-    }
+        : [],
+    }))
 
-    put(`/courses/${course.id}`, payload)
+    put(`/courses/${course.id}`)
   }
 
   return (
@@ -223,22 +230,25 @@ export default function EditCourse({ course }: Props) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie</Label>
+                    <Label htmlFor="categoryId">Catégorie</Label>
                     <Select
-                      value={data.category}
-                      onValueChange={(value) => setData('category', value)}
+                      value={data.categoryId.toString()}
+                      onValueChange={(value) => setData('categoryId', Number(value) || '')}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez une catégorie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Computer Science">Informatique</SelectItem>
-                        <SelectItem value="Mathematics">Mathématiques</SelectItem>
-                        <SelectItem value="Science">Sciences</SelectItem>
-                        <SelectItem value="Language">Langues</SelectItem>
-                        <SelectItem value="Business">Commerce</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {errors.categoryId && (
+                      <p className="text-sm text-red-500">{errors.categoryId}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

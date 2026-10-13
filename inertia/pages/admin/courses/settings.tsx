@@ -63,12 +63,21 @@ export default function CourseSettings({ course, categories }: Props) {
     level: course.level || '',
     language: course.language,
     estimatedHours: course.estimatedHours || '',
-    tags: course.tags.join(', '),
-    categoryId: course.categoryId || '',
+    tags: (course.tags ?? []).join(', '),
+    categoryId: (course.categoryId || '') as number | '',
   })
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    // The validator expects `tags` as an array and `categoryId` as a number or null
+    form.transform((data) => ({
+      ...data,
+      tags: data.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      categoryId: data.categoryId === '' ? null : Number(data.categoryId),
+    }))
     form.put(`/admin/courses/${course.id}/settings`)
   }
 
