@@ -130,9 +130,9 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Bouncer 3 foundation: CSRF test harness + test factories, CoursePolicy/EnrollmentPolicy (behaviour-preserving), Inertia 403 page (axe-checked), gradebook via policy [DEBT-04]
-- [ ] 02-02-PLAN.md — Widen phone/mobile_phone for ciphertext + `pii:scan` (report-only by default, audited fixes) [DEBT-08]
-- [ ] 02-03-PLAN.md — 2FA pending state: 10-min expiry, 5-attempt lock, per-user throttle [DEBT-09]
+- [x] 02-01-PLAN.md — Bouncer 3 foundation: CSRF test harness + test factories, CoursePolicy/EnrollmentPolicy (behaviour-preserving), Inertia 403 page (axe-checked), gradebook via policy [DEBT-04]
+- [x] 02-02-PLAN.md — Widen phone/mobile_phone for ciphertext + `pii:scan` (report-only by default, audited fixes) [DEBT-08]
+- [x] 02-03-PLAN.md — 2FA pending state: 10-min expiry, 5-attempt lock, per-user throttle [DEBT-09]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -379,7 +379,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
-| 2. Security and Correctness Hardening | 0/14 | Planned | - |
+| 2. Security and Correctness Hardening | 3/14 | In Progress|  |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
