@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import { DateTime } from 'luxon'
 import CourseEnrollment from '#models/course_enrollment'
 import CourseEnrollmentRequest from '#models/course_enrollment_request'
 import CourseGroupMember from '#models/course_group_member'
@@ -271,5 +272,125 @@ test.group('Enrollments - access and validation', (group) => {
     const members = await CourseGroupMember.query().where('group_id', groupB.id)
     assert.lengthOf(members, 0)
     assert.equal(await enrollmentCount(courseA.id), 0)
+  })
+})
+
+/**
+ * AS4 (behaviour change): self and key enrolment are refused server-side when
+ * `course.canEnroll()` is false. Admins bypass the check via the policy.
+ */
+const ENROLMENT_CLOSED = 'Les inscriptions à ce cours ne sont pas ouvertes.'
+
+test.group('Enrollments - AS4 canEnroll', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('self enrolment into a draft course is refused', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'draft' })
+    const method = await createEnrollmentMethod(course, { methodType: 'self' })
+    const student = await createUser({ roles: ['student'] })
+
+    const url = route('enrollments.enroll-self', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(student)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.equal(response.flashMessage('error'), ENROLMENT_CLOSED)
+    assert.equal(await enrollmentCount(course.id, student.id), 0)
+  })
+
+  test('key enrolment into a course with enrolment disabled is refused', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: false })
+    const method = await createEnrollmentMethod(course, {
+      methodType: 'key',
+      enrollmentKey: 'secret',
+    })
+    const student = await createUser({ roles: ['student'] })
+
+    const url = route('enrollments.enroll-key', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ enrollmentMethodId: method.id, enrollmentKey: 'secret' })
+      .loginAs(student)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.equal(response.flashMessage('error'), ENROLMENT_CLOSED)
+    assert.equal(await enrollmentCount(course.id, student.id), 0)
+  })
+
+  test('self enrolment before the course start date is refused', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published' })
+    course.startDate = DateTime.now().plus({ days: 7 })
+    await course.save()
+    const method = await createEnrollmentMethod(course, { methodType: 'self' })
+    const student = await createUser({ roles: ['student'] })
+
+    const url = route('enrollments.enroll-self', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(student)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.equal(response.flashMessage('error'), ENROLMENT_CLOSED)
+    assert.equal(await enrollmentCount(course.id, student.id), 0)
+  })
+
+  test('self enrolment into an open course still works', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const method = await createEnrollmentMethod(course, { methodType: 'self' })
+    const student = await createUser({ roles: ['student'] })
+
+    const url = route('enrollments.enroll-self', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(student)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    response.assertHeader('location', route('courses.show', { id: course.id }))
+    assert.isUndefined(response.flashMessage('error'))
+    assert.equal(await enrollmentCount(course.id, student.id), 1)
+  })
+
+  test('an admin can still self-enrol into a draft course', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'draft' })
+    const method = await createEnrollmentMethod(course, { methodType: 'self' })
+    const admin = await createUser({ roles: ['admin'] })
+
+    const url = route('enrollments.enroll-self', { id: course.id })
+    const request = client.post(url).withCsrfToken()
+    const response = await request
+      .json({ enrollmentMethodId: method.id })
+      .loginAs(admin)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    response.assertHeader('location', route('courses.show', { id: course.id }))
+    assert.isUndefined(response.flashMessage('error'))
+    assert.equal(await enrollmentCount(course.id, admin.id), 1)
   })
 })

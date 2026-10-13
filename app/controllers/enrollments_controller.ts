@@ -57,7 +57,7 @@ export default class EnrollmentsController {
   /**
    * Enroll with a key
    */
-  async enrollWithKey({ params, request, auth, response, session }: HttpContext) {
+  async enrollWithKey({ params, request, auth, bouncer, response, session }: HttpContext) {
     const { enrollmentKey, enrollmentMethodId } =
       await request.validateUsing(enrollWithKeyValidator)
 
@@ -69,6 +69,13 @@ export default class EnrollmentsController {
 
     if (!method) {
       session.flash('error', "Méthode d'inscription invalide.")
+      return response.redirect().back()
+    }
+
+    // AS4: the course itself must be open for enrolment (admins bypass)
+    const course = await Course.findOrFail(method.courseId)
+    if (await bouncer.with('CoursePolicy').denies('enroll', course)) {
+      session.flash('error', 'Les inscriptions à ce cours ne sont pas ouvertes.')
       return response.redirect().back()
     }
 
@@ -143,7 +150,6 @@ export default class EnrollmentsController {
     method.currentEnrollments += 1
     await method.save()
 
-    const course = await Course.findOrFail(method.courseId)
     course.enrolledCount += 1
     await course.save()
 
@@ -155,7 +161,7 @@ export default class EnrollmentsController {
   /**
    * Self-enroll (open enrollment)
    */
-  async enrollSelf({ params, request, auth, response, session }: HttpContext) {
+  async enrollSelf({ params, request, auth, bouncer, response, session }: HttpContext) {
     const { enrollmentMethodId } = await request.validateUsing(enrollSelfValidator)
 
     // Scoped to the course in the URL (A9)
@@ -166,6 +172,13 @@ export default class EnrollmentsController {
 
     if (!method) {
       session.flash('error', "Méthode d'inscription invalide.")
+      return response.redirect().back()
+    }
+
+    // AS4: the course itself must be open for enrolment (admins bypass)
+    const course = await Course.findOrFail(method.courseId)
+    if (await bouncer.with('CoursePolicy').denies('enroll', course)) {
+      session.flash('error', 'Les inscriptions à ce cours ne sont pas ouvertes.')
       return response.redirect().back()
     }
 
@@ -216,7 +229,6 @@ export default class EnrollmentsController {
     method.currentEnrollments += 1
     await method.save()
 
-    const course = await Course.findOrFail(method.courseId)
     course.enrolledCount += 1
     await course.save()
 
