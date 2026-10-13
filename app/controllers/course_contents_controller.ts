@@ -146,7 +146,7 @@ export default class CourseContentsController {
   /**
    * Display course outline
    */
-  async outline({ inertia, params, auth }: HttpContext) {
+  async outline({ inertia, params, auth, bouncer }: HttpContext) {
     const user = auth.user!
     const course = await Course.query()
       .where('id', params.id)
@@ -168,6 +168,8 @@ export default class CourseContentsController {
           })
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', course)
 
     // Get all user's progress
     const allContentIds: number[] = []
@@ -441,9 +443,14 @@ export default class CourseContentsController {
   /**
    * Update user progress on content
    */
-  async updateProgress({ request, params, auth, response }: HttpContext) {
+  async updateProgress({ request, params, auth, response, bouncer }: HttpContext) {
     const user = auth.user!
-    const content = await CourseContent.findOrFail(params.contentId)
+    const content = await CourseContent.query()
+      .where('id', params.contentId)
+      .preload('module', (query) => query.preload('course'))
+      .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', content.module.course)
 
     const progress = await ContentProgress.getOrCreate(user.id, content.id)
     const payload = await request.validateUsing(updateProgressValidator)
@@ -467,9 +474,14 @@ export default class CourseContentsController {
   /**
    * Mark content as complete
    */
-  async markComplete({ params, auth, response, session }: HttpContext) {
+  async markComplete({ params, auth, response, session, bouncer }: HttpContext) {
     const user = auth.user!
-    const content = await CourseContent.findOrFail(params.contentId)
+    const content = await CourseContent.query()
+      .where('id', params.contentId)
+      .preload('module', (query) => query.preload('course'))
+      .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', content.module.course)
 
     const progress = await ContentProgress.getOrCreate(user.id, content.id)
     await progress.markAsCompleted()
@@ -481,7 +493,7 @@ export default class CourseContentsController {
   /**
    * Get user's overall course progress
    */
-  async getCourseProgress({ params, auth, response }: HttpContext) {
+  async getCourseProgress({ params, auth, response, bouncer }: HttpContext) {
     const user = auth.user!
     const course = await Course.query()
       .where('id', params.id)
@@ -491,6 +503,8 @@ export default class CourseContentsController {
         })
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('learn', course)
 
     // Get all content IDs
     const allContentIds: number[] = []

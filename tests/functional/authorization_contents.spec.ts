@@ -3,6 +3,7 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import type Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
+import ContentProgress from '#models/content_progress'
 import {
   assertNotCsrfRejected,
   createCourse,
@@ -256,5 +257,156 @@ test.group('Course contents - authorization and scoping', (group) => {
 
     response.assertStatus(302)
     assert.isDefined(response.flashMessage('inputErrorsBag.content'))
+  })
+})
+
+/**
+ * AS3: outline and progress tracking require enrolment or edit rights
+ * (admins pass via the policy `before`).
+ */
+test.group('Course contents - AS3 enrolment gate', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  async function progressRows(userId: number, contentId: number): Promise<number> {
+    const rows = await ContentProgress.query()
+      .where('user_id', userId)
+      .where('content_id', contentId)
+    return rows.length
+  }
+
+  test('outline: a non-enrolled student gets the 403 page; an enrolled student gets it', async ({
+    client,
+    route,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const outsider = await createUser({ roles: ['student'] })
+    const enrolled = await createUser({ roles: ['student'] })
+    await enrollUser(course, enrolled)
+    const url = route('courses.outline', { id: course.id })
+
+    const denied = await client.get(url).withInertia().loginAs(outsider)
+    denied.assertStatus(403)
+    denied.assertInertiaComponent('errors/forbidden')
+
+    const allowed = await client.get(url).withInertia().loginAs(enrolled)
+    allowed.assertStatus(200)
+    allowed.assertInertiaComponent('courses/outline')
+  })
+
+  test('progress: a non-enrolled student gets a JSON 403; an enrolled student gets the summary', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const outsider = await createUser({ roles: ['student'] })
+    const enrolled = await createUser({ roles: ['student'] })
+    await enrollUser(course, enrolled)
+    const url = route('courses.progress', { id: course.id })
+
+    const denied = await client.get(url).header('accept', 'application/json').loginAs(outsider)
+    denied.assertStatus(403)
+
+    const allowed = await client.get(url).header('accept', 'application/json').loginAs(enrolled)
+    allowed.assertStatus(200)
+    assert.property(allowed.body(), 'progressPercentage')
+  })
+
+  test('updateProgress: a non-enrolled student gets a JSON 403 and no progress row', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const module = await createModule(course)
+    const content = await createContent(module)
+    const outsider = await createUser({ roles: ['student'] })
+    const enrolled = await createUser({ roles: ['student'] })
+    await enrollUser(course, enrolled)
+    const url = route('contents.progress.update', { contentId: content.id })
+
+    const deniedReq = client.post(url).withCsrfToken()
+    const denied = await deniedReq
+      .header('accept', 'application/json')
+      .json({ status: 'in_progress' })
+      .loginAs(outsider)
+    denied.assertStatus(403)
+    assert.equal(await progressRows(outsider.id, content.id), 0)
+
+    // Positive control: the same request shape succeeds for an enrolled student,
+    // so the 403 above is the policy, not a CSRF or harness rejection.
+    const allowedReq = client.post(url).withCsrfToken()
+    const allowed = await allowedReq
+      .header('accept', 'application/json')
+      .json({ status: 'in_progress' })
+      .loginAs(enrolled)
+    allowed.assertStatus(200)
+    assert.isTrue(allowed.body().success)
+    assert.equal(await progressRows(enrolled.id, content.id), 1)
+  })
+
+  test('markComplete: a non-enrolled student gets the 403 page; an enrolled student completes', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const module = await createModule(course)
+    const content = await createContent(module)
+    const outsider = await createUser({ roles: ['student'] })
+    const enrolled = await createUser({ roles: ['student'] })
+    await enrollUser(course, enrolled)
+    const url = route('contents.complete', { contentId: content.id })
+
+    const deniedReq = client.post(url).withCsrfToken()
+    const denied = await deniedReq.withInertia().loginAs(outsider).redirects(0)
+    denied.assertStatus(403)
+    denied.assertInertiaComponent('errors/forbidden')
+    assert.equal(await progressRows(outsider.id, content.id), 0)
+
+    const allowedReq = client.post(url).withCsrfToken()
+    const allowed = await allowedReq.loginAs(enrolled).redirects(0)
+    allowed.assertStatus(302)
+    assertNotCsrfRejected(assert, allowed)
+    assert.equal(await progressRows(enrolled.id, content.id), 1)
+  })
+
+  test('owner (not enrolled) can open the outline and preview the learn player', async ({
+    client,
+    route,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+
+    const outline = await client
+      .get(route('courses.outline', { id: course.id }))
+      .withInertia()
+      .loginAs(owner)
+    outline.assertStatus(200)
+    outline.assertInertiaComponent('courses/outline')
+
+    const learn = await client
+      .get(route('courses.learn', { id: course.id }))
+      .withInertia()
+      .loginAs(owner)
+    learn.assertStatus(200)
+    learn.assertInertiaComponent('courses/learn')
+  })
+
+  test('admin can open the outline of any course', async ({ client, route }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const admin = await createUser({ roles: ['admin'] })
+
+    const response = await client
+      .get(route('courses.outline', { id: course.id }))
+      .withInertia()
+      .loginAs(admin)
+    response.assertStatus(200)
+    response.assertInertiaComponent('courses/outline')
   })
 })
