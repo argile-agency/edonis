@@ -19,28 +19,33 @@ key-files:
     - tests/functional/authorization.spec.ts
     - tests/functional/grades.spec.ts
 decisions:
-  - "AS2 implemented as one commit (d11cf3b); user decision PENDING at checkpoint Task 2"
+  - "AS2 implemented as one commit (d11cf3b) and APPROVED by the user at checkpoint Task 2"
+  - "Approval covers admins and edit/manage co-instructors as presented; the user's wording named admins only"
 metrics:
   completed: 2026-10-13
-  tasks_completed: 1
+  tasks_completed: 2
   tasks_total: 2
-status: awaiting-checkpoint
+status: complete
 ---
 
 # Phase 02 Plan 09: AS2 gradebook access for admins and edit co-instructors Summary
 
-Admins and `edit`-permission co-instructors can now open `/grades/courses/:id` in the instructor view. `view`-only collaborators who are not enrolled are still refused. The whole change is one revertable commit, and it is waiting for the user's AS2 decision.
+Admins and `edit`-permission co-instructors can now open `/grades/courses/:id` in the instructor view. `view`-only collaborators who are not enrolled are still refused. The whole change is one revertable commit, and the user approved it at the AS2 checkpoint.
 
 ## AS2 commit
 
 - **SHA:** `d11cf3b` (`feat(grades): let admins and edit co-instructors open the course gradebook`)
 - **Fallback lookup** (in case a merge, squash or rebase changes the SHA): `git log --format=%h --grep='^feat(grades): let admins'`
-- **Revert path (on reject):** `git revert --no-edit <AS2 sha>`, then `PORT=3409 DB_FILENAME=./tmp/test-02-09.sqlite3 node ace test functional`. It must exit 0.
+- **Revert path (no longer needed; kept in case AS2 is narrowed later):** `git revert --no-edit <AS2 sha>`, then `PORT=3409 DB_FILENAME=./tmp/test-02-09.sqlite3 node ace test functional`. It must exit 0.
 - The commit touches exactly `app/policies/course_policy.ts`, `tests/functional/authorization.spec.ts` and `tests/functional/grades.spec.ts`.
 
 ## User decision
 
-**User decision: PENDING (checkpoint Task 2).** The continuation agent replaces this line with the user's reply, verbatim ("approved" or "reject AS2").
+**User decision: APPROVED (checkpoint Task 2).** Commit `d11cf3b` is kept; nothing was reverted and no new test run was needed.
+
+User's reply (originally in French; English translation): "For AS2, yes, admins must be able to see the students' full gradebook with their profiles and grades, so I approve."
+
+**Scope note:** the user's reply only mentions admins. The approved change also covers co-instructors with `edit`/`manage` permission, as presented at the checkpoint, so those co-instructors also get the instructor view (every enrolled student's email, full name and grades). If the user wants only admins, narrow `viewGradebook` / `viewGradebookAsInstructor` in `app/policies/course_policy.ts` back to owner-only (admins still pass through `before()`) and update the matching rows in `authorization.spec.ts` and the edit co-instructor test in `grades.spec.ts`.
 
 ## What changed
 
@@ -75,8 +80,8 @@ None in behaviour. One cosmetic point: the class docblock comment was updated an
 
 ## Known follow-ups
 
-- `app/controllers/grades_controller.ts:87` still has the comment "Owner or enrolled user only (CoursePolicy)". It was left alone on purpose because the AS2 commit is limited to three files. It should be updated if AS2 is approved.
-- DEBT-04 is NOT marked complete here. The plan finishes only after the user's decision.
+- `app/controllers/grades_controller.ts:87` still has the comment "Owner or enrolled user only (CoursePolicy)". This is now out of date: admins and `edit`/`manage` co-instructors are also allowed. It was left alone on purpose to keep the AS2 commit to three files. Fix it in a later cleanup.
+- DEBT-04: the AS2 part is done with this approval. STATE.md, ROADMAP.md and REQUIREMENTS.md were not updated by this executor; the orchestrator does that.
 
 ## Threat model
 
@@ -87,3 +92,4 @@ None in behaviour. One cosmetic point: the class docblock comment was updated an
 
 - FOUND: app/policies/course_policy.ts, tests/functional/authorization.spec.ts, tests/functional/grades.spec.ts
 - FOUND: commit d11cf3b in git log
+- FOUND: commit 9f449bd (pending-checkpoint SUMMARY) in git log
