@@ -93,8 +93,8 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
-   * Not called anywhere until AS4 (plan 02-05) is confirmed. Admins bypass
-   * it via `before`.
+   * Whether the course accepts enrolments (AS4, plan 02-05); checked by the
+   * enrolment controller. Admins bypass it via `before`.
    */
   enroll(_user: User, course: Course): AuthorizerResponse {
     return course.canEnroll()
