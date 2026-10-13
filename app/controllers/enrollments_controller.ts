@@ -4,8 +4,10 @@ import CourseEnrollment from '#models/course_enrollment'
 import CourseEnrollmentMethod from '#models/course_enrollment_method'
 import CourseEnrollmentRequest from '#models/course_enrollment_request'
 import CourseGroup from '#models/course_group'
-import CourseGroupMember from '#models/course_group_member'
 import User from '#models/user'
+import EnrollmentService from '#services/enrollment_service'
+import CapacityReachedException from '#exceptions/capacity_reached_exception'
+import AlreadyEnrolledException from '#exceptions/already_enrolled_exception'
 import {
   enrollManualValidator,
   enrollSelfValidator,
@@ -13,6 +15,26 @@ import {
   requestEnrollmentValidator,
 } from '#validators/enrollment'
 import { DateTime } from 'luxon'
+
+/**
+ * Runs a student-initiated enrolment and turns the two expected refusals
+ * into their flash message. Returns null on success; any other error
+ * propagates.
+ */
+async function enrollmentRefusal(enroll: () => Promise<unknown>): Promise<string | null> {
+  try {
+    await enroll()
+    return null
+  } catch (error) {
+    if (error instanceof CapacityReachedException) {
+      return "Cette méthode d'inscription n'est plus disponible."
+    }
+    if (error instanceof AlreadyEnrolledException) {
+      return 'Vous êtes déjà inscrit à ce cours.'
+    }
+    throw error
+  }
+}
 
 export default class EnrollmentsController {
   /**
@@ -97,17 +119,6 @@ export default class EnrollmentsController {
       return response.redirect().back()
     }
 
-    // Check if already enrolled
-    const existingEnrollment = await CourseEnrollment.query()
-      .where('course_id', method.courseId)
-      .where('user_id', auth.user!.id)
-      .first()
-
-    if (existingEnrollment) {
-      session.flash('error', 'Vous êtes déjà inscrit à ce cours.')
-      return response.redirect().back()
-    }
-
     // Calculate access period
     let timeStart = DateTime.now()
     let timeEnd = null
@@ -116,42 +127,25 @@ export default class EnrollmentsController {
       timeEnd = DateTime.now().plus({ days: method.enrollmentDurationDays })
     }
 
-    // Create enrollment
-    await CourseEnrollment.create({
-      courseId: method.courseId,
-      userId: auth.user!.id,
-      enrollmentMethodId: method.id,
-      courseRole: method.defaultRole,
-      status: 'active',
-      timeStart,
-      timeEnd,
-      enrolledAt: DateTime.now(),
-      enrolledBy: null, // Self-enrolled
-    })
-
-    // Auto-assign to group if configured
-    if (method.autoAssignGroupId) {
-      const group = await CourseGroup.findOrFail(method.autoAssignGroupId)
-
-      if (group.canAddMembers()) {
-        await CourseGroupMember.create({
-          groupId: group.id,
-          userId: auth.user!.id,
-          joinedAt: DateTime.now(),
-          addedBy: null,
-        })
-
-        group.currentMembers += 1
-        await group.save()
-      }
+    // Seat, enrolment row, counters and auto-assign group in one transaction.
+    // The unique (course_id, user_id) constraint is the duplicate guard.
+    const refusal = await enrollmentRefusal(() =>
+      EnrollmentService.enroll({
+        courseId: method.courseId,
+        userId: auth.user!.id,
+        methodId: method.id,
+        courseRole: method.defaultRole,
+        enrolledBy: null, // Self-enrolled
+        timeStart,
+        timeEnd,
+        groupId: method.autoAssignGroupId,
+        addedBy: null,
+      })
+    )
+    if (refusal) {
+      session.flash('error', refusal)
+      return response.redirect().back()
     }
-
-    // Update enrollment count
-    method.currentEnrollments += 1
-    await method.save()
-
-    course.enrolledCount += 1
-    await course.save()
 
     session.flash('success', 'Inscription réussie ! Bienvenue dans le cours.')
 
@@ -193,17 +187,6 @@ export default class EnrollmentsController {
       return response.redirect().back()
     }
 
-    // Check if already enrolled
-    const existingEnrollment = await CourseEnrollment.query()
-      .where('course_id', method.courseId)
-      .where('user_id', auth.user!.id)
-      .first()
-
-    if (existingEnrollment) {
-      session.flash('error', 'Vous êtes déjà inscrit à ce cours.')
-      return response.redirect().back()
-    }
-
     // Calculate access period
     let timeStart = DateTime.now()
     let timeEnd = null
@@ -212,25 +195,23 @@ export default class EnrollmentsController {
       timeEnd = DateTime.now().plus({ days: method.enrollmentDurationDays })
     }
 
-    // Create enrollment
-    await CourseEnrollment.create({
-      courseId: method.courseId,
-      userId: auth.user!.id,
-      enrollmentMethodId: method.id,
-      courseRole: method.defaultRole,
-      status: 'active',
-      timeStart,
-      timeEnd,
-      enrolledAt: DateTime.now(),
-      enrolledBy: null,
-    })
-
-    // Update counts
-    method.currentEnrollments += 1
-    await method.save()
-
-    course.enrolledCount += 1
-    await course.save()
+    const refusal = await enrollmentRefusal(() =>
+      EnrollmentService.enroll({
+        courseId: method.courseId,
+        userId: auth.user!.id,
+        methodId: method.id,
+        courseRole: method.defaultRole,
+        enrolledBy: null,
+        timeStart,
+        timeEnd,
+        groupId: method.autoAssignGroupId,
+        addedBy: null,
+      })
+    )
+    if (refusal) {
+      session.flash('error', refusal)
+      return response.redirect().back()
+    }
 
     session.flash('success', method.welcomeMessage || 'Inscription réussie !')
 
@@ -345,62 +326,34 @@ export default class EnrollmentsController {
     const enrolledUsers: string[] = []
     const errors: string[] = []
 
+    // One transaction per user: a refusal for one user never undoes the others
     for (const userId of userIds) {
+      let user: User | null = null
       try {
-        const user = await User.findOrFail(userId)
+        user = await User.findOrFail(userId)
 
-        // Check if already enrolled
-        const existing = await CourseEnrollment.query()
-          .where('course_id', course.id)
-          .where('user_id', userId)
-          .first()
-
-        if (existing) {
-          errors.push(`${user.fullName} est déjà inscrit`)
-          continue
-        }
-
-        // Create enrollment
-        await CourseEnrollment.create({
+        await EnrollmentService.enroll({
           courseId: course.id,
-          userId: userId,
-          enrollmentMethodId: method?.id || null,
+          userId: user.id,
+          methodId: method?.id ?? null,
           courseRole: courseRole || 'student',
-          status: 'active',
+          enrolledBy: auth.user!.id,
           timeStart: DateTime.now(),
           timeEnd: null,
-          enrolledAt: DateTime.now(),
-          enrolledBy: auth.user!.id,
+          groupId: group?.id ?? null,
+          addedBy: auth.user!.id,
         })
-
-        // Add to group if specified
-        if (group) {
-          if (group.canAddMembers()) {
-            await CourseGroupMember.create({
-              groupId: group.id,
-              userId: userId,
-              joinedAt: DateTime.now(),
-              addedBy: auth.user!.id,
-            })
-
-            group.currentMembers += 1
-            await group.save()
-          }
-        }
 
         enrolledUsers.push(user.fullName || user.email)
       } catch (error) {
-        errors.push(`Erreur pour l'utilisateur ${userId}`)
+        if (error instanceof AlreadyEnrolledException && user) {
+          errors.push(`${user.fullName} est déjà inscrit`)
+        } else if (error instanceof CapacityReachedException) {
+          errors.push(`Capacité atteinte pour l'utilisateur ${userId}`)
+        } else {
+          errors.push(`Erreur pour l'utilisateur ${userId}`)
+        }
       }
-    }
-
-    // Update course enrolled count
-    course.enrolledCount += enrolledUsers.length
-    await course.save()
-
-    if (method) {
-      method.currentEnrollments += enrolledUsers.length
-      await method.save()
     }
 
     if (enrolledUsers.length > 0) {
@@ -423,16 +376,11 @@ export default class EnrollmentsController {
       .preload('course')
       .firstOrFail()
 
-    const course = enrollment.course
-
     // Self, `manage` on the course, or admin (A1: no unloaded `roles` access)
     await bouncer.with('EnrollmentPolicy').authorize('unenroll', enrollment)
 
-    await enrollment.delete()
-
-    // Update counts
-    course.enrolledCount = Math.max(0, course.enrolledCount - 1)
-    await course.save()
+    // Deletes the row and decrements course + method counters in one transaction
+    await EnrollmentService.unenroll(enrollment)
 
     session.flash('success', 'Désinscription réussie.')
 
