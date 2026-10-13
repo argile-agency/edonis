@@ -177,6 +177,13 @@ The `members` relation is read only by `courses_controller.ts:422/428`, which pr
 
 None.
 
+## Self-Check: PASSED
+
+- Commits on the branch: `55be558`, `9086b3e`, `f814ea0`, `975ec59`, `bc7e392`.
+- Modified files exist: `app/controllers/courses_controller.ts`, `app/services/enrollment_service.ts`, `tests/functional/enrollment_counters.spec.ts`, `package.json`.
+- CSRF gate one-liner exits 0 (12 `withCsrfToken()` ≥ 12 write calls).
+- The admin UI (`inertia/pages/admin/courses/participants.tsx:147`) builds the remove URL from `course.id`, so the new `course_id` scoping does not break it.
+
 ## Requirement status
 
 DEBT-06, DEBT-04 and DEBT-05 are met by the code and gates above. They are left for the orchestrator or continuation agent to mark complete once the AS5 checkpoint is answered.
