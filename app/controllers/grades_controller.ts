@@ -77,23 +77,18 @@ export default class GradesController {
   /**
    * Display gradebook for a specific course
    */
-  async course({ auth, params, inertia, response }: HttpContext) {
+  async course({ auth, bouncer, params, inertia }: HttpContext) {
     const user = auth.user!
     const courseId = params.id
 
     // Get the course
     const course = await Course.query().where('id', courseId).preload('instructor').firstOrFail()
 
-    // Check if user is enrolled or is instructor
-    const isInstructor = course.instructorId === user.id
-    const enrollment = await CourseEnrollment.query()
-      .where('course_id', courseId)
-      .where('user_id', user.id)
-      .first()
-
-    if (!isInstructor && !enrollment) {
-      return response.forbidden('You do not have access to this gradebook')
-    }
+    // Owner or enrolled user only (CoursePolicy); denials render errors/forbidden
+    await bouncer.with('CoursePolicy').authorize('viewGradebook', course)
+    const isInstructor = await bouncer
+      .with('CoursePolicy')
+      .allows('viewGradebookAsInstructor', course)
 
     // Get grade categories
     const categories = await GradeCategory.query()

@@ -2,6 +2,7 @@ import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http'
 import logger from '@adonisjs/core/services/logger'
+import { errors as bouncerErrors } from '@adonisjs/bouncer'
 
 /**
  * Structural type guards for narrowing `unknown` errors without `any`.
@@ -82,6 +83,25 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     }
 
     try {
+      /**
+       * Bouncer's AuthorizationException is self-handling, so a 403 status
+       * page would never fire. Render the Inertia 403 page for browser and
+       * Inertia requests; JSON callers fall through to Bouncer's JSON body.
+       */
+      if (error instanceof bouncerErrors.E_AUTHORIZATION_FAILURE) {
+        const wantsJson =
+          ctx.request.accepts(['html', 'json']) === 'json' && !ctx.request.header('x-inertia')
+        if (!wantsJson) {
+          // Awaited inside the try so a render failure degrades to the Edge page.
+          // The handler's return value is not sent automatically (unlike a
+          // controller's), so write the rendered page to the response explicitly.
+          const page = await ctx.inertia.render('errors/forbidden', {
+            message: "Vous n'avez pas accès à cette ressource.",
+          })
+          return ctx.response.status(403).send(page)
+        }
+      }
+
       return await super.handle(error, ctx)
     } catch (renderError) {
       logger.error(
