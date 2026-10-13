@@ -1,28 +1,12 @@
 import { test } from '@japa/runner'
-import type { ApiRequest } from '@japa/api-client'
 import testUtils from '@adonisjs/core/services/test_utils'
 import encryption from '@adonisjs/core/services/encryption'
 import limiter from '@adonisjs/limiter/services/main'
 import { DateTime } from 'luxon'
-import Tokens from 'csrf'
 import * as OTPAuth from 'otpauth'
 import User from '#models/user'
 import AuditLog from '#models/audit_log'
 import TwoFactorService from '#services/two_factor_service'
-
-/**
- * Spec-local CSRF helper: does exactly what Shield's `shieldApiClient()`
- * plugin does for `.withCsrfToken()` (seed a `csrf-secret` in the session and
- * send the matching `x-csrf-token` header). Plan 02-08 replaces it with
- * `.withCsrfToken()` once 02-01's plugin registration is merged.
- */
-function withCsrf<T extends ApiRequest>(request: T): T {
-  const tokens = new Tokens()
-  const secret = tokens.secretSync()
-  return request
-    .withSession({ 'csrf-secret': secret })
-    .header('x-csrf-token', tokens.create(secret))
-}
 
 function uniqueSuffix() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
@@ -67,7 +51,8 @@ test.group('Two-factor - pending login state', (group) => {
   }) => {
     const user = await createUser('2fa-expired')
 
-    const response = await withCsrf(client.post(route('two-factor.verify')))
+    const request = client.post(route('two-factor.verify')).withCsrfToken()
+    const response = await request
       .withSession({ two_factor_pending: pendingFor(user.id, { expiresAt: Date.now() - 1000 }) })
       .form({ token: '000000' })
       .redirects(0)
@@ -88,7 +73,8 @@ test.group('Two-factor - pending login state', (group) => {
   }) => {
     const user = await createUser('2fa-locked')
 
-    const response = await withCsrf(client.post(route('two-factor.verify')))
+    const request = client.post(route('two-factor.verify')).withCsrfToken()
+    const response = await request
       .withSession({ two_factor_pending: pendingFor(user.id, { attempts: 4 }) })
       .form({ token: '000000' })
       .redirects(0)
@@ -102,9 +88,8 @@ test.group('Two-factor - pending login state', (group) => {
     assert.isNotNull(audit)
 
     // Once locked there is no pending state left: a follow-up attempt goes to login.
-    const followUp = await withCsrf(client.post(route('two-factor.verify')))
-      .form({ token: '000000' })
-      .redirects(0)
+    const followUpRequest = client.post(route('two-factor.verify')).withCsrfToken()
+    const followUp = await followUpRequest.form({ token: '000000' }).redirects(0)
 
     followUp.assertStatus(302)
     assert.equal(followUp.header('location'), route('login'))
@@ -119,7 +104,8 @@ test.group('Two-factor - pending login state', (group) => {
     const user = await createUser('2fa-undercap')
     const pending = pendingFor(user.id, { attempts: 0 })
 
-    const response = await withCsrf(client.post(route('two-factor.verify')))
+    const request = client.post(route('two-factor.verify')).withCsrfToken()
+    const response = await request
       .withSession({ two_factor_pending: pending })
       .form({ token: '000000' })
       .redirects(0)
@@ -161,7 +147,8 @@ test.group('Two-factor - pending login state', (group) => {
       secret: OTPAuth.Secret.fromBase32(base32),
     }).generate()
 
-    const response = await withCsrf(client.post(route('two-factor.verify')))
+    const request = client.post(route('two-factor.verify')).withCsrfToken()
+    const response = await request
       .withSession({ two_factor_pending: pendingFor(user.id) })
       .form({ token })
       .redirects(0)
