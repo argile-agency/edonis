@@ -80,9 +80,13 @@ test.group('Grades - access control', (group) => {
     const { course } = await createEnrolledCourse()
     const outsider = await createUser('unenrolled')
 
-    const response = await client.get(route('grades.course', { id: course.id })).loginAs(outsider)
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .withInertia()
+      .loginAs(outsider)
 
     response.assertStatus(403)
+    response.assertInertiaComponent('errors/forbidden')
   })
 
   test('instructor sees the instructor view', async ({ client, route, assert }) => {
@@ -95,5 +99,24 @@ test.group('Grades - access control', (group) => {
 
     response.assertStatus(200)
     assert.isTrue(response.inertiaProps.isInstructor)
+  })
+
+  test('non-enrolled JSON caller gets a JSON 403, not the Inertia page', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { course } = await createEnrolledCourse()
+    const outsider = await createUser('unenrolled-json')
+
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .header('accept', 'application/json')
+      .loginAs(outsider)
+
+    response.assertStatus(403)
+    assert.match(response.header('content-type') ?? '', /application\/json/)
+    assert.isUndefined(response.body().component)
+    assert.isArray(response.body().errors)
   })
 })
