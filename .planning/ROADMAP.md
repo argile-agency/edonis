@@ -145,10 +145,10 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-10-PLAN.md — course_contents onto CoursePolicy, A2/A3/A5/A8 scoping, V17, AS3 checkpoint [DEBT-04, DEBT-05]
-- [ ] 02-11-PLAN.md — courses_controller validators V1–V7, V14 + form contract fixes + A9 [DEBT-05]
-- [ ] 02-12-PLAN.md — Listing/avatar/account validators + numeric route-param matchers [DEBT-05]
-- [ ] 02-13-PLAN.md — EnrollmentService: transactional atomic counters + audited `enrollment:recount` [DEBT-06]
+- [x] 02-10-PLAN.md — course_contents onto CoursePolicy, A2/A3/A5/A8 scoping, V17, AS3 checkpoint [DEBT-04, DEBT-05]
+- [x] 02-11-PLAN.md — courses_controller validators V1–V7, V14 + form contract fixes + A9 [DEBT-05]
+- [x] 02-12-PLAN.md — Listing/avatar/account validators + numeric route-param matchers [DEBT-05]
+- [x] 02-13-PLAN.md — EnrollmentService: transactional atomic counters + audited `enrollment:recount` [DEBT-06]
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -379,7 +379,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
-| 2. Security and Correctness Hardening | 9/14 | In Progress|  |
+| 2. Security and Correctness Hardening | 13/14 | In Progress|  |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
