@@ -1,9 +1,9 @@
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Badge } from '~/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
-import { ArrowLeft, Edit, UserX, UserCheck } from 'lucide-react'
+import { ArrowLeft, Edit, UserX, UserCheck, ShieldOff } from 'lucide-react'
 
 interface Role {
   id: number
@@ -24,6 +24,7 @@ interface User {
   locale: string
   timezone: string
   isActive: boolean
+  twoFactorEnabled?: boolean
   lastLoginAt: string | null
   createdAt: string
   updatedAt: string
@@ -45,6 +46,16 @@ interface Props {
 }
 
 export default function UsersShow({ user, userRoles }: Props) {
+  const handleResetTwoFactor = () => {
+    if (
+      confirm(
+        'Réinitialiser la double authentification de cet utilisateur ? Il devra la reconfigurer.'
+      )
+    ) {
+      router.post(`/admin/users/${user.id}/two-factor/reset`)
+    }
+  }
+
   return (
     <>
       <Head title={`${user.fullName || user.email}`} />
@@ -295,6 +306,17 @@ export default function UsersShow({ user, userRoles }: Props) {
                     >
                       <UserCheck className="h-4 w-4" />
                       Activer le compte
+                    </Button>
+                  )}
+                  {user.twoFactorEnabled && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="w-full gap-2"
+                      onClick={handleResetTwoFactor}
+                    >
+                      <ShieldOff className="h-4 w-4" />
+                      Réinitialiser la 2FA
                     </Button>
                   )}
                 </CardContent>

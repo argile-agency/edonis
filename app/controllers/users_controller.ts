@@ -9,6 +9,7 @@ import {
   validateStudentIdUnique,
 } from '#validators/user_validator'
 import AuditService from '#services/audit_service'
+import TwoFactorAdminService from '#services/two_factor_admin_service'
 
 export default class UsersController {
   /**
@@ -286,6 +287,27 @@ export default class UsersController {
     })
 
     session.flash('success', 'Utilisateur activé avec succès')
+    return response.redirect().back()
+  }
+
+  /**
+   * Réinitialiser la double authentification d'un utilisateur
+   * POST /admin/users/:id/two-factor/reset
+   */
+  async resetTwoFactor(ctx: HttpContext) {
+    const { params, response, session } = ctx
+    const user = await User.findOrFail(params.id)
+
+    await TwoFactorAdminService.reset(user)
+
+    // No oldValues/newValues: serializing the user would copy PII into audit_logs.
+    await AuditService.logFromContext(ctx, {
+      action: 'admin.user.2fa.reset',
+      resourceType: 'User',
+      resourceId: user.id,
+    })
+
+    session.flash('success', 'Authentification à deux facteurs réinitialisée.')
     return response.redirect().back()
   }
 

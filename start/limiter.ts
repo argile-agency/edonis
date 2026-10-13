@@ -60,3 +60,21 @@ export const twoFactorThrottle = limiter.define('two_factor', (ctx) => {
     .blockFor('15 minutes')
     .usingKey(`2fa_user_${userId}`)
 })
+
+/**
+ * Admin 2FA reset throttle: 5 requests per minute per acting admin.
+ * CLAUDE.md requires a rate limit on every auth-related endpoint; this one
+ * also caps mass resets from a compromised admin session.
+ * Blocks for 5 minutes after exceeding the limit. Falls back to the IP key
+ * when there is no authenticated user.
+ */
+export const twoFactorResetThrottle = limiter.define('two_factor_reset', (ctx) => {
+  if (!ctx.auth?.user) {
+    return limiter.allowRequests(5).every('1 minute').blockFor('5 minutes')
+  }
+  return limiter
+    .allowRequests(5)
+    .every('1 minute')
+    .blockFor('5 minutes')
+    .usingKey(`admin_${ctx.auth.user.id}`)
+})
