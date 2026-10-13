@@ -5,6 +5,11 @@ import UserRole from '#models/user_role'
 import { loginValidator, registerValidator } from '#validators/auth_validator'
 import AuditService from '#services/audit_service'
 import env from '#start/env'
+import {
+  LEGACY_TWO_FACTOR_KEY,
+  TWO_FACTOR_PENDING_KEY,
+  createPending,
+} from '../helpers/two_factor_pending.js'
 
 export default class AuthController {
   /**
@@ -40,7 +45,8 @@ export default class AuthController {
 
       // Check if 2FA is enabled
       if (user.twoFactorEnabled) {
-        session.put('two_factor_user_id', user.id)
+        session.forget(LEGACY_TWO_FACTOR_KEY)
+        session.put(TWO_FACTOR_PENDING_KEY, createPending(user.id, Date.now()))
 
         await AuditService.logFromContext(ctx, {
           action: 'user.login.2fa_required',

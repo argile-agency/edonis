@@ -40,3 +40,23 @@ export const passwordThrottle = limiter.define('password', (ctx) => {
     .blockFor('5 minutes')
     .usingKey(`user_${ctx.auth.user.id}`)
 })
+
+/**
+ * 2FA challenge throttle: 5 requests per minute per pending user.
+ * Keyed on the user whose password was verified (session `two_factor_pending`),
+ * so a distributed attacker cannot multiply guesses across IPs.
+ * Blocks for 15 minutes after exceeding the limit. Falls back to the IP key
+ * when there is no pending user. Applied in addition to the per-IP loginThrottle.
+ */
+export const twoFactorThrottle = limiter.define('two_factor', (ctx) => {
+  const pending = ctx.session?.get('two_factor_pending')
+  const userId = pending && typeof pending === 'object' ? pending.userId : undefined
+  if (typeof userId !== 'number') {
+    return limiter.allowRequests(5).every('1 minute')
+  }
+  return limiter
+    .allowRequests(5)
+    .every('1 minute')
+    .blockFor('15 minutes')
+    .usingKey(`2fa_user_${userId}`)
+})

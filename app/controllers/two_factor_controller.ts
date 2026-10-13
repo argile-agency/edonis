@@ -1,24 +1,82 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
-import vine from '@vinejs/vine'
 import hash from '@adonisjs/core/services/hash'
 import User from '#models/user'
 import TwoFactorService from '#services/two_factor_service'
 import AuditService from '#services/audit_service'
-
-const tokenValidator = vine.compile(
-  vine.object({
-    token: vine.string().fixedLength(6),
-  })
-)
-
-const passwordValidator = vine.compile(
-  vine.object({
-    password: vine.string().minLength(1),
-  })
-)
+import { tokenValidator, passwordValidator, recoveryCodeValidator } from '#validators/two_factor'
+import {
+  LEGACY_TWO_FACTOR_KEY,
+  TWO_FACTOR_PENDING_KEY,
+  readPending,
+  recordFailedAttempt,
+  type TwoFactorPending,
+} from '../helpers/two_factor_pending.js'
 
 export default class TwoFactorController {
+  /**
+   * Resolve the pending (password-verified, code-not-yet-verified) login.
+   *
+   * Returns the pending record, or `null` after having already redirected
+   * to the login page (no pending state, or expired). The pre-expiry
+   * session key (LEGACY_TWO_FACTOR_KEY) is always forgotten and never honoured.
+   */
+  private async resolvePending(ctx: HttpContext): Promise<TwoFactorPending | null> {
+    const { session, response } = ctx
+    session.forget(LEGACY_TWO_FACTOR_KEY)
+
+    const raw = session.get(TWO_FACTOR_PENDING_KEY)
+    const result = readPending(raw, Date.now())
+
+    if (result.status === 'ok') {
+      return result.pending
+    }
+
+    if (result.status === 'expired') {
+      session.forget(TWO_FACTOR_PENDING_KEY)
+      const rawUserId = (raw as { userId?: unknown }).userId
+      await AuditService.logFromContext(ctx, {
+        action: 'user.login.2fa_expired',
+        resourceType: 'User',
+        resourceId: typeof rawUserId === 'number' ? rawUserId : null,
+      })
+      session.flash('error', 'Votre session de vérification a expiré. Veuillez vous reconnecter.')
+    }
+
+    response.redirect().toRoute('login')
+    return null
+  }
+
+  /**
+   * Record a wrong code on the pending login. Under the cap, the incremented
+   * state is stored and the user is sent back with `errorMessage`. On the
+   * last allowed failure the pending state is destroyed, the lockout is
+   * audited and the user must re-enter the password.
+   */
+  private async handleFailedAttempt(
+    ctx: HttpContext,
+    pending: TwoFactorPending,
+    errorMessage: string
+  ) {
+    const { session, response } = ctx
+    const result = recordFailedAttempt(pending)
+
+    if (result.locked) {
+      session.forget(TWO_FACTOR_PENDING_KEY)
+      await AuditService.logFromContext(ctx, {
+        action: 'user.login.2fa_locked',
+        resourceType: 'User',
+        resourceId: pending.userId,
+      })
+      session.flash('error', 'Trop de tentatives. Veuillez vous reconnecter.')
+      return response.redirect().toRoute('login')
+    }
+
+    session.put(TWO_FACTOR_PENDING_KEY, result.pending)
+    session.flash('error', errorMessage)
+    return response.redirect().back()
+  }
+
   /**
    * Show the 2FA setup page.
    * GET /user/two-factor
@@ -172,11 +230,11 @@ export default class TwoFactorController {
    * GET /two-factor/challenge
    */
   async challenge(ctx: HttpContext) {
-    const { inertia, session, response } = ctx
-    const userId = session.get('two_factor_user_id')
+    const { inertia } = ctx
+    const pending = await this.resolvePending(ctx)
 
-    if (!userId) {
-      return response.redirect().toRoute('login')
+    if (!pending) {
+      return
     }
 
     return inertia.render('two-factor/challenge')
@@ -188,23 +246,22 @@ export default class TwoFactorController {
    */
   async verifyChallenge(ctx: HttpContext) {
     const { request, response, session, auth } = ctx
-    const userId = session.get('two_factor_user_id')
+    const pending = await this.resolvePending(ctx)
 
-    if (!userId) {
-      return response.redirect().toRoute('login')
+    if (!pending) {
+      return
     }
 
     const { token } = await request.validateUsing(tokenValidator)
-    const user = await User.findOrFail(userId)
+    const user = await User.findOrFail(pending.userId)
 
     const isValid = TwoFactorService.verifyToken(user, token)
     if (!isValid) {
-      session.flash('error', 'Code invalide. Veuillez réessayer.')
-      return response.redirect().back()
+      return this.handleFailedAttempt(ctx, pending, 'Code invalide. Veuillez réessayer.')
     }
 
     // Complete login
-    session.forget('two_factor_user_id')
+    session.forget(TWO_FACTOR_PENDING_KEY)
     await auth.use('web').login(user)
     await user.updateLastLogin()
 
@@ -224,29 +281,22 @@ export default class TwoFactorController {
    */
   async verifyRecovery(ctx: HttpContext) {
     const { request, response, session, auth } = ctx
-    const userId = session.get('two_factor_user_id')
+    const pending = await this.resolvePending(ctx)
 
-    if (!userId) {
-      return response.redirect().toRoute('login')
+    if (!pending) {
+      return
     }
 
-    const recoveryCodeValidator = vine.compile(
-      vine.object({
-        recoveryCode: vine.string().minLength(1),
-      })
-    )
-
     const { recoveryCode } = await request.validateUsing(recoveryCodeValidator)
-    const user = await User.findOrFail(userId)
+    const user = await User.findOrFail(pending.userId)
 
     const isValid = await TwoFactorService.verifyRecoveryCode(user, recoveryCode)
     if (!isValid) {
-      session.flash('error', 'Code de récupération invalide')
-      return response.redirect().back()
+      return this.handleFailedAttempt(ctx, pending, 'Code de récupération invalide')
     }
 
     // Complete login
-    session.forget('two_factor_user_id')
+    session.forget(TWO_FACTOR_PENDING_KEY)
     await auth.use('web').login(user)
     await user.updateLastLogin()
 
