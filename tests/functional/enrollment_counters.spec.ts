@@ -471,3 +471,112 @@ test.group('Enrollments - HTTP counters', (group) => {
     assert.equal(await currentEnrollments(method.id), 1)
   })
 })
+
+async function findEnrollment(courseId: number, userId: number) {
+  return CourseEnrollment.query().where('course_id', courseId).where('user_id', userId).first()
+}
+
+test.group('Counters - mixed sequence (criterion 3)', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  async function setup() {
+    const admin = await createUser({ roles: ['admin'] })
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const groupRow = await createGroup(course, { maxMembers: null })
+    const method = await createEnrollmentMethod(course, {
+      methodType: 'self',
+      maxEnrollments: null,
+    })
+    await setAutoAssignGroup(method, groupRow)
+    return { admin, course, groupRow, method }
+  }
+
+  test('counters equal COUNT(*) after enrol x3, unenrol x1 and removeParticipant x1', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { admin, course, groupRow, method } = await setup()
+    const studentA = await createUser({ roles: ['student'] })
+    const studentB = await createUser({ roles: ['student'] })
+    const studentC = await createUser({ roles: ['student'] })
+    const selfUrl = route('enrollments.enroll-self', { id: course.id })
+
+    // enrol A and B through the self method (auto-assigned to the group)
+    for (const student of [studentA, studentB]) {
+      const req = client.post(selfUrl).withCsrfToken()
+      const res = await req.json({ enrollmentMethodId: method.id }).loginAs(student).redirects(0)
+      res.assertStatus(302)
+      assertNotCsrfRejected(assert, res)
+      assert.isNotNull(await findEnrollment(course.id, student.id))
+    }
+
+    // enrol C through the admin participants endpoint (no method)
+    const addUrl = route('admin.courses.participants.add', { id: course.id })
+    const addReq = client.post(addUrl).withCsrfToken()
+    const addRes = await addReq.json({ userId: studentC.id }).loginAs(admin).redirects(0)
+    addRes.assertStatus(302)
+    assertNotCsrfRejected(assert, addRes)
+    assert.equal(addRes.flashMessage('success'), 'Participant added successfully')
+    assert.isNotNull(await findEnrollment(course.id, studentC.id))
+
+    // unenrol A (self)
+    const enrollmentA = await findEnrollment(course.id, studentA.id)
+    const unenrollUrl = route('enrollments.unenroll', { enrollmentId: enrollmentA!.id })
+    const unenrollReq = client.delete(unenrollUrl).withCsrfToken()
+    const unenrollRes = await unenrollReq.loginAs(studentA).redirects(0)
+    unenrollRes.assertStatus(302)
+    assertNotCsrfRejected(assert, unenrollRes)
+    assert.isNull(await findEnrollment(course.id, studentA.id))
+
+    // admin removes B
+    const enrollmentB = await findEnrollment(course.id, studentB.id)
+    const removeUrl = route('admin.courses.participants.remove', {
+      id: course.id,
+      enrollmentId: enrollmentB!.id,
+    })
+    const removeReq = client.delete(removeUrl).withCsrfToken()
+    const removeRes = await removeReq.loginAs(admin).redirects(0)
+    removeRes.assertStatus(302)
+    assertNotCsrfRejected(assert, removeRes)
+    assert.equal(removeRes.flashMessage('success'), 'Participant removed successfully')
+    assert.isNull(await findEnrollment(course.id, studentB.id))
+
+    // the three counters equal COUNT(*) of their source rows
+    const courseRows = await countRows('course_enrollments', 'course_id', course.id)
+    const methodRows = await countRows('course_enrollments', 'enrollment_method_id', method.id)
+    const memberRows = await countRows('course_group_members', 'group_id', groupRow.id)
+    assert.equal(courseRows, 1)
+    assert.equal(methodRows, 0)
+    assert.equal(await enrolledCount(course.id), courseRows)
+    assert.equal(await currentEnrollments(method.id), methodRows)
+    assert.equal(await currentMembers(groupRow.id), memberRows)
+  })
+
+  test('adding an already-enrolled participant flashes an error instead of a 500', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { admin, course } = await setup()
+    const student = await createUser({ roles: ['student'] })
+    const addUrl = route('admin.courses.participants.add', { id: course.id })
+
+    const firstReq = client.post(addUrl).withCsrfToken()
+    const firstRes = await firstReq.json({ userId: student.id }).loginAs(admin).redirects(0)
+    firstRes.assertStatus(302)
+    assertNotCsrfRejected(assert, firstRes)
+    assert.isNotNull(await findEnrollment(course.id, student.id))
+    const before = await enrolledCount(course.id)
+    assert.equal(before, 1)
+
+    const againReq = client.post(addUrl).withCsrfToken()
+    const againRes = await againReq.json({ userId: student.id }).loginAs(admin).redirects(0)
+    againRes.assertStatus(302)
+    assertNotCsrfRejected(assert, againRes)
+    assert.equal(againRes.flashMessage('error'), 'Cet utilisateur est déjà inscrit à ce cours.')
+    assert.equal(await enrolledCount(course.id), before)
+    assert.equal(await countRows('course_enrollments', 'course_id', course.id), 1)
+  })
+})
