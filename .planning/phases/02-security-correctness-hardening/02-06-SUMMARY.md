@@ -36,7 +36,6 @@ metrics:
   completed: 2026-10-13
   tasks: 2
   files: 7
-requirements: [DEBT-07, DEBT-05]
 ---
 
 # Phase 02 Plan 06: Category hierarchy integrity Summary
@@ -112,6 +111,12 @@ As the plan dictated, each task went in as one commit (`fix(categories): ...`), 
 ### Harness note
 After its run finishes, `node ace test` stays alive when an error occurs at import time, because the Vite dev server keeps the process open. Local runs went through a wrapper that kills the process once the summary line is printed. Successful runs exit on their own.
 
+## Requirement Status
+
+- **DEBT-07: complete.** Cycles are rejected on the write path, the subtree is recomputed atomically, `getFullPath` is bounded, and a read-only integrity audit exists (reworded success criterion 4).
+- **DEBT-05: partial.** This plan covers only inventory item V8 (`categories.reorder`) and moves the categories validators into `app/validators/category.ts`. Do NOT mark DEBT-05 complete on the strength of this plan; the other controllers belong to other Phase 2 plans.
+- REQUIREMENTS.md was not edited from this worktree. The orchestrator owns shared tracking files.
+
 ## Findings (out of scope)
 
 - **`inertia/pages/admin/categories/edit.tsx` does not exist**, so `GET /admin/categories/:id/edit` (`CategoriesController.edit`) cannot render. That is why the update endpoint is reachable only through hand-built requests today. Recommend a quick task to add the edit page, which should reuse the server-side cycle rejection. This is outside Phase 2 scope, and the page was NOT created here.
@@ -130,4 +135,6 @@ After its run finishes, `node ace test` stays alive when an error occurs at impo
 ## Self-Check: PASSED
 
 - FOUND: app/helpers/category_tree.ts, tests/unit/category_tree.spec.ts, app/validators/category.ts, commands/categories_check_integrity.ts, tests/functional/categories.spec.ts
-- FOUND commits: e838c14, 4336999
+- FOUND (modified): app/models/course_category.ts, app/controllers/categories_controller.ts
+- FOUND commits: e838c14, 4336999, cec6558 (verified with `git log`)
+- `inertia/pages/admin/categories/` still contains only `create.tsx` and `index.tsx` (no edit page created)
