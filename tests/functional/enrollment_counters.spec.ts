@@ -361,7 +361,10 @@ test.group('Enrollments - HTTP counters', (group) => {
       "Cette méthode d'inscription n'est plus disponible."
     )
     assert.isNull(
-      await CourseEnrollment.query().where('course_id', course.id).where('user_id', second.id).first()
+      await CourseEnrollment.query()
+        .where('course_id', course.id)
+        .where('user_id', second.id)
+        .first()
     )
     assert.equal(await enrolledCount(course.id), 1)
     assert.equal(await currentEnrollments(method.id), 1)
