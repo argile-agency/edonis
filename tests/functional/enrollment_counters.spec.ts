@@ -580,3 +580,92 @@ test.group('Counters - mixed sequence (criterion 3)', (group) => {
     assert.equal(await countRows('course_enrollments', 'course_id', course.id), 1)
   })
 })
+
+test.group('EnrollmentService - AS5 group cleanup', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  async function joinGroup(groupRow: CourseGroup, userId: number) {
+    const place = await db.transaction((trx) =>
+      EnrollmentService.tryIncrementGroup(trx, groupRow.id)
+    )
+    if (Number(place) < 1) throw new Error('group is full')
+    await CourseGroupMember.create({ groupId: groupRow.id, userId })
+  }
+
+  async function membership(groupId: number, userId: number) {
+    return CourseGroupMember.query().where('group_id', groupId).where('user_id', userId).first()
+  }
+
+  test("unenrol removes the user's memberships in that course's groups only", async ({
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const courseX = await createCourse(owner)
+    const courseY = await createCourse(owner)
+    const g1 = await createGroup(courseX, { maxMembers: null })
+    const g2 = await createGroup(courseX, { maxMembers: null })
+    const h = await createGroup(courseY, { maxMembers: null })
+    const student = await createUser({ roles: ['student'] })
+    const classmate = await createUser({ roles: ['student'] })
+
+    const enrollment = await EnrollmentService.enroll({
+      courseId: courseX.id,
+      userId: student.id,
+      courseRole: 'student',
+      enrolledBy: null,
+    })
+    await EnrollmentService.enroll({
+      courseId: courseY.id,
+      userId: student.id,
+      courseRole: 'student',
+      enrolledBy: null,
+    })
+    await joinGroup(g1, student.id)
+    await joinGroup(g2, student.id)
+    await joinGroup(g2, classmate.id)
+    await joinGroup(h, student.id)
+    assert.equal(await currentMembers(g1.id), 1)
+    assert.equal(await currentMembers(g2.id), 2)
+
+    await EnrollmentService.unenroll(enrollment)
+
+    assert.isNull(await CourseEnrollment.find(enrollment.id))
+    assert.isNull(await membership(g1.id, student.id))
+    assert.isNull(await membership(g2.id, student.id))
+    assert.equal(await currentMembers(g1.id), 0)
+    assert.equal(await currentMembers(g2.id), 1)
+    assert.isNotNull(await membership(g2.id, classmate.id))
+    assert.equal(
+      await currentMembers(g2.id),
+      await countRows('course_group_members', 'group_id', g2.id)
+    )
+
+    // another course's group is untouched
+    assert.isNotNull(await membership(h.id, student.id))
+    assert.equal(await currentMembers(h.id), 1)
+  })
+
+  test('a second unenrol of the same enrolment does not decrement the groups again', async ({
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const groupRow = await createGroup(course, { maxMembers: null })
+    const method = await createEnrollmentMethod(course, { maxEnrollments: null })
+    await setAutoAssignGroup(method, groupRow)
+    const student = await createUser({ roles: ['student'] })
+    const other = await createUser({ roles: ['student'] })
+
+    const enrollment = await enrollVia(course, method, student.id)
+    await enrollVia(course, method, other.id)
+    assert.equal(await currentMembers(groupRow.id), 2)
+
+    await EnrollmentService.unenroll(enrollment)
+    await EnrollmentService.unenroll(enrollment)
+
+    assert.isNull(await membership(groupRow.id, student.id))
+    assert.equal(await currentMembers(groupRow.id), 1)
+    assert.equal(await countRows('course_group_members', 'group_id', groupRow.id), 1)
+    assert.isNotNull(await membership(groupRow.id, other.id))
+  })
+})
