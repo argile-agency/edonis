@@ -67,7 +67,7 @@ Seven byte-identical Lucid JSON column `prepare`/`consume` blocks in four models
 - `grep -rn "eslint-disable" app/ --include="*.ts" | wc -l` → **0**
 - `grep -c "no-explicit-any\|no-unnecessary-type-assertion" eslint.config.js` → **0**
 - The `eqeqeq: ['error', 'always', { null: 'ignore' }]` block and its comment are unchanged. The `eslint.config.js` diff contains only the 15 added lines.
-- `@adonisjs/eslint-config` does not set `no-restricted-syntax`. `eslint --print-config app/models/course.ts` shows only the new selector, so the new block does not override any preset rule.
+- `@adonisjs/eslint-config` does not set `no-restricted-syntax`. `eslint --print-config start/routes.ts`, a `.ts` file outside the new block's glob, shows no such rule. So the `app/**` block adds a rule rather than replacing preset selectors.
 - No dependency was added and `package.json` is unchanged.
 
 ### Tripwire: guard deliberately tripped
