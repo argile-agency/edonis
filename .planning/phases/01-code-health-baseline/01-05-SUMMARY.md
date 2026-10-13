@@ -1,7 +1,7 @@
 ---
 phase: 01-code-health-baseline
 plan: 05
-status: checkpoint-pending
+status: complete-local-proof-only
 subsystem: ci
 tags: [ci, github-actions, eslint, japa, gates]
 requires: [01-03, 01-04]
@@ -23,12 +23,12 @@ decisions:
   - "Local chain runs prefix every command with NODE_ENV=test so migrate/seed hit tmp/test.sqlite3, not the dev DB from .env"
 metrics:
   duration: ~15min (Tasks 1-2)
-  completed: pending (Task 3 checkpoint)
+  completed: 2026-10-13 (Tasks 1-2); Task 3 GitHub Actions proof deferred to operator
   tasks: 2 of 3
   files: 2
 ---
 
-# Phase 1 Plan 05: Enforce CI Gates Summary (checkpoint pending)
+# Phase 1 Plan 05: Enforce CI Gates Summary (GitHub Actions proof deferred)
 
 Lint, unit-test and functional-test failures now each make the CI step exit non-zero. The ESLint step has no `continue-on-error`. The old `node ace test functional || echo ...` step is now two bare steps, `node ace test unit` and `node ace test functional`. The job is renamed `tests` everywhere, including `summary.needs`. The tests job runs with `SESSION_DRIVER: memory`. All three gates were shown locally to fail on a deliberate break and pass again after the revert. **It has not yet been shown that GitHub Actions turns red.** That is Task 3, which is waiting on a human because it needs a push and a PR.
 
@@ -38,7 +38,7 @@ Lint, unit-test and functional-test failures now each make the CI step exit non-
 |---|---|---|---|
 | 1 | Make lint/test steps real gates in ci.yml; add `check` script | fca2e29 | done |
 | 2 | Prove locally that each gate propagates a failure | (no commit, by design) | done |
-| 3 | Confirm the gates fire in GitHub Actions | - | **checkpoint:human-verify, pending** |
+| 3 | Confirm the gates fire in GitHub Actions | - | **deferred by operator on 2026-10-13: local proof only, Actions proof outstanding** |
 
 ## Task 1 results
 
@@ -71,7 +71,9 @@ The first lint break, written as `({} as any)`, also produced a prettier error. 
 
 After the experiments, `git status --short -- app tests eslint.config.js package.json .github` was empty, `bun run check` exited 0, and HEAD was still `ci: enforce lint and test gates`.
 
-## Task 3: pending (filled in after the checkpoint)
+## Task 3: DEFERRED (operator runs the Actions proof when pushing)
+
+> CI enforcement is proven **locally only** (lint, unit and functional gates each exit 1 when broken, 0 when restored). It has NOT been observed in GitHub Actions. `git fetch origin` failed with an access error in the execution environment, and pushing ~46 commits needs the operator's go-ahead. Follow the checkpoint steps A-E (PRs against `main`, scratch branch cut from the green branch) and record the results below.
 
 - Green run URL: _pending_
 - Red (scratch) run URL: _pending_

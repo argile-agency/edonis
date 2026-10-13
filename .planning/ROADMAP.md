@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Technical debt remediation:**
 
-- [ ] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite
+- [x] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite (completed 2026-10-13)
 - [ ] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form
 
@@ -87,7 +87,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05-PLAN.md — CI gate enforcement (lint + unit + functional) [wave 3]
+- [x] 01-05-PLAN.md — CI gate enforcement (lint + unit + functional) [wave 3] *(GitHub Actions proof pending — local gates proven only)*
 
 ### Phase 2: Security and Correctness Hardening
 
@@ -378,7 +378,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Code Health Baseline | 4/5 | In Progress|  |
+| 1. Code Health Baseline | 5/5 | Complete   | 2026-10-13 |
 | 2. Security and Correctness Hardening | 0/14 | Planned | - |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
