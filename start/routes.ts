@@ -9,7 +9,13 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
-import { loginThrottle, registerThrottle, passwordThrottle, twoFactorThrottle } from './limiter.js'
+import {
+  loginThrottle,
+  registerThrottle,
+  passwordThrottle,
+  twoFactorThrottle,
+  twoFactorResetThrottle,
+} from './limiter.js'
 
 const UsersController = () => import('#controllers/users_controller')
 const AuthController = () => import('#controllers/auth_controller')
@@ -203,6 +209,10 @@ router
     // Supprimer/Activer un utilisateur
     router.delete('/users/:id', [UsersController, 'destroy']).as('users.destroy')
     router.post('/users/:id/activate', [UsersController, 'activate']).as('users.activate')
+    router
+      .post('/users/:id/two-factor/reset', [UsersController, 'resetTwoFactor'])
+      .as('users.two-factor.reset')
+      .use(twoFactorResetThrottle)
     router.delete('/users/:id/force', [UsersController, 'forceDestroy']).as('users.forceDestroy')
   })
   .prefix('/admin')
