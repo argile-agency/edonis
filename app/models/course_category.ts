@@ -71,11 +71,11 @@ export default class CourseCategory extends BaseModel {
     if (this.path) return this.path
 
     const parts: string[] = [this.slug]
-    let current = this
+    let current: CourseCategory = this
 
     while (current.parentId) {
-      await current.load('parent' as any)
-      current = current.parent as any
+      await current.load('parent')
+      current = current.parent
       parts.unshift(current.slug)
     }
 

@@ -41,7 +41,8 @@ export default class Cohort extends BaseModel {
 
   // Helper methods
   public async updateMemberCount(): Promise<void> {
-    await this.load('members' as any)
+    const self: Cohort = this
+    await self.load('members')
     this.memberCount = this.members.length
     await this.save()
   }

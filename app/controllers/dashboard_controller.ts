@@ -11,7 +11,7 @@ export default class DashboardController {
 
     try {
       // Charger les rôles
-      await user.load('roles' as any)
+      await user.load('roles')
     } catch (error) {
       logger.error('DashboardController: failed to load user roles: %s', (error as Error).message)
     }
