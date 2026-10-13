@@ -4,6 +4,7 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import Course from '#models/course'
 import User from '#models/user'
 import CourseEnrollmentMethod from '#models/course_enrollment_method'
+import { jsonColumnConfig } from '../helpers/json_column.js'
 
 export type BulkEnrollmentStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -54,24 +55,10 @@ export default class BulkEnrollmentLog extends BaseModel {
   @column()
   declare skippedRows: number
 
-  @column({
-    prepare: (value: ErrorDetail[] | null) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare errorDetails: ErrorDetail[] | null
 
-  @column({
-    prepare: (value: ImportOptions | null) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare importOptions: ImportOptions | null
 
   @column()

@@ -3,6 +3,7 @@ import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import Assignment from '#models/assignment'
 import User from '#models/user'
+import { jsonColumnConfig } from '../helpers/json_column.js'
 
 export default class Submission extends BaseModel {
   @column({ isPrimary: true })
@@ -20,14 +21,7 @@ export default class Submission extends BaseModel {
   @column()
   declare textContent: string | null
 
-  @column({
-    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare fileAttachments: string[] | null
 
   @column()
@@ -54,24 +48,10 @@ export default class Submission extends BaseModel {
   @column()
   declare feedback: string | null
 
-  @column({
-    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare feedbackAttachments: string[] | null
 
-  @column({
-    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare rubricScores: any | null
 
   @column()

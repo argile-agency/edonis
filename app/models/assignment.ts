@@ -5,6 +5,7 @@ import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import GradeCategory from '#models/grade_category'
 import Submission from '#models/submission'
+import { jsonColumnConfig } from '../helpers/json_column.js'
 
 export default class Assignment extends BaseModel {
   @column({ isPrimary: true })
@@ -55,14 +56,7 @@ export default class Assignment extends BaseModel {
   @column()
   declare useRubric: boolean
 
-  @column({
-    prepare: (value: any) => (value != null ? JSON.stringify(value) : null),
-    consume: (value: any) => {
-      if (value == null) return null
-      if (typeof value === 'object') return value
-      return JSON.parse(value)
-    },
-  })
+  @column(jsonColumnConfig)
   declare rubricData: any | null
 
   @column()
