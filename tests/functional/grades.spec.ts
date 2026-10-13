@@ -4,6 +4,10 @@ import { DateTime } from 'luxon'
 import User from '#models/user'
 import Course from '#models/course'
 import CourseEnrollment from '#models/course_enrollment'
+import {
+  createUser as createUserWithRoles,
+  grantPermission,
+} from '#tests/functional/helpers/factories'
 
 /**
  * Unique suffix so fixtures never collide with seeded rows
@@ -99,6 +103,51 @@ test.group('Grades - access control', (group) => {
 
     response.assertStatus(200)
     assert.isTrue(response.inertiaProps.isInstructor)
+  })
+
+  test('admin who neither owns nor is enrolled sees the instructor view (AS2)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { course } = await createEnrolledCourse()
+    const admin = await createUserWithRoles({ roles: ['admin'] })
+
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .withInertia()
+      .loginAs(admin)
+
+    response.assertStatus(200)
+    assert.isTrue(response.inertiaProps.isInstructor)
+  })
+
+  test('edit co-instructor sees the instructor view (AS2)', async ({ client, route, assert }) => {
+    const { course } = await createEnrolledCourse()
+    const coInstructor = await createUserWithRoles({ roles: ['teacher'] })
+    await grantPermission(course, coInstructor, 'edit')
+
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .withInertia()
+      .loginAs(coInstructor)
+
+    response.assertStatus(200)
+    assert.isTrue(response.inertiaProps.isInstructor)
+  })
+
+  test('view-only collaborator who is not enrolled is forbidden', async ({ client, route }) => {
+    const { course } = await createEnrolledCourse()
+    const viewer = await createUserWithRoles({ roles: ['teacher'] })
+    await grantPermission(course, viewer, 'view')
+
+    const response = await client
+      .get(route('grades.course', { id: course.id }))
+      .withInertia()
+      .loginAs(viewer)
+
+    response.assertStatus(403)
+    response.assertInertiaComponent('errors/forbidden')
   })
 
   test('non-enrolled JSON caller gets a JSON 403, not the Inertia page', async ({
