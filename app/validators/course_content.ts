@@ -108,6 +108,15 @@ export const reorderContentsValidator = vine.compile(
   })
 )
 
+/**
+ * Query string of the learn player: `?content=<id>` must be a positive integer id.
+ */
+export const learnQueryValidator = vine.compile(
+  vine.object({
+    content: vine.number().positive().optional(),
+  })
+)
+
 // Progress validators
 export const updateProgressValidator = vine.compile(
   vine.object({
