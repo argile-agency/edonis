@@ -13,6 +13,11 @@ import {
   updateCourseValidator,
   createCoursePermissionValidator,
 } from '#validators/course'
+import {
+  courseIndexQueryValidator,
+  rejectCourseValidator,
+  addParticipantValidator,
+} from '#validators/course_admin'
 import { scopeVisibleCourses } from '#policies/course_policy'
 
 export default class CoursesController {
@@ -21,11 +26,12 @@ export default class CoursesController {
    */
   async index({ inertia, auth, request }: HttpContext) {
     const user = auth.user!
-    const page = request.input('page', 1)
+    const filters = await request.validateUsing(courseIndexQueryValidator)
+    const page = filters.page ?? 1
     const perPage = 15
-    const status = request.input('status')
-    const category = request.input('category')
-    const search = request.input('search')
+    const status = filters.status ?? undefined
+    const category = filters.category ?? undefined
+    const search = filters.search ?? undefined
 
     const query = Course.query().preload('instructor')
 
@@ -37,7 +43,7 @@ export default class CoursesController {
       query.where('status', status)
     }
 
-    if (category && category !== '' && category !== 'all') {
+    if (category && /^\d+$/.test(category)) {
       query.where('category_id', Number(category))
     }
 
@@ -70,7 +76,11 @@ export default class CoursesController {
    * Display the form for creating a new course
    */
   async create({ inertia }: HttpContext) {
-    return inertia.render('courses/create')
+    const categories = await CourseCategory.query().orderBy('name', 'asc')
+
+    return inertia.render('courses/create', {
+      categories: categories.map((cat) => ({ id: cat.id, name: cat.name })),
+    })
   }
 
   /**
@@ -147,8 +157,11 @@ export default class CoursesController {
 
     await bouncer.with('CoursePolicy').authorize('edit', course)
 
+    const categories = await CourseCategory.query().orderBy('name', 'asc')
+
     return inertia.render('courses/edit', {
       course: course.serialize(),
+      categories: categories.map((cat) => ({ id: cat.id, name: cat.name })),
     })
   }
 
@@ -526,7 +539,7 @@ export default class CoursesController {
     const user = auth.user!
     await bouncer.with('CoursePolicy').authorize('administer')
 
-    const { reason } = request.only(['reason'])
+    const { reason } = await request.validateUsing(rejectCourseValidator)
     const course = await Course.findOrFail(params.id)
     await course.reject(user.id, reason)
 
@@ -616,13 +629,13 @@ export default class CoursesController {
     const user = auth.user!
     await bouncer.with('CoursePolicy').authorize('administer')
 
-    const { userId, courseRole } = request.only(['userId', 'courseRole'])
+    const payload = await request.validateUsing(addParticipantValidator)
     const course = await Course.findOrFail(params.id)
 
     await CourseEnrollment.create({
       courseId: course.id,
-      userId: Number(userId),
-      courseRole: courseRole || 'student',
+      userId: payload.userId,
+      courseRole: payload.courseRole ?? 'student',
       status: 'active',
       enrolledBy: user.id,
       enrolledAt: DateTime.now(),
@@ -683,23 +696,13 @@ export default class CoursesController {
     await bouncer.with('CoursePolicy').authorize('administer')
 
     const course = await Course.findOrFail(params.id)
+    // The settings form splits its comma-separated tags into an array before submit
     const payload = await request.validateUsing(updateCourseValidator)
-
-    // Convert tags string to array if needed
-    const tagsInput = request.input('tags')
-    const tags =
-      typeof tagsInput === 'string'
-        ? tagsInput
-            .split(',')
-            .map((t: string) => t.trim())
-            .filter((t: string) => t.length > 0)
-        : payload.tags
 
     const data = {
       ...payload,
       startDate: payload.startDate ? DateTime.fromJSDate(payload.startDate) : undefined,
       endDate: payload.endDate ? DateTime.fromJSDate(payload.endDate) : undefined,
-      tags,
     }
 
     await course.merge(data).save()
