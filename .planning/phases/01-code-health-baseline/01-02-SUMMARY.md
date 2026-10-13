@@ -3,7 +3,7 @@ phase: 01-code-health-baseline
 plan: 02
 subsystem: courses
 tags: [bugfix, luxon, enrollment, unit-tests, debt-02]
-status: checkpoint-pending
+status: complete
 requires: []
 provides:
   - "Course.canEnroll() enforces its start/end date window"
@@ -23,23 +23,23 @@ decisions:
   - "Compare Luxon DateTime values directly (this.startDate > now) instead of DateTime.fromJSDate(x as any)"
   - "Fix commit uses a single-line subject (CLAUDE.md / user preference) instead of the plan's multi-line body"
 metrics:
-  tasks_completed: 1
+  tasks_completed: 2
   tasks_total: 2
-  completed: null
+  completed: 2026-10-13
 ---
 
-# Phase 01 Plan 02: canEnroll() date-window fix (checkpoint pending)
+# Phase 01 Plan 02: canEnroll() date-window fix
 
 `Course.canEnroll()` now compares Luxon `DateTime` values directly. Previously it called `DateTime.fromJSDate()` on a value that was already a Luxon `DateTime`. That returns an invalid DateTime whose `valueOf()` is `NaN`, so both date guards always evaluated `false` and the enrollment window was never enforced. Five in-memory unit tests now cover this.
 
-**Status:** Task 1 is done and committed. Task 2 (the blocking human checkpoint) is **waiting for operator approval**.
+**Status:** Complete. Task 1 is done and committed. Task 2 (the blocking human checkpoint) was **approved by the operator on 2026-10-13** (no end-date-inclusive follow-up requested).
 
 ## Tasks
 
 | Task | Name | Status | Commit |
 | ---- | ---- | ------ | ------ |
 | 1 | Prove the bug with a unit test, then fix canEnroll() | done | `194dd28` |
-| 2 | Pre-merge data check: how many courses lose eligibility | **awaiting human verification** | n/a |
+| 2 | Pre-merge data check: how many courses lose eligibility | approved 2026-10-13 | n/a |
 
 ## RED (before the course.ts edit), verbatim, ANSI stripped, stack frames trimmed
 
@@ -138,7 +138,7 @@ That is 4 of the 4 published courses. The other two (AI301 draft, SCI201 archive
 
 ## Release Note (for whoever ships Phase 1)
 
-> `Course.canEnroll()` has never enforced its start/end date window, because `DateTime.fromJSDate()` returns an invalid DateTime when given a Luxon `DateTime`. After this change, courses with a future `start_date` or a past `end_date` will report `canEnroll: false`. On the dev DB this affects **6 / 6** courses (4 published and enrollment-open), all because the seed data is stale. **Row count:** 6 (dev). Operator approval: _pending_.
+> `Course.canEnroll()` has never enforced its start/end date window, because `DateTime.fromJSDate()` returns an invalid DateTime when given a Luxon `DateTime`. After this change, courses with a future `start_date` or a past `end_date` will report `canEnroll: false`. On the dev DB this affects **6 / 6** courses (4 published and enrollment-open), all because the seed data is stale. **Row count:** 6 (dev). Operator approval: **approved 2026-10-13**.
 
 ## Known Stubs
 
@@ -149,4 +149,4 @@ None.
 - `tests/unit/course.spec.ts`: FOUND
 - `app/models/course.ts` fix: FOUND
 - commit `194dd28`: FOUND
-- Task 2 approval: PENDING (blocking checkpoint)
+- Task 2 approval: APPROVED 2026-10-13 (operator)

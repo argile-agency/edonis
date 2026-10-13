@@ -77,9 +77,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Remove `as any` Clusters A–C (type-only, zero behaviour delta) [wave 1]
-- [ ] 01-02-PLAN.md — Fix the `canEnroll()` date-window runtime bug + unit test [wave 1]
-- [ ] 01-03-PLAN.md — Functional test infrastructure (`.env.test`, api-client, spec rewrite) [wave 1]
+- [x] 01-01-PLAN.md — Remove `as any` Clusters A–C (type-only, zero behaviour delta) [wave 1]
+- [x] 01-02-PLAN.md — Fix the `canEnroll()` date-window runtime bug + unit test [wave 1]
+- [x] 01-03-PLAN.md — Functional test infrastructure (`.env.test`, api-client, spec rewrite) [wave 1]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -98,14 +98,19 @@ Plans:
 
   1. `app/policies/` exists and all resource-ownership checks route through it:
      `grep -rn "hasPermission(\|hasRole(\|instructorId ===\|isInstructor(\|\.roles\.some(" app/controllers` returns 0
+
   2. Every action in the DEBT-05 inventory (17 actions) reads input only via `request.validateUsing()`:
      `grep -rn "request\.\(only\|input\|all\)(" app/controllers` returns 0
+
   3. Enrollment counter mutations run inside a transaction using atomic conditional increments, and
      counters equal `COUNT(*)` of their source rows after any sequence of enrol/unenrol operations
+
   4. Category update rejects a parent that is the category itself or a descendant; descendant
      `path`/`depth` are recomputed on move
+
   5. Decryption failures are logged and never returned raw in all modes; raises when
      PII_DECRYPT_STRICT=true. Prerequisites: PII columns can hold ciphertext, and existing rows are scanned/repaired before raising is enabled
+
   6. 2FA pending state has an explicit timeout and a documented recovery path
 
 > **Re-scoped 2026-10-09 after research** (`02-RESEARCH.md`). Criteria 1-5 were reworded to match
@@ -373,7 +378,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Code Health Baseline | 0/5 | Planned (re-scoped) | - |
+| 1. Code Health Baseline | 3/5 | In Progress|  |
 | 2. Security and Correctness Hardening | 0/14 | Planned | - |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 0/1 | Plan written, not executed | - |
