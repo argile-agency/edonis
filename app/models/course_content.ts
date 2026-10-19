@@ -1,8 +1,9 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
-import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, belongsTo, hasMany, manyToMany } from '@adonisjs/lucid/orm'
+import type { BelongsTo, HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 import CourseModule from '#models/course_module'
 import ContentProgress from '#models/content_progress'
+import ContentFile from '#models/content_file'
 import { jsonColumnConfig } from '../helpers/json_column.js'
 
 export type ContentType = 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz'
@@ -97,6 +98,16 @@ export default class CourseContent extends BaseModel {
     foreignKey: 'contentId',
   })
   declare progresses: HasMany<typeof ContentProgress>
+
+  @manyToMany(() => ContentFile, {
+    pivotTable: 'content_content_files',
+    localKey: 'id',
+    pivotForeignKey: 'course_content_id',
+    relatedKey: 'id',
+    pivotRelatedForeignKey: 'content_file_id',
+    pivotTimestamps: true,
+  })
+  declare files: ManyToMany<typeof ContentFile>
 
   // Helper methods
   public isAvailable(): boolean {
