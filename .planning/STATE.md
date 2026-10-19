@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: GSD install verified at v1.42.3 across both runtime roots; planning
-last_updated: "2026-10-19T09:53:41.044Z"
+status: ready_to_plan
+stopped_at: Phase 04 complete (1/1) — ready to discuss Phase 5
+last_updated: 2026-10-19T16:19:34.454Z
 last_activity: 2026-10-19
 progress:
   total_phases: 12
@@ -21,21 +21,27 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with seamless Moodle migration
-**Current focus:** Phase 04 — content-foundation
+**Current focus:** Phase 5 — builder ui
 
 ## Current Position
 
-Phase: 04 (content-foundation) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
+Phase: 5
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-10-19
 
-Next recommended run: `/gsd:execute-phase 2`
+Next recommended run: `/gsd:execute-phase 2` (planned, 14 plans; Phase 5 depends only on Phase 4
+and can be discussed/planned in parallel)
 
-Open items from Phase 1: `01-HUMAN-UAT.md` (3 pending) — GitHub Actions proof for plan 01-05
-(green PR, deliberately-red PR, required-check names). CI enforcement is proven locally only.
+Open items from Phase 1: `01-HUMAN-UAT.md` (2 pending) — deliberately-red PR and required-check
+names. Green CI on postgres/mysql/sqlite proven 2026-10-19 (push run of e4f777d).
 
-Progress (12-phase roadmap): [#.........] 8% (1/12 phases)
+Open items from Phase 4: `04-HUMAN-UAT.md` test 2 skipped — storage persistence across a redeploy,
+re-test at first deployment with `CONTENT_STORAGE_PATH` on persistent storage. Out-of-scope
+observations OBS-03 (legacy `file_url` seed data → Phase 7) and header dropdown hydration/`asChild`
+warnings remain open; OBS-01/02/04 fixed.
+
+Progress (12-phase roadmap): [##........] 17% (2/12 phases)
 
 > **Important:** the 0% figure measures the *content milestone roadmap only*.
 > The product itself is substantially built — see "Codebase Reality Check" below.
@@ -126,7 +132,7 @@ completion triggers.
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -135,6 +141,7 @@ completion triggers.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 5 | - | - |
+| 04 | 1 | - | - |
 
 **Recent Trend:**
 
