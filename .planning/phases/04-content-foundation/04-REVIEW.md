@@ -17,7 +17,22 @@ findings:
   warning: 6
   info: 5
   total: 12
-status: issues_found
+status: fixed
+fix_scope: critical_warning
+fixed_at: 2026-10-19
+fixes:
+  CR-01: { status: fixed, commit: cdd3213 }
+  WR-01: { status: fixed, commit: 4851130 }
+  WR-02: { status: fixed, commit: 6ee0347 }
+  WR-03: { status: fixed, commit: 4ed7938 }
+  WR-04: { status: fixed, commit: de919c3 }
+  WR-05: { status: fixed, commit: d93d3bf }
+  WR-06: { status: fixed, commit: a8b9ffe }
+  IN-01: { status: partially_addressed, commit: de919c3 }
+  IN-02: { status: open }
+  IN-03: { status: open }
+  IN-04: { status: open }
+  IN-05: { status: open }
 ---
 
 # Phase 04: Code Review Report
@@ -25,7 +40,21 @@ status: issues_found
 **Reviewed:** 2026-10-19T12:00:00Z
 **Depth:** standard
 **Files Reviewed:** 8
-**Status:** issues_found
+**Status:** fixed (all Critical and Warning findings fixed; Info findings out of fix scope)
+
+## Fix Log
+
+| Finding | Status | Commit | Notes |
+|---------|--------|--------|-------|
+| CR-01 | fixed | `cdd3213` | `CourseModule.isEffectivelyAvailable()` walks the full ancestry (same course, cycle-safe, fails closed on a missing parent); the download check uses it. |
+| WR-01 | fixed | `4851130` | Learners need a published course; archived courses serve `completed` enrollments only; draft courses are staff-only. |
+| WR-02 | fixed | `6ee0347` | Dedup hit checks that the blob is a file on disk; if missing, the upload is moved to the record's path (or a fresh path if the stored one is invalid). A concurrent restore is tolerated. |
+| WR-03 | fixed | `4ed7938` | `CONTENT_STORAGE_PATH` (start/env.ts, .env.example, deployment doc). Default anchors on the source checkout when running from `build/`. Download tests use a temp root. |
+| WR-04 | fixed | `de919c3` | `filename`/`mime_type` moved from `content_files` to the `content_content_files` pivot (phase-04 migrations edited). Download uses the name from the content that grants access. New `storeForContent()` / `attachmentMetadata()`. |
+| WR-05 | fixed | `d93d3bf` | Added tests for module/parent/content windows, completed/expired/pending enrollments, a shared file where only the second course grants access, and containment/absolute/directory paths over HTTP. |
+| WR-06 | fixed | `a8b9ffe` | Fake `move()` honours `overwrite: false`. Race recovery tested with a stubbed `ContentFile.create` that inserts the winner and then throws a synthetic error, so the test is safe on every engine. |
+| IN-01 | partially addressed | `de919c3` | Pivot filename and MIME type are bounded in `attachmentMetadata()`. |
+| IN-02..IN-05 | open | none | Out of fix scope (Info). |
 
 ## Narrative Findings (AI reviewer)
 
@@ -48,6 +77,8 @@ What does not hold up:
 ## Critical Issues
 
 ### CR-01: Learners can download files in child modules whose parent module is unpublished
+
+**Fix status:** fixed in `cdd3213`
 
 **File:** `app/controllers/files_controller.ts:91-93` (via `app/models/course_module.ts:69-84`)
 **Issue:** `isVisibleToLearners` checks `content.isAvailable() && content.module.isAvailable()`, and `CourseModule.isAvailable()` only looks at the module's own `isPublished` and availability window. Modules are hierarchical (`course_modules.parent_id`). The learner player (`course_contents_controller.ts:61-79`) only reaches child modules through a published top-level parent, so unpublishing a parent hides the whole subtree. Nothing cascades `is_published` to the children (no such logic in `course_contents_controller.ts`).
@@ -77,6 +108,8 @@ Better still, put an `isEffectivelyAvailable()` helper on `CourseModule` so the 
 
 ### WR-01: Course status is ignored for learners (draft courses still serve files)
 
+**Fix status:** fixed in `4851130`
+
 **File:** `app/controllers/files_controller.ts:68-86`
 **Issue:** The learner branch checks content, module and enrollment, but never `course.status`. If a course goes back to `draft` (for example, pulled for a content takedown), every learner with an `active` enrollment can still download all of its published files. The existing player has the same gap, but this endpoint is new and is meant to be the security boundary for blobs. It should not copy the weakness. Archived courses with `completed` enrollments are arguably fine, but that should be an explicit decision.
 **Fix:** For the learner branch, require `course.isPublished()` (and optionally allow `course.isArchived()` only when the enrollment is `completed`):
@@ -86,6 +119,8 @@ const courseOpen = course.isPublished() || (course.isArchived() && enrollment.st
 Add tests for draft and archived courses.
 
 ### WR-02: A dedup hit trusts the DB row even when the blob is missing, so the file can never be repaired
+
+**Fix status:** fixed in `6ee0347`
 
 **File:** `app/services/file_storage_service.ts:45-49`
 **Issue:** On a checksum match the service deletes the new upload and returns the existing record without checking that `getFullPath(existing)` exists on disk. If the blob was lost (a failed volume, a manual cleanup, the build-dir wipe in WR-03, or a crash between `file.move` and a later rollback), the row is permanently broken. Every re-upload of the same bytes is thrown away and gets the same dangling record, and downloads keep returning 404. The one action that would fix it (re-uploading) is silently discarded.
@@ -105,6 +140,8 @@ if (existing) {
 
 ### WR-03: The storage root is inside the app root, which is the regenerated `build/` directory in production
 
+**Fix status:** fixed in `4ed7938`
+
 **File:** `app/services/file_storage_service.ts:30`
 **Issue:** `app.makePath('storage/content_files')` resolves against the application root. In production that is `build/` (see the CLAUDE.md "Production Build" section), and `node ace build` empties the output directory on every build. An in-place redeploy therefore deletes every uploaded course file while the `content_files` rows survive. Combined with WR-02, those files cannot be recovered by re-uploading. `storage/` is also not in `adonisrc.ts` `metaFiles`, so nothing marks it as persistent.
 **Fix:** Make the root configurable and point it outside the build tree:
@@ -118,11 +155,15 @@ Document it in CLAUDE.md and the deployment docs, and require it in production.
 
 ### WR-04: Dedup returns the first uploader's filename and MIME type for every later upload
 
+**Fix status:** fixed in `de919c3` (pivot columns; kept `/files/:id/download` and use the name from the content that grants access instead of adding a content-scoped route)
+
 **File:** `app/services/file_storage_service.ts:45-49, 63-70`; `app/models/content_file.ts:15-23`
 **Issue:** `filename` and `mimeType` live on the deduplicated `content_files` row, not on the pivot. If teacher B uploads `exam-answers-v2.pdf` with the same bytes as teacher A's `B_internal_draft.pdf` in another course, B gets A's record. B's content then downloads under A's filename. That is wrong for B, and it discloses another course's filename across course boundaries. The dedup hit itself (same id returned) is also an existence oracle for arbitrary content across courses.
 **Fix:** Move per-use metadata to the pivot. Add `filename` (and optionally `mime_type`) columns to `content_content_files`, set them in `attach()`, and pass the content id to the download route so the right name is used: `/contents/:contentId/files/:fileId/download`. That route also gives a cleaner authorization scope (see IN-04).
 
 ### WR-05: The download test suite misses the authorization edges that matter
+
+**Fix status:** fixed in `d93d3bf` (with regression tests also added in `cdd3213`, `4851130`, `4ed7938`, `de919c3`)
 
 **File:** `tests/functional/files_download.spec.ts:101-225`
 **Issue:** The suite covers the happy paths but none of the rules where defects actually exist:
@@ -135,6 +176,8 @@ The download tests also write into the real `storage/content_files/` tree. Becau
 **Fix:** Add the cases above. Inject or configure the storage root (see WR-03) so the HTTP tests can use a temp directory.
 
 ### WR-06: The service tests do not exercise race recovery, and the fake `move()` ignores `overwrite`
+
+**Fix status:** fixed in `a8b9ffe` (limitation: the race test simulates the violation with a synthetic error, so it does not exercise a real constraint violation on PostgreSQL)
 
 **File:** `tests/functional/file_storage_service.spec.ts:35-37`
 **Issue:** The `catch` branch in `store()` (unlink the blob, return the winner) is the most delicate code in the service and has no test. The fake `move()` ignores `options.overwrite`, so the "Throws on failure (including name collision, since overwrite is off)" contract in `file_storage_service.ts:59-60` is unverified. With `withGlobalTransaction` on Postgres, a unique violation would also abort the shared transaction, so the follow-up `findBy` would fail. A naive test would pass on SQLite and fail in the PG CI job.
