@@ -3,26 +3,26 @@ status: testing
 phase: 04-content-foundation
 source: [04-01-SUMMARY.md, 04-REVIEW.md, 04-HUMAN-UAT.md]
 started: 2026-10-19T11:54:58Z
-updated: 2026-10-19T14:53:00Z
+updated: 2026-10-19T15:35:18Z
 ---
 
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
 number: 4
-name: CI matrix green on PostgreSQL and MySQL
+name: CI matrix green on PostgreSQL and MySQL (re-run after fixes)
 expected: |
-  After pushing, CI "Tests (postgres)" and "Tests (mysql)" legs pass, including phase-04 specs and migrations.
+  After pushing 7119d5e + 3a86210, all CI jobs green: Tests (postgres), Tests (mysql), Tests (sqlite), Lint & Type Check, Build.
 awaiting: user response
 
 ## Tests
 
 ### 1. Cold Start Smoke Test
 expected: Stop the dev server. `node ace migration:fresh --seed` completes without errors, creating content_files and content_content_files. `bun run dev` boots and student@edonis.test can log in and see their courses.
-result: issue
-reported: "Je suis pas sûr que nous puissions considérer le test 1 comme réussi. Le user étudiant de test étant inscrit à aucun cours, il n'est pas possible de s'auto-inscrire à un cours ou de voir un catalogue de cours, donc impossible aussi de faire le test 2."
-severity: major
-note: "dev server initially exited with code 1; resolved by `bun update` (package.json/bun.lock left modified, uncommitted, outside phase scope). Pre-existing defect, not introduced by phase 04. Retest with ordered `db:seed --files` workaround: student enrolled in demo courses OK; durable seeder-order fix still pending."
+result: pass
+reported_initially: "Je suis pas sûr que nous puissions considérer le test 1 comme réussi. Le user étudiant de test étant inscrit à aucun cours, il n'est pas possible de s'auto-inscrire à un cours ou de voir un catalogue de cours, donc impossible aussi de faire le test 2."
+severity_initially: major
+note: "dev server initially exited with code 1; resolved by `bun update` (package.json/bun.lock left modified, uncommitted, outside phase scope). Pre-existing defect, not introduced by phase 04. Retest with ordered `db:seed --files` workaround: student enrolled in demo courses OK; durable seeder-order fix landed in 1c79159; user retest passed (migration:fresh --seed, student enrolled without workaround)."
 
 ### 2. Enrolled student downloads an attached file
 expected: After attaching a file via the REPL recipe (uat-recipe below) to published content in a course the student is actively enrolled in, visiting /files/{id}/download as student@edonis.test downloads the file named "UAT notes.txt" containing "hello from UAT". (Recipe writes the blob manually under storage/content_files/ua/; random naming + dedup via the service are covered by automated tests.)
@@ -35,25 +35,29 @@ note: "Unpublished → access denied (HTTP 403 via response.forbidden) but the b
 
 ### 4. CI matrix green on PostgreSQL and MySQL
 expected: After pushing, the CI "Tests (postgres)" and "Tests (mysql)" legs pass, including file_storage_service and files_download specs; phase-04 migrations run on both engines.
-result: [pending]
+result: issue
+reported: "mysql et sqlite : Tests 48 passed (48) mais FAILED — functional: Setup hook cleanup function, \"migration:reset\" failed (mysql: 1763139591301_create_update_courses_table_add_enrollment_fields_table ; sqlite: 1769791152246_create_add_terms_version_to_users_table)"
+severity: major
+note: "Pre-existing, not phase 04 (phase-04 migrations rolled back fine). Fixed in 7119d5e (MySQL: drop FKs before indexes) and 3a86210 (CI seeded the DB before the functional suite, whose migration:reset teardown then failed on SQLite FK checks; seed now runs after tests). Verified locally on throwaway mysql:8.0 and sqlite: 48/48 + reset + migrate + seed. Awaiting CI re-run after push (postgres leg status not yet reported)."
 
 ### 5. Stored files survive a redeploy
 expected: With CONTENT_STORAGE_PATH pointing at a persistent volume, upload/attach a file, redeploy, and the file is still downloadable via /files/{id}/download.
-result: [pending]
+result: skipped
+reason: "No production/staging deployment available yet — only a GitHub repo. Re-test when deploying (Infomaniak) with CONTENT_STORAGE_PATH on persistent storage."
 
 ## Summary
 
 total: 5
-passed: 2
+passed: 3
 issues: 1
-pending: 2
-skipped: 0
+pending: 0
+skipped: 1
 blocked: 0
 
 ## Gaps
 
 - truth: "After `node ace db:seed`, student@edonis.test is actively enrolled in published demo courses and can see them"
-  status: failed
+  status: resolved
   reason: "User reported: student enrolled in no course; no self-enrollment or catalogue reachable, blocks file download tests"
   severity: major
   test: 1
@@ -61,7 +65,14 @@ blocked: 0
   artifacts: [database/seeders/*.ts, config/database.ts]
   missing: ["database/seeders/main/index_seeder.ts calling seeders in dependency order + seeders.paths pointing at it"]
   fixed_in: 1c79159
-  fix_note: "Verified on a fresh SQLite DB: migration:run + db:seed completes in order, student enrolled in demo courses. User retest pending (node ace migration:fresh --seed)." 
+  fix_note: "Verified on a fresh SQLite DB: migration:run + db:seed completes in order, student enrolled in demo courses. User retest passed: migration:fresh --seed → student enrolled without workaround." 
+
+- truth: "CI functional suite passes and tears down cleanly on mysql and sqlite"
+  status: fixed_pending_ci
+  reason: "migration:reset teardown failed on mysql (index needed by FK) and sqlite (seeded data before tests)"
+  severity: major
+  test: 4
+  fixed_in: [7119d5e, 3a86210]
 
 ## Out-of-Scope Observations
 <!-- Pre-existing defects seen during phase-04 UAT; not phase-04 gaps. Route to backlog / owning phase. -->
