@@ -164,17 +164,21 @@ jobs:
         if: matrix.db == 'sqlite'
         run: mkdir -p tmp
 
-      - name: Run database migrations
-        run: node ace migration:run --force
-
-      - name: Run database seeders
-        run: node ace db:seed
-
+      # The functional suite migrates an empty database itself and runs
+      # migration:reset on teardown, so the schema must not be pre-seeded:
+      # rolling back over seeded rows fails (SQLite FK checks on table rebuild).
       - name: Run unit tests
         run: node ace test unit
 
       - name: Run functional tests
         run: node ace test functional
+
+      # Smoke-test migrations and seeders on every engine after the tests
+      - name: Run database migrations
+        run: node ace migration:run --force
+
+      - name: Run database seeders
+        run: node ace db:seed
 
   summary:
     name: CI Summary
