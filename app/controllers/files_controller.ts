@@ -1,5 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { normalize } from 'node:path'
+import { extname, normalize } from 'node:path'
 import ContentFile from '#models/content_file'
 import CourseEnrollment, { type EnrollmentStatus } from '#models/course_enrollment'
 import type Course from '#models/course'
@@ -35,7 +35,9 @@ export default class FilesController {
       return response.notFound({ message: 'File not found' })
     }
 
-    if (!(await this.canDownload(auth.user!, file))) {
+    // The download name is the one attached to the content that grants access
+    const filename = await this.authorizedFilename(auth.user!, file)
+    if (filename === null) {
       return response.forbidden({ message: 'You do not have access to this file' })
     }
 
@@ -52,44 +54,74 @@ export default class FilesController {
     }
 
     response.header('X-Content-Type-Options', 'nosniff')
-    return response.attachment(fullPath, file.filename, 'attachment', true, () => [
+    return response.attachment(fullPath, filename, 'attachment', true, () => [
       'File not found',
       404,
     ])
   }
 
-  private async canDownload(user: User, file: ContentFile): Promise<boolean> {
-    if (await user.hasRole('admin')) {
-      return true
-    }
-
+  /**
+   * Returns the download filename when the user may download the file, or
+   * null when access is denied. The filename comes from the pivot row of the
+   * first content (by id) that grants access, so a user only ever sees the
+   * name used in a course they can access, never another course's name.
+   */
+  private async authorizedFilename(user: User, file: ContentFile): Promise<string | null> {
     const contents = await file
       .related('contents')
       .query()
       .preload('module', (moduleQuery) => moduleQuery.preload('course'))
+      .orderBy('course_contents.id', 'asc')
+
+    if (await user.hasRole('admin')) {
+      return contents.length > 0
+        ? this.pivotFilename(contents[0], file)
+        : this.fallbackFilename(file)
+    }
+
+    // Per-course memo: several contents of one course may share the file
+    const staffByCourse = new Map<number, boolean>()
+    const enrolledByCourse = new Map<number, boolean>()
 
     for (const content of contents) {
       const course = content.module.course
 
-      if (await course.hasPermission(user.id, 'view')) {
-        return true
+      if (!staffByCourse.has(course.id)) {
+        staffByCourse.set(course.id, await course.hasPermission(user.id, 'view'))
+      }
+      if (staffByCourse.get(course.id)) {
+        return this.pivotFilename(content, file)
       }
 
       const allowedStatuses = this.learnerEnrollmentStatuses(course)
-      if (allowedStatuses.length > 0 && (await this.isVisibleToLearners(content))) {
+      if (allowedStatuses.length === 0 || !(await this.isVisibleToLearners(content))) {
+        continue
+      }
+
+      if (!enrolledByCourse.has(course.id)) {
         const enrollment = await CourseEnrollment.query()
           .where('course_id', course.id)
           .where('user_id', user.id)
           .whereIn('status', allowedStatuses)
           .first()
-
-        if (enrollment) {
-          return true
-        }
+        enrolledByCourse.set(course.id, enrollment !== null)
+      }
+      if (enrolledByCourse.get(course.id)) {
+        return this.pivotFilename(content, file)
       }
     }
 
-    return false
+    return null
+  }
+
+  private pivotFilename(content: CourseContent, file: ContentFile): string {
+    const name: unknown = content.$extras.pivot_filename
+    return typeof name === 'string' && name.length > 0 ? name : this.fallbackFilename(file)
+  }
+
+  /** Name for files with no attachment metadata (orphans, admin-only) */
+  private fallbackFilename(file: ContentFile): string {
+    return `file-${file.id}${extname(file.storagePath)}`
   }
 
   /**

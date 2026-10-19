@@ -54,9 +54,7 @@ async function createStoredFile(shard: string) {
   await writeFile(join(storageRoot, shard, name), FILE_BODY)
 
   return ContentFile.create({
-    filename: 'Week 1 notes.txt',
     storagePath: `${shard}/${name}`,
-    mimeType: 'text/plain',
     size: Buffer.byteLength(FILE_BODY),
     checksum: createHash('sha256').update(uniqueSuffix()).digest('hex'),
   })
@@ -64,7 +62,8 @@ async function createStoredFile(shard: string) {
 
 /**
  * Instructor-owned published course with one module, one content linked to
- * a stored file, and an actively enrolled student.
+ * a stored file (or to `overrides.file`, to share one blob between courses)
+ * under `overrides.filename`, and an actively enrolled student.
  */
 async function createCourseWithFile(
   shard: string,
@@ -72,6 +71,8 @@ async function createCourseWithFile(
     contentPublished?: boolean
     enrollmentStatus?: EnrollmentStatus
     courseStatus?: Course['status']
+    file?: ContentFile
+    filename?: string
   } = {}
 ) {
   const instructor = await createUser('instructor')
@@ -98,8 +99,10 @@ async function createCourseWithFile(
     isPublished: overrides.contentPublished ?? true,
   })
 
-  const file = await createStoredFile(shard)
-  await content.related('files').attach([file.id])
+  const file = overrides.file ?? (await createStoredFile(shard))
+  await content.related('files').attach({
+    [file.id]: { filename: overrides.filename ?? 'Week 1 notes.txt', mime_type: 'text/plain' },
+  })
 
   await CourseEnrollment.create({
     userId: student.id,
@@ -180,7 +183,11 @@ test.group('Files - download authorization', (group) => {
     response.assertStatus(200)
   })
 
-  test('admin can download any file, including unlinked ones', async ({ client, route }) => {
+  test('admin can download any file, including unlinked ones', async ({
+    client,
+    route,
+    assert,
+  }) => {
     const admin = await createUser('admin')
     const role = await Role.firstOrCreate({ slug: 'admin' }, { name: 'Administrator' })
     await admin.related('roles').attach([role.id])
@@ -189,6 +196,32 @@ test.group('Files - download authorization', (group) => {
     const response = await client.get(route('files.download', { id: orphan.id })).loginAs(admin)
 
     response.assertStatus(200)
+    assert.include(response.header('content-disposition'), `file-${orphan.id}.txt`)
+  })
+
+  test('a file shared by two courses downloads under each course own filename', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const first = await createCourseWithFile(shard, { filename: 'A internal draft.txt' })
+    const second = await createCourseWithFile(shard, {
+      file: first.file,
+      filename: 'B exam answers.txt',
+    })
+
+    const firstResponse = await client
+      .get(route('files.download', { id: first.file.id }))
+      .loginAs(first.student)
+    const secondResponse = await client
+      .get(route('files.download', { id: first.file.id }))
+      .loginAs(second.student)
+
+    firstResponse.assertStatus(200)
+    assert.include(firstResponse.header('content-disposition'), 'A internal draft.txt')
+    secondResponse.assertStatus(200)
+    assert.include(secondResponse.header('content-disposition'), 'B exam answers.txt')
+    assert.notInclude(secondResponse.header('content-disposition'), 'A internal draft')
   })
 
   test('non-enrolled user is forbidden', async ({ client, route }) => {

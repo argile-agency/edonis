@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url'
 import { cuid } from '@adonisjs/core/helpers'
 import app from '@adonisjs/core/services/app'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import ContentFile from '#models/content_file'
+import ContentFile, { type ContentFileAttachment } from '#models/content_file'
+import type CourseContent from '#models/course_content'
 import env from '#start/env'
 
 /**
@@ -64,8 +65,34 @@ export default class FileStorageService {
   }
 
   /**
-   * Store an uploaded file. If a file with the same checksum already exists,
-   * the existing record is returned and the temp upload is discarded, unless
+   * Store an upload and link it to a content under the upload's own filename
+   * and MIME type (pivot columns). Re-linking the same bytes to the same
+   * content updates that metadata instead of failing.
+   */
+  async storeForContent(content: CourseContent, file: MultipartFile): Promise<ContentFile> {
+    const metadata = this.attachmentMetadata(file)
+    const record = await this.store(file)
+    await content.related('files').sync({ [record.id]: metadata }, false)
+    return record
+  }
+
+  /**
+   * Per-attachment metadata for the content_content_files pivot, bounded to
+   * the column sizes so oversized client values cannot fail the insert.
+   */
+  attachmentMetadata(file: MultipartFile): ContentFileAttachment {
+    const mimeType = file.type && file.subtype ? `${file.type}/${file.subtype}` : ''
+    return {
+      filename: (file.clientName || 'file').slice(0, 255),
+      mime_type: mimeType && mimeType.length <= 100 ? mimeType : 'application/octet-stream',
+    }
+  }
+
+  /**
+   * Store an uploaded file's bytes (no filename/MIME type: those belong to
+   * the attachment, see storeForContent). If a file with the same checksum
+   * already exists, the existing record is returned and the temp upload is
+   * discarded, unless
    * the existing record's blob is missing on disk: then the upload is used to
    * restore it (self-heal), so re-uploading repairs a lost file.
    */
@@ -91,14 +118,7 @@ export default class FileStorageService {
     await file.move(shardDir, { name: storageName, overwrite: false })
 
     try {
-      return await ContentFile.create({
-        filename: file.clientName,
-        storagePath,
-        mimeType:
-          file.type && file.subtype ? `${file.type}/${file.subtype}` : 'application/octet-stream',
-        size: file.size,
-        checksum,
-      })
+      return await ContentFile.create({ storagePath, size: file.size, checksum })
     } catch (error) {
       // Never leave an orphan on disk if the insert failed
       await unlink(join(shardDir, storageName)).catch(() => {})

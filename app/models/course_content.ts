@@ -105,6 +105,8 @@ export default class CourseContent extends BaseModel {
     pivotForeignKey: 'course_content_id',
     relatedKey: 'id',
     pivotRelatedForeignKey: 'content_file_id',
+    // Per-attachment filename/MIME type (see ContentFileAttachment)
+    pivotColumns: ['filename', 'mime_type'],
     pivotTimestamps: true,
   })
   declare files: ManyToMany<typeof ContentFile>
