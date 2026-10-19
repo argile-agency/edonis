@@ -350,4 +350,167 @@ test.group('Files - download authorization', (group) => {
 
     response.assertStatus(400)
   })
+
+  test('storage paths escaping or equal to the root are rejected by containment', async ({
+    client,
+    route,
+  }) => {
+    const { instructor, file } = await createCourseWithFile(shard)
+
+    // None of these contain "../" so they get past the regex fast path
+    for (const storagePath of ['..', 'ab/..', '.', '/etc/passwd']) {
+      file.storagePath = storagePath
+      await file.save()
+
+      const response = await client
+        .get(route('files.download', { id: file.id }))
+        .loginAs(instructor)
+
+      response.assertStatus(400)
+    }
+  })
+
+  test('Windows absolute and directory storage paths never serve content', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { instructor, file } = await createCourseWithFile(shard)
+
+    // C:\... is absolute on Windows (400) and a missing relative name
+    // inside the root elsewhere (404); "ab" is the shard directory itself.
+    for (const storagePath of ['C:\\Windows\\win.ini', 'ab']) {
+      file.storagePath = storagePath
+      await file.save()
+
+      const response = await client
+        .get(route('files.download', { id: file.id }))
+        .loginAs(instructor)
+
+      assert.oneOf(response.status(), [400, 404], `storagePath ${storagePath}`)
+    }
+  })
+})
+
+test.group('Files - learner availability rules', (group) => {
+  const shard = 'cd'
+
+  group.each.setup(async () => {
+    storageRoot = await mkdtemp(join(tmpdir(), 'edonis-content-files-'))
+    const previousStoragePath = env.get('CONTENT_STORAGE_PATH')
+    env.set('CONTENT_STORAGE_PATH', storageRoot)
+
+    const cleanupDb = await testUtils.db().withGlobalTransaction()
+    return async () => {
+      await cleanupDb()
+      env.set('CONTENT_STORAGE_PATH', previousStoragePath ?? '')
+      await rm(storageRoot, { recursive: true, force: true })
+    }
+  })
+
+  test('unpublished module is forbidden', async ({ client, route }) => {
+    const { student, module, file } = await createCourseWithFile(shard)
+    module.isPublished = false
+    await module.save()
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(403)
+  })
+
+  test('content outside its availability window is forbidden', async ({ client, route }) => {
+    const future = await createCourseWithFile(shard)
+    future.content.availableFrom = DateTime.now().plus({ days: 1 })
+    await future.content.save()
+
+    const past = await createCourseWithFile(shard)
+    past.content.availableUntil = DateTime.now().minus({ days: 1 })
+    await past.content.save()
+
+    const futureResponse = await client
+      .get(route('files.download', { id: future.file.id }))
+      .loginAs(future.student)
+    const pastResponse = await client
+      .get(route('files.download', { id: past.file.id }))
+      .loginAs(past.student)
+
+    futureResponse.assertStatus(403)
+    pastResponse.assertStatus(403)
+  })
+
+  test('module or parent module outside its availability window is forbidden', async ({
+    client,
+    route,
+  }) => {
+    const ownWindow = await createCourseWithFile(shard)
+    ownWindow.module.availableUntil = DateTime.now().minus({ days: 1 })
+    await ownWindow.module.save()
+
+    const parentWindow = await createCourseWithFile(shard)
+    const parent = await CourseModule.create({
+      courseId: parentWindow.course.id,
+      title: 'Opens next week',
+      isPublished: true,
+      availableFrom: DateTime.now().plus({ days: 7 }),
+    })
+    parentWindow.module.parentId = parent.id
+    await parentWindow.module.save()
+
+    const ownResponse = await client
+      .get(route('files.download', { id: ownWindow.file.id }))
+      .loginAs(ownWindow.student)
+    const parentResponse = await client
+      .get(route('files.download', { id: parentWindow.file.id }))
+      .loginAs(parentWindow.student)
+
+    ownResponse.assertStatus(403)
+    parentResponse.assertStatus(403)
+  })
+
+  test('content inside its availability window is downloadable', async ({ client, route }) => {
+    const { student, content, file } = await createCourseWithFile(shard)
+    content.availableFrom = DateTime.now().minus({ days: 1 })
+    content.availableUntil = DateTime.now().plus({ days: 1 })
+    await content.save()
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(200)
+  })
+
+  test('completed enrollment on a published course can download', async ({ client, route }) => {
+    const { student, file } = await createCourseWithFile(shard, { enrollmentStatus: 'completed' })
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(200)
+  })
+
+  test('expired and pending enrollments are forbidden', async ({ client, route }) => {
+    for (const enrollmentStatus of ['expired', 'pending'] as const) {
+      const { student, file } = await createCourseWithFile(shard, { enrollmentStatus })
+
+      const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+      response.assertStatus(403)
+    }
+  })
+
+  test('file shared with a course granting nothing is served through the second course', async ({
+    client,
+    route,
+  }) => {
+    const hidden = await createCourseWithFile(shard, { courseStatus: 'draft' })
+    const open = await createCourseWithFile(shard, { file: hidden.file })
+
+    const hiddenStudent = await client
+      .get(route('files.download', { id: hidden.file.id }))
+      .loginAs(hidden.student)
+    const openStudent = await client
+      .get(route('files.download', { id: hidden.file.id }))
+      .loginAs(open.student)
+
+    hiddenStudent.assertStatus(403)
+    openStudent.assertStatus(200)
+  })
 })
