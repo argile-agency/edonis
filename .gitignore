@@ -43,3 +43,7 @@ public/uploads/*
 tmp/*.sqlite3
 tmp/*.sqlite3-wal
 tmp/*.sqlite3-shm
+
+# Course content file storage (outside webroot; keep directory via .gitkeep)
+storage/content_files/*
+!storage/content_files/.gitkeep
