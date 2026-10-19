@@ -1,11 +1,13 @@
 import { createHash } from 'node:crypto'
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { mkdir, stat, unlink } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, posix, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { cuid } from '@adonisjs/core/helpers'
 import app from '@adonisjs/core/services/app'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import ContentFile from '#models/content_file'
+import env from '#start/env'
 
 /**
  * Detects path traversal sequences (../ or ..\) in a relative storage path.
@@ -18,16 +20,46 @@ export const PATH_TRAVERSAL_REGEX = /\.\.[\\/]/
 const SAFE_EXTNAME_REGEX = /^[a-z0-9]{1,16}$/i
 
 /**
+ * Project root used to anchor the content storage directory.
+ *
+ * In development and tests this is the application root. When the app runs
+ * from the compiled output (`cd build && node bin/server.js`), the
+ * application root is `build/`, which `node ace build` empties on every
+ * build. In that case anchor on the source checkout that contains `build/`
+ * so uploaded files survive a rebuild.
+ */
+export function projectRoot(): string {
+  const appRoot = fileURLToPath(app.appRoot)
+  const parent = dirname(appRoot)
+  if (basename(appRoot) === 'build' && existsSync(join(parent, 'adonisrc.ts'))) {
+    return parent
+  }
+  return appRoot
+}
+
+/**
+ * Root directory for content blobs.
+ *
+ * `CONTENT_STORAGE_PATH` (absolute, or relative to the project root) wins;
+ * otherwise `<project root>/storage/content_files`. Production deployments
+ * should set it to a persistent volume.
+ */
+export function resolveContentStorageRoot(): string {
+  const configured = env.get('CONTENT_STORAGE_PATH')
+  return resolve(projectRoot(), configured || join('storage', 'content_files'))
+}
+
+/**
  * Stores course content files outside the webroot, deduplicated by SHA-256.
  *
- * Layout: storage/content_files/{first 2 hex chars of checksum}/{cuid}.{ext}
+ * Layout: {storage root}/{first 2 hex chars of checksum}/{cuid}.{ext}
  * The DB stores only the relative path (POSIX separators), so the storage
  * root can move without a data migration.
  */
 export default class FileStorageService {
   readonly basePath: string
 
-  constructor(basePath: string = app.makePath('storage/content_files')) {
+  constructor(basePath: string = resolveContentStorageRoot()) {
     this.basePath = resolve(basePath)
   }
 

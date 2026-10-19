@@ -2,11 +2,13 @@ import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import app from '@adonisjs/core/services/app'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
-import FileStorageService from '#services/file_storage_service'
+import FileStorageService, { resolveContentStorageRoot } from '#services/file_storage_service'
 import ContentFile from '#models/content_file'
+import env from '#start/env'
 
 function uniqueSuffix() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
@@ -45,7 +47,7 @@ test.group('FileStorageService', (group) => {
   let tmpDir: string
 
   group.each.setup(async () => {
-    const root = app.makePath('tmp', `file-storage-test-${uniqueSuffix()}`)
+    const root = await mkdtemp(join(tmpdir(), 'edonis-file-storage-'))
     basePath = join(root, 'content_files')
     tmpDir = join(root, 'uploads')
     await mkdir(tmpDir, { recursive: true })
@@ -152,5 +154,35 @@ test.group('FileStorageService', (group) => {
     assert.isNull(service.resolvePath('/etc/passwd'))
     assert.isNull(service.resolvePath(''))
     assert.equal(service.resolvePath('ab/file.pdf'), join(basePath, 'ab', 'file.pdf'))
+  })
+})
+
+test.group('FileStorageService - storage root', (group) => {
+  let previous: string | undefined
+
+  group.each.setup(() => {
+    previous = env.get('CONTENT_STORAGE_PATH')
+    return () => env.set('CONTENT_STORAGE_PATH', previous ?? '')
+  })
+
+  test('defaults to storage/content_files under the project root', ({ assert }) => {
+    env.set('CONTENT_STORAGE_PATH', '')
+
+    assert.equal(resolveContentStorageRoot(), app.makePath('storage', 'content_files'))
+    assert.equal(new FileStorageService().basePath, app.makePath('storage', 'content_files'))
+  })
+
+  test('honours an absolute CONTENT_STORAGE_PATH', ({ assert }) => {
+    const absolute = join(tmpdir(), 'edonis-configured-root')
+    env.set('CONTENT_STORAGE_PATH', absolute)
+
+    assert.equal(resolveContentStorageRoot(), absolute)
+    assert.equal(new FileStorageService().basePath, absolute)
+  })
+
+  test('resolves a relative CONTENT_STORAGE_PATH against the project root', ({ assert }) => {
+    env.set('CONTENT_STORAGE_PATH', 'var/files')
+
+    assert.equal(resolveContentStorageRoot(), app.makePath('var', 'files'))
   })
 })

@@ -61,4 +61,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   TERMS_VERSION: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Course content file storage root (absolute, or relative to
+  | the project root). Defaults to <project>/storage/content_files.
+  | Set it to a persistent location in production.
+  |----------------------------------------------------------
+  */
+  CONTENT_STORAGE_PATH: Env.schema.string.optional(),
 })

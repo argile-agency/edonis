@@ -13,6 +13,7 @@ Developer reference for issues commonly encountered when deploying this app on *
   ```
 - **`.env` location**: AdonisJS resolves its app root from `import.meta.url`, so the runtime reads `build/.env`. The build command copies the root `.env` into `build/` because `build/` is regenerated on every deploy.
 - **Mandatory `.env` values**: `HOST=0.0.0.0` (k8s pod — loopback unreachable), `PORT=3333` (matches *Port d'écoute*), `DB_CONNECTION=mysql`, plus `APP_KEY`, `SESSION_DRIVER`, `DB_HOST/PORT/USER/PASSWORD/DATABASE`.
+- **Course content files**: set `CONTENT_STORAGE_PATH` to an absolute path on persistent storage. The default (`<project>/storage/content_files`, resolved outside `build/` even when running from it) survives `npm run build`, but not a redeploy that replaces the checkout or the pod filesystem.
 
 ## Issues encountered
 

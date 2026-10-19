@@ -1,7 +1,8 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
-import app from '@adonisjs/core/services/app'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 import User from '#models/user'
@@ -12,6 +13,8 @@ import CourseContent from '#models/course_content'
 import CourseEnrollment, { type EnrollmentStatus } from '#models/course_enrollment'
 import CoursePermission from '#models/course_permission'
 import ContentFile from '#models/content_file'
+import FileStorageService from '#services/file_storage_service'
+import env from '#start/env'
 
 /**
  * Unique suffix so fixtures never collide with seeded rows or each other.
@@ -36,13 +39,19 @@ async function createUser(prefix: string) {
 const FILE_BODY = 'Lecture notes: week 1'
 
 /**
- * Real file on disk under storage/content_files/<shard>/ so the download
- * path is exercised end-to-end. Shard dir is removed in teardown.
+ * Per-test temporary storage root, wired into FilesController through
+ * CONTENT_STORAGE_PATH so tests never write into the real storage folder.
+ */
+let storageRoot: string
+
+/**
+ * Real file on disk under <storageRoot>/<shard>/ so the download path is
+ * exercised end-to-end. The storage root is removed in teardown.
  */
 async function createStoredFile(shard: string) {
   const name = `${uniqueSuffix()}.txt`
-  await mkdir(app.makePath('storage/content_files', shard), { recursive: true })
-  await writeFile(app.makePath('storage/content_files', shard, name), FILE_BODY)
+  await mkdir(join(storageRoot, shard), { recursive: true })
+  await writeFile(join(storageRoot, shard, name), FILE_BODY)
 
   return ContentFile.create({
     filename: 'Week 1 notes.txt',
@@ -106,12 +115,21 @@ test.group('Files - download authorization', (group) => {
   let shard: string
 
   group.each.setup(async () => {
-    shard = `test-${uniqueSuffix()}`
+    shard = 'ab'
+    storageRoot = await mkdtemp(join(tmpdir(), 'edonis-content-files-'))
+    const previousStoragePath = env.get('CONTENT_STORAGE_PATH')
+    env.set('CONTENT_STORAGE_PATH', storageRoot)
+
     const cleanupDb = await testUtils.db().withGlobalTransaction()
     return async () => {
       await cleanupDb()
-      await rm(app.makePath('storage/content_files', shard), { recursive: true, force: true })
+      env.set('CONTENT_STORAGE_PATH', previousStoragePath ?? '')
+      await rm(storageRoot, { recursive: true, force: true })
     }
+  })
+
+  test('serves files from the configured storage root', ({ assert }) => {
+    assert.equal(new FileStorageService().basePath, resolve(storageRoot))
   })
 
   test('unauthenticated user is redirected to login', async ({ client, route }) => {
