@@ -76,6 +76,8 @@
     "@adonisjs/shield": "^8.2.0",
     "@adonisjs/static": "^1.1.1",
     "@adonisjs/vite": "^4.0.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.1",
     "@inertiajs/react": "^2.3.29",
     "@radix-ui/react-alert-dialog": "^1.2.1",
     "@radix-ui/react-avatar": "^1.3.1",

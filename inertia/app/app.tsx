@@ -1,6 +1,9 @@
 /// <reference path="../../adonisrc.ts" />
 /// <reference path="../../config/inertia.ts" />
 
+// Self-hosted fonts, bundled by Vite (no third-party font CDN)
+import '@fontsource-variable/inter'
+import '@fontsource-variable/source-serif-4'
 import '../css/app.css'
 import { hydrateRoot } from 'react-dom/client'
 import { createInertiaApp } from '@inertiajs/react'
