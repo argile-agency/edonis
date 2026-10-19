@@ -17,8 +17,8 @@ export default class FilesController {
    * Authorized when the user is an admin, or for at least one course
    * content referencing the file:
    * - the user is course staff (owner or course_permission >= view), or
-   * - the user is enrolled (active/completed) and the content and its
-   *   module are published and currently available.
+   * - the user is enrolled (active/completed) and the content, its module
+   *   and every ancestor module are published and currently available.
    * Files not linked to any content are admin-only.
    */
   async download({ params, response, auth }: HttpContext) {
@@ -72,7 +72,7 @@ export default class FilesController {
         return true
       }
 
-      if (this.isVisibleToLearners(content)) {
+      if (await this.isVisibleToLearners(content)) {
         const enrollment = await CourseEnrollment.query()
           .where('course_id', course.id)
           .where('user_id', user.id)
@@ -88,7 +88,12 @@ export default class FilesController {
     return false
   }
 
-  private isVisibleToLearners(content: CourseContent): boolean {
-    return content.isAvailable() && content.module.isAvailable()
+  /**
+   * Content is visible to learners when it is available and its module and
+   * every ancestor module are available (an unpublished parent hides its
+   * whole subtree, as in the learner player).
+   */
+  private async isVisibleToLearners(content: CourseContent): Promise<boolean> {
+    return content.isAvailable() && (await content.module.isEffectivelyAvailable())
   }
 }

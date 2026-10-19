@@ -95,7 +95,7 @@ async function createCourseWithFile(
     enrolledAt: DateTime.now(),
   })
 
-  return { instructor, student, course, content, file }
+  return { instructor, student, course, module, content, file }
 }
 
 test.group('Files - download authorization', (group) => {
@@ -184,6 +184,42 @@ test.group('Files - download authorization', (group) => {
     const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
 
     response.assertStatus(403)
+  })
+
+  test('content in a child module of an unpublished parent is forbidden', async ({
+    client,
+    route,
+  }) => {
+    const { student, course, module, file } = await createCourseWithFile(shard)
+    const parent = await CourseModule.create({
+      courseId: course.id,
+      title: 'Hidden section',
+      isPublished: false,
+    })
+    module.parentId = parent.id
+    await module.save()
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(403)
+  })
+
+  test('content in a child module of a published parent is downloadable', async ({
+    client,
+    route,
+  }) => {
+    const { student, course, module, file } = await createCourseWithFile(shard)
+    const parent = await CourseModule.create({
+      courseId: course.id,
+      title: 'Visible section',
+      isPublished: true,
+    })
+    module.parentId = parent.id
+    await module.save()
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(200)
   })
 
   test('suspended enrollment is forbidden', async ({ client, route }) => {

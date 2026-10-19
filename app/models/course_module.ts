@@ -84,6 +84,36 @@ export default class CourseModule extends BaseModel {
     return true
   }
 
+  /**
+   * Whether learners can reach this module: it and every ancestor module must
+   * be available. Unpublishing (or scheduling) a parent hides its whole
+   * subtree in the learner player, so access checks must follow the same
+   * rule. Fails closed on a missing ancestor or a parent_id cycle.
+   */
+  public async isEffectivelyAvailable(): Promise<boolean> {
+    const visited = new Set<number>()
+    let current: CourseModule | null = this
+
+    while (current) {
+      if (visited.has(current.id) || !current.isAvailable()) {
+        return false
+      }
+      visited.add(current.id)
+
+      if (!current.parentId) {
+        return true
+      }
+
+      current = await CourseModule.query()
+        .where('id', current.parentId)
+        .where('course_id', this.courseId)
+        .first()
+    }
+
+    // parent_id points to a missing module (or one in another course)
+    return false
+  }
+
   public async getDepth(): Promise<number> {
     if (!this.parentId) {
       return 0
