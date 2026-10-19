@@ -1,9 +1,9 @@
 ---
-status: partial
+status: complete
 phase: 04-content-foundation
 source: [04-01-SUMMARY.md, 04-REVIEW.md, 04-HUMAN-UAT.md]
 started: 2026-10-19T11:54:58Z
-updated: 2026-10-19T15:51:11Z
+updated: 2026-10-19T16:19:25Z
 ---
 
 ## Current Test
@@ -30,9 +30,8 @@ note: "Unpublished → access denied (HTTP 403 via response.forbidden) but the b
 
 ### 4. CI matrix green on PostgreSQL and MySQL
 expected: After pushing, the CI "Tests (postgres)" and "Tests (mysql)" legs pass, including file_storage_service and files_download specs; phase-04 migrations run on both engines.
-result: blocked
-blocked_by: other
-blocked_reason: "Set aside by user: previous CI run stuck (mysql/sqlite jobs hung after teardown failure, cannot cancel without force-cancel API). Re-run CI after pushing 7119d5e, 3a86210, e810af8."
+result: pass
+note: "CI run on push of e4f777d (includes fixes 7119d5e, 3a86210, e810af8): Tests (mysql) 13m01s, Tests (postgres) 12m56s, Tests (sqlite) 1m28s, Lint & Type Check, Build, Security Audit, CI Summary all green. Job timeout raised 15→30 min afterwards (runners slow on this run)."
 reported_initially: "mysql et sqlite : Tests 48 passed (48) mais FAILED — functional: Setup hook cleanup function, \"migration:reset\" failed (mysql: 1763139591301_create_update_courses_table_add_enrollment_fields_table ; sqlite: 1769791152246_create_add_terms_version_to_users_table)"
 severity: major
 note: "Pre-existing, not phase 04 (phase-04 migrations rolled back fine). Fixed in 7119d5e (MySQL: drop FKs before indexes) and 3a86210 (CI seeded the DB before the functional suite, whose migration:reset teardown then failed on SQLite FK checks; seed now runs after tests). Verified locally on throwaway mysql:8.0 and sqlite: 48/48 + reset + migrate + seed. Awaiting CI re-run after push (postgres leg status not yet reported)."
@@ -45,11 +44,11 @@ reason: "No production/staging deployment available yet — only a GitHub repo. 
 ## Summary
 
 total: 5
-passed: 3
+passed: 4
 issues: 0
 pending: 0
 skipped: 1
-blocked: 1
+blocked: 0
 
 ## Gaps
 
@@ -65,7 +64,7 @@ blocked: 1
   fix_note: "Verified on a fresh SQLite DB: migration:run + db:seed completes in order, student enrolled in demo courses. User retest passed: migration:fresh --seed → student enrolled without workaround." 
 
 - truth: "CI functional suite passes and tears down cleanly on mysql and sqlite"
-  status: fixed_pending_ci
+  status: resolved
   reason: "migration:reset teardown failed on mysql (index needed by FK) and sqlite (seeded data before tests)"
   severity: major
   test: 4

@@ -3,7 +3,7 @@ status: partial
 phase: 01-code-health-baseline
 source: [01-VERIFICATION.md]
 started: 2026-10-13T00:00:00Z
-updated: 2026-10-13T00:00:00Z
+updated: 2026-10-19T16:19:25Z
 ---
 
 ## Current Test
@@ -14,7 +14,8 @@ updated: 2026-10-13T00:00:00Z
 
 ### 1. CI green on a real PR
 expected: Open a PR against `main`; all `ci.yml` jobs pass, including `Tests (postgres)`, `Tests (mysql)` and `Tests (sqlite)`. Note the database each leg used, whether the empty `image:` service expression on the sqlite leg is harmless, and that the job-level `SESSION_DRIVER=memory` wins over `.env.test`.
-result: [pending]
+result: pass
+note: "Verified 2026-10-19 on a push run (not a PR) of e4f777d: all ci.yml jobs green incl. Tests (postgres|mysql|sqlite). First real CI run exposed two pre-existing teardown failures, fixed in 7119d5e (MySQL rollback FK/index order) and 3a86210 (functional tests now run on an unseeded DB). sqlite leg with empty image: expression ran fine."
 
 ### 2. CI goes red when it should
 expected: On a scratch branch cut from the green branch (PR against `main`), add `export const x = {} as any` under `app/` and flip the 403 assertion in `tests/functional/grades.spec.ts` to 200. The lint job and every `Tests (...)` leg fail and the run is red. Close the PR unmerged and delete the branch.
@@ -27,9 +28,9 @@ result: [pending]
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
-pending: 3
+pending: 2
 skipped: 0
 blocked: 0
 
