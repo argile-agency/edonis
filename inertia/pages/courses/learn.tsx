@@ -71,6 +71,12 @@ interface Props {
   menus: any
 }
 
+/** CSRF token from the XSRF-TOKEN cookie set by Shield, for fetch() calls */
+function xsrfToken(): string {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
 export default function LearnCourse({
   course,
   modules,
@@ -107,12 +113,20 @@ export default function LearnCourse({
       if (currentContent && progress?.status !== 'completed') {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000)
         if (timeSpent > 0 && timeSpent % 30 === 0) {
-          // Send progress update every 30 seconds
-          router.post(
-            `/contents/${currentContent.id}/progress`,
-            { timeSpent: 30 },
-            { preserveState: true, preserveScroll: true }
-          )
+          // Send progress update every 30 seconds. The endpoint answers JSON,
+          // so use fetch: an Inertia visit would reject a non-Inertia response.
+          fetch(`/contents/${currentContent.id}/progress`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-XSRF-TOKEN': xsrfToken(),
+            },
+            body: JSON.stringify({ timeSpent: 30 }),
+          }).catch(() => {
+            // Background heartbeat: a missed beat only under-counts time spent
+          })
         }
       }
     }, 1000)
