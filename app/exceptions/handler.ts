@@ -55,6 +55,11 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * Database connection errors bypass this entirely (see handle()).
    */
   protected statusPages: Record<StatusPageRange, StatusPageRenderer> = {
+    // JSON clients keep a JSON body; browsers and Inertia visits get the page
+    '403': (error, { inertia, request, response }) =>
+      request.accepts(['html', 'json']) === 'json'
+        ? response.forbidden({ message: error.message })
+        : inertia.render('errors/forbidden', { error }),
     '404': (error, { inertia }) => inertia.render('errors/not_found', { error }),
     '429': (error, { inertia }) =>
       inertia.render('errors/too_many_requests', {

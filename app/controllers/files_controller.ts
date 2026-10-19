@@ -1,4 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import { Exception } from '@adonisjs/core/exceptions'
 import { extname, normalize } from 'node:path'
 import ContentFile from '#models/content_file'
 import CourseEnrollment, { type EnrollmentStatus } from '#models/course_enrollment'
@@ -27,18 +28,22 @@ export default class FilesController {
   async download({ params, response, auth }: HttpContext) {
     const id = Number(params.id)
     if (!Number.isSafeInteger(id) || id <= 0) {
-      return response.notFound({ message: 'File not found' })
+      throw new Exception('File not found', { status: 404, code: 'E_FILE_NOT_FOUND' })
     }
 
     const file = await ContentFile.find(id)
     if (!file) {
-      return response.notFound({ message: 'File not found' })
+      throw new Exception('File not found', { status: 404, code: 'E_FILE_NOT_FOUND' })
     }
 
     // The download name is the one attached to the content that grants access
     const filename = await this.authorizedFilename(auth.user!, file)
     if (filename === null) {
-      return response.forbidden({ message: 'You do not have access to this file' })
+      // Thrown so the exception handler renders the 403 page for browsers
+      throw new Exception('You do not have access to this file', {
+        status: 403,
+        code: 'E_FILE_ACCESS_DENIED',
+      })
     }
 
     // Security: prevent path traversal. The regex is a fast reject; resolvePath

@@ -233,6 +233,27 @@ test.group('Files - download authorization', (group) => {
     response.assertStatus(403)
   })
 
+  test('denial renders the 403 page for browsers and JSON for API clients', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { file } = await createCourseWithFile(shard)
+    const outsider = await createUser('outsider')
+    const url = route('files.download', { id: file.id })
+
+    const inertiaResponse = await client.get(url).loginAs(outsider).withInertia()
+    inertiaResponse.assertStatus(403)
+    inertiaResponse.assertInertiaComponent('errors/forbidden')
+
+    const jsonResponse = await client
+      .get(url)
+      .loginAs(outsider)
+      .header('accept', 'application/json')
+    jsonResponse.assertStatus(403)
+    assert.equal(jsonResponse.body().message, 'You do not have access to this file')
+  })
+
   test('enrolled student cannot download unpublished content', async ({ client, route }) => {
     const { student, file } = await createCourseWithFile(shard, { contentPublished: false })
 
