@@ -54,7 +54,8 @@ interface CourseModule {
   title: string
   description: string | null
   isPublished: boolean
-  children: CourseModule[]
+  // The learn controller preloads two levels: sub-modules arrive without `children`
+  children?: CourseModule[]
   contents: CourseContent[]
 }
 
@@ -98,7 +99,7 @@ export default function LearnCourse({
         if (module.contents.some((c) => c.id === currentContent.id)) {
           setExpandedModules((prev) => new Set(prev).add(module.id))
         }
-        module.children.forEach((child) => {
+        ;(module.children ?? []).forEach((child) => {
           if (child.contents.some((c) => c.id === currentContent.id)) {
             setExpandedModules((prev) => new Set(prev).add(module.id).add(child.id))
           }
@@ -186,7 +187,7 @@ export default function LearnCourse({
     const allContents: CourseContent[] = []
     modules.forEach((module) => {
       module.contents.forEach((content) => allContents.push(content))
-      module.children.forEach((child) => {
+      ;(module.children ?? []).forEach((child) => {
         child.contents.forEach((content) => allContents.push(content))
       })
     })
@@ -209,7 +210,8 @@ export default function LearnCourse({
 
   const renderModule = (module: CourseModule, depth: number = 0) => {
     const isExpanded = expandedModules.has(module.id)
-    const hasChildren = module.children.length > 0 || module.contents.length > 0
+    const children = module.children ?? []
+    const hasChildren = children.length > 0 || module.contents.length > 0
 
     return (
       <div key={module.id}>
@@ -254,7 +256,7 @@ export default function LearnCourse({
               </button>
             ))}
 
-            {module.children.map((child) => renderModule(child, depth + 1))}
+            {children.map((child) => renderModule(child, depth + 1))}
           </>
         )}
       </div>
