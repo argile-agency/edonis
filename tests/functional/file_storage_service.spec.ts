@@ -21,12 +21,17 @@ function uniqueSuffix() {
 /**
  * Minimal stand-in for a bodyparser MultipartFile: a temp file on disk plus
  * the metadata and `move()` behaviour FileStorageService relies on.
+ *
+ * Like MultipartFile.move, `overwrite: false` refuses to replace an existing
+ * target. `beforeMove` lets a test simulate a concurrent writer that creates
+ * the target between the service's checks and the move.
  */
 async function fakeUpload(
   tmpDir: string,
   content: string,
   clientName: string,
-  extname: string | undefined = clientName.split('.').pop()
+  extname: string | undefined = clientName.split('.').pop(),
+  hooks: { beforeMove?: (target: string) => Promise<void> } = {}
 ) {
   const tmpPath = join(tmpDir, `upload-${uniqueSuffix()}`)
   await writeFile(tmpPath, content)
@@ -38,12 +43,40 @@ async function fakeUpload(
     type: 'application',
     subtype: 'pdf',
     size: Buffer.byteLength(content),
-    async move(location: string, options: { name: string }) {
-      await rename(tmpPath, join(location, options.name))
+    async move(location: string, options: { name: string; overwrite?: boolean }) {
+      const target = join(location, options.name)
+      await hooks.beforeMove?.(target)
+      if (options.overwrite === false && existsSync(target)) {
+        throw new Error(`Cannot move file: "${target}" already exists`)
+      }
+      await rename(tmpPath, target)
     },
   }
 
   return file as unknown as MultipartFile
+}
+
+/**
+ * Temporarily replace ContentFile.create. Returns a restore function that
+ * puts back the original (inherited) static method.
+ */
+function stubContentFileCreate(
+  impl: (values: Pick<ContentFile, 'storagePath' | 'size' | 'checksum'>) => Promise<ContentFile>
+) {
+  const ownDescriptor = Object.getOwnPropertyDescriptor(ContentFile, 'create')
+  Object.defineProperty(ContentFile, 'create', {
+    value: impl,
+    configurable: true,
+    writable: true,
+  })
+
+  return () => {
+    if (ownDescriptor) {
+      Object.defineProperty(ContentFile, 'create', ownDescriptor)
+    } else {
+      Reflect.deleteProperty(ContentFile, 'create')
+    }
+  }
 }
 
 /**
@@ -202,6 +235,105 @@ test.group('FileStorageService', (group) => {
     )
 
     assert.match(record.storagePath, /\.bin$/)
+  })
+
+  /*
+   * Race recovery. The concurrent winner is simulated by a ContentFile.create
+   * stub that inserts the winning row and then throws. A synthetic error is
+   * used instead of a real unique-constraint violation: inside the shared
+   * test transaction a real violation would abort the transaction on
+   * PostgreSQL and make the follow-up lookup fail, while passing on SQLite.
+   * In production store() runs outside any transaction (autocommit), where
+   * the real violation leaves the connection usable.
+   */
+  test('losing a concurrent insert removes the moved blob and returns the winner', async ({
+    assert,
+  }) => {
+    const service = new FileStorageService(basePath)
+    let winner: ContentFile | undefined
+    let loserBlob = ''
+
+    const restore = stubContentFileCreate(async (values) => {
+      loserBlob = join(basePath, values.storagePath)
+      winner = new ContentFile()
+      winner.merge({ ...values, storagePath: 'zz/winner.pdf' })
+      await winner.save()
+      throw Object.assign(new Error('duplicate key value violates unique constraint'), {
+        code: '23505',
+      })
+    })
+
+    try {
+      const result = await service.store(
+        await fakeUpload(tmpDir, `race-${uniqueSuffix()}`, 'loser.pdf')
+      )
+
+      assert.equal(result.id, winner!.id)
+      assert.equal(result.storagePath, 'zz/winner.pdf')
+      assert.isNotEmpty(loserBlob)
+      assert.isFalse(existsSync(loserBlob))
+    } finally {
+      restore()
+    }
+  })
+
+  test('a failed insert with no winner removes the blob and rethrows', async ({ assert }) => {
+    const service = new FileStorageService(basePath)
+    let movedBlob = ''
+
+    const restore = stubContentFileCreate(async (values) => {
+      movedBlob = join(basePath, values.storagePath)
+      throw new Error('insert failed')
+    })
+
+    try {
+      const upload = await fakeUpload(tmpDir, `fail-${uniqueSuffix()}`, 'x.pdf')
+      await assert.rejects(async () => {
+        await service.store(upload)
+      }, /insert failed/)
+      assert.isNotEmpty(movedBlob)
+      assert.isFalse(existsSync(movedBlob))
+    } finally {
+      restore()
+    }
+  })
+
+  test('never overwrites an existing blob on a storage name collision', async ({ assert }) => {
+    const service = new FileStorageService(basePath)
+    const bytes = `collision-${uniqueSuffix()}`
+    let occupied = ''
+
+    const upload = await fakeUpload(tmpDir, bytes, 'new.pdf', undefined, {
+      beforeMove: async (target) => {
+        occupied = target
+        await writeFile(target, 'someone else')
+      },
+    })
+
+    await assert.rejects(async () => {
+      await service.store(upload)
+    }, /already exists/)
+    assert.equal(await readFile(occupied, 'utf8'), 'someone else')
+    const checksum = await service.computeChecksum(upload.tmpPath!)
+    assert.isNull(await ContentFile.findBy('checksum', checksum))
+  })
+
+  test('a concurrent self-heal of the same blob is accepted', async ({ assert }) => {
+    const service = new FileStorageService(basePath)
+    const bytes = `concurrent-heal-${uniqueSuffix()}`
+
+    const first = await service.store(await fakeUpload(tmpDir, bytes, 'a.pdf'))
+    await rm(service.getFullPath(first))
+
+    // Another request restores the blob between our existence check and move
+    const upload = await fakeUpload(tmpDir, bytes, 'a.pdf', undefined, {
+      beforeMove: (target) => writeFile(target, bytes),
+    })
+    const healed = await service.store(upload)
+
+    assert.equal(healed.id, first.id)
+    assert.equal(await readFile(service.getFullPath(healed), 'utf8'), bytes)
+    assert.isFalse(existsSync(upload.tmpPath!))
   })
 
   test('resolvePath rejects traversal and absolute paths', ({ assert }) => {
