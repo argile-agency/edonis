@@ -79,6 +79,8 @@ blocked: 1
   reported: "All Inertia requests must receive a valid Inertia response, however a plain JSON response was received. {\"success\":true,\"progress\":{...}}" — appears after ~30s on CS101 learn view
   cause: "30s heartbeat uses Inertia router.post() against an endpoint that returns plain JSON; should use fetch/axios with CSRF token (or the endpoint should redirect back). Phase 02-10 gates this route but does not fix the client call."
   severity: major
+  fixed_in: 64dfbc5
+  fix_note: "Heartbeat now uses fetch() with X-XSRF-TOKEN from Shield's XSRF-TOKEN cookie. Verified against a live server on a throwaway SQLite DB: with token → 200 JSON and timeSpent recorded; without token → CSRF rejection (302). User browser retest pending." 
 - id: OBS-02
   where: CS101 learn view, section "Concepts fondamentaux"
   reported: "La section cause une page blanche qui force à recharger la page"
