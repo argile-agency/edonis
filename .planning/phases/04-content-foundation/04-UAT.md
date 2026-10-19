@@ -1,19 +1,14 @@
 ---
-status: testing
+status: partial
 phase: 04-content-foundation
 source: [04-01-SUMMARY.md, 04-REVIEW.md, 04-HUMAN-UAT.md]
 started: 2026-10-19T11:54:58Z
-updated: 2026-10-19T15:35:18Z
+updated: 2026-10-19T15:51:11Z
 ---
 
 ## Current Test
-<!-- OVERWRITE each test - shows where we are -->
 
-number: 4
-name: CI matrix green on PostgreSQL and MySQL (re-run after fixes)
-expected: |
-  After pushing 7119d5e + 3a86210, all CI jobs green: Tests (postgres), Tests (mysql), Tests (sqlite), Lint & Type Check, Build.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -35,8 +30,10 @@ note: "Unpublished → access denied (HTTP 403 via response.forbidden) but the b
 
 ### 4. CI matrix green on PostgreSQL and MySQL
 expected: After pushing, the CI "Tests (postgres)" and "Tests (mysql)" legs pass, including file_storage_service and files_download specs; phase-04 migrations run on both engines.
-result: issue
-reported: "mysql et sqlite : Tests 48 passed (48) mais FAILED — functional: Setup hook cleanup function, \"migration:reset\" failed (mysql: 1763139591301_create_update_courses_table_add_enrollment_fields_table ; sqlite: 1769791152246_create_add_terms_version_to_users_table)"
+result: blocked
+blocked_by: other
+blocked_reason: "Set aside by user: previous CI run stuck (mysql/sqlite jobs hung after teardown failure, cannot cancel without force-cancel API). Re-run CI after pushing 7119d5e, 3a86210, e810af8."
+reported_initially: "mysql et sqlite : Tests 48 passed (48) mais FAILED — functional: Setup hook cleanup function, \"migration:reset\" failed (mysql: 1763139591301_create_update_courses_table_add_enrollment_fields_table ; sqlite: 1769791152246_create_add_terms_version_to_users_table)"
 severity: major
 note: "Pre-existing, not phase 04 (phase-04 migrations rolled back fine). Fixed in 7119d5e (MySQL: drop FKs before indexes) and 3a86210 (CI seeded the DB before the functional suite, whose migration:reset teardown then failed on SQLite FK checks; seed now runs after tests). Verified locally on throwaway mysql:8.0 and sqlite: 48/48 + reset + migrate + seed. Awaiting CI re-run after push (postgres leg status not yet reported)."
 
@@ -49,10 +46,10 @@ reason: "No production/staging deployment available yet — only a GitHub repo. 
 
 total: 5
 passed: 3
-issues: 1
+issues: 0
 pending: 0
 skipped: 1
-blocked: 0
+blocked: 1
 
 ## Gaps
 
