@@ -67,6 +67,7 @@ node ace test         # Alternative test command
 3. Check for existing records with `findBy()` or `updateOrCreate()`
 4. Keep demo data realistic but minimal to avoid bloat during development
 5. Document any new seeders in this file
+6. Register new seeders in `database/seeders/main/index_seeder.ts` in dependency order — `db:seed` only runs that entry point
 
 **Test Accounts** (after running seeders):
 
