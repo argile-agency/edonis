@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Course content milestone:**
 
-- [ ] **Phase 4: Content Foundation** - Database models and file storage service
+- [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
 - [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder
 - [ ] **Phase 6: Page Content** - WYSIWYG rich text editor integration
 - [ ] **Phase 7: File Content** - File upload, storage, and download
@@ -191,7 +191,7 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — ContentFile model, FileStorageService, and file download endpoint
+- [x] 04-01-PLAN.md — ContentFile model, FileStorageService, and file download endpoint
 
 ### Phase 5: Builder UI
 
@@ -381,7 +381,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
 | 2. Security and Correctness Hardening | 0/14 | Planned | - |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
-| 4. Content Foundation | 0/1 | Plan written, not executed | - |
+| 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |

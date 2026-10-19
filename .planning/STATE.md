@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: GSD install verified at v1.42.3 across both runtime roots; planning
-last_updated: "2026-10-13T10:49:39.451Z"
-last_activity: 2026-10-13
+last_updated: "2026-10-19T09:53:41.044Z"
+last_activity: 2026-10-19
 progress:
   total_phases: 12
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 20
-  completed_plans: 5
-  percent: 8
+  completed_plans: 6
+  percent: 17
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with seamless Moodle migration
-**Current focus:** Phase 01 — code-health-baseline
+**Current focus:** Phase 04 — content-foundation
 
 ## Current Position
 
-Phase: 02 (security-correctness-hardening) — planned, 14 plans, not started
-Plan: 0 of 14
-Status: Phase 1 complete (2026-10-13); Phase 2 ready to execute
-Last activity: 2026-10-13 -- Phase 1 verified and closed
+Phase: 04 (content-foundation) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-10-19
 
 Next recommended run: `/gsd:execute-phase 2`
 
@@ -142,6 +142,7 @@ completion triggers.
 - Trend: N/A (no completed plans under GSD yet)
 
 *Updated after each plan completion*
+| Phase 04 P01 | 11min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Recent decisions affecting current work:
   roadmap, not as a separate milestone. GSD forbids decimal insertion before
   Phase 1, so the content phases were renumbered 1-9 -> 4-12. Safe because zero
   plans had been executed.
+
+- [Phase 04]: 04-01: Content file downloads require auth + per-course authorization (admin, course staff via hasPermission view, or active/completed enrollment on published+available content); orphan files admin-only
+- [Phase 04]: 04-01: Content blobs stored outside webroot at storage/content_files/{sha256[0:2]}/{cuid}.{ext}, deduped by UNIQUE checksum; DB stores POSIX relative path
 
 ### Roadmap Evolution
 
@@ -231,10 +235,11 @@ Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
   `(course_id, user_id)`, `(is_published, created_at)`.
 
 - Roles reloaded from DB on every request (no cache).
+- Local Windows env: node ace processes segfault on exit (139); node ace test can report exit 1 with lost output. See .planning/phases/04-content-foundation/deferred-items.md
 
 ## Session Continuity
 
-Last session: 2026-10-09
+Last session: 2026-10-19T09:53:20.135Z
 Stopped at: GSD install verified at v1.42.3 across both runtime roots; planning
 restructure committed; lint baseline brought to zero errors (`af99ea1`).
 Working tree is clean. Ready to plan Phase 1.
