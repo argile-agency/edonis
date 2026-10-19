@@ -2,7 +2,7 @@ import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import app from '@adonisjs/core/services/app'
 import { existsSync } from 'node:fs'
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
 import FileStorageService from '#services/file_storage_service'
@@ -97,6 +97,41 @@ test.group('FileStorageService', (group) => {
 
     const count = await ContentFile.query().where('checksum', first.checksum).count('* as total')
     assert.equal(Number(count[0].$extras.total), 1)
+  })
+
+  test('re-uploading restores a missing blob at the existing record path', async ({ assert }) => {
+    const service = new FileStorageService(basePath)
+    const content = `self-heal-${uniqueSuffix()}`
+
+    const first = await service.store(await fakeUpload(tmpDir, content, 'a.pdf'))
+    await rm(service.getFullPath(first))
+
+    const reupload = await fakeUpload(tmpDir, content, 'b.pdf')
+    const healed = await service.store(reupload)
+
+    assert.equal(healed.id, first.id)
+    assert.equal(healed.storagePath, first.storagePath)
+    assert.equal(await readFile(service.getFullPath(healed), 'utf8'), content)
+    assert.isFalse(existsSync(reupload.tmpPath!))
+  })
+
+  test('re-uploading repairs a record whose storage path is invalid', async ({ assert }) => {
+    const service = new FileStorageService(basePath)
+    const content = `self-heal-invalid-${uniqueSuffix()}`
+
+    const first = await service.store(await fakeUpload(tmpDir, content, 'a.pdf'))
+    first.storagePath = '../outside.pdf'
+    await first.save()
+
+    const healed = await service.store(await fakeUpload(tmpDir, content, 'a.pdf'))
+    const reloaded = await ContentFile.findOrFail(first.id)
+
+    assert.equal(healed.id, first.id)
+    assert.match(
+      reloaded.storagePath,
+      new RegExp(`^${first.checksum.slice(0, 2)}/[a-z0-9]+\\.pdf$`)
+    )
+    assert.equal(await readFile(service.getFullPath(reloaded), 'utf8'), content)
   })
 
   test('falls back to .bin for missing or unsafe extensions', async ({ assert }) => {

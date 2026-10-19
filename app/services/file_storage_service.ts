@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { mkdir, unlink } from 'node:fs/promises'
-import { isAbsolute, join, posix, relative, resolve } from 'node:path'
+import { mkdir, stat, unlink } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, posix, relative, resolve } from 'node:path'
 import { cuid } from '@adonisjs/core/helpers'
 import app from '@adonisjs/core/services/app'
 import type { MultipartFile } from '@adonisjs/core/bodyparser'
@@ -33,7 +33,9 @@ export default class FileStorageService {
 
   /**
    * Store an uploaded file. If a file with the same checksum already exists,
-   * the existing record is returned and the temp upload is discarded.
+   * the existing record is returned and the temp upload is discarded, unless
+   * the existing record's blob is missing on disk: then the upload is used to
+   * restore it (self-heal), so re-uploading repairs a lost file.
    */
   async store(file: MultipartFile): Promise<ContentFile> {
     if (!file.tmpPath) {
@@ -44,15 +46,12 @@ export default class FileStorageService {
 
     const existing = await ContentFile.findBy('checksum', checksum)
     if (existing) {
-      await unlink(file.tmpPath).catch(() => {})
+      await this.restoreBlobIfMissing(existing, file)
       return existing
     }
 
-    const extname =
-      file.extname && SAFE_EXTNAME_REGEX.test(file.extname) ? file.extname.toLowerCase() : 'bin'
-    const storageName = `${cuid()}.${extname}`
-    const prefix = checksum.substring(0, 2)
-    const storagePath = posix.join(prefix, storageName)
+    const storagePath = this.buildStoragePath(checksum, file)
+    const [prefix, storageName] = storagePath.split('/')
     const shardDir = join(this.basePath, prefix)
 
     await mkdir(shardDir, { recursive: true })
@@ -79,6 +78,62 @@ export default class FileStorageService {
         return winner
       }
       throw error
+    }
+  }
+
+  /**
+   * Dedup hit: keep the existing blob when it is on disk and discard the
+   * upload. Otherwise move the upload (same bytes, same checksum) into the
+   * record's path, or into a fresh path if the stored one is invalid.
+   */
+  private async restoreBlobIfMissing(record: ContentFile, file: MultipartFile): Promise<void> {
+    const tmpPath = file.tmpPath!
+    let target = this.resolvePath(record.storagePath)
+
+    const kind = target ? await this.pathKind(target) : 'missing'
+    if (kind === 'file') {
+      await unlink(tmpPath).catch(() => {})
+      return
+    }
+
+    // Invalid stored path, or something other than a file in the way
+    if (!target || kind === 'other') {
+      record.storagePath = this.buildStoragePath(record.checksum, file)
+      target = this.resolvePath(record.storagePath)!
+    }
+
+    await mkdir(dirname(target), { recursive: true })
+    try {
+      await file.move(dirname(target), { name: basename(target), overwrite: false })
+    } catch (error) {
+      // A concurrent upload of the same bytes may have restored it first
+      if ((await this.pathKind(target)) === 'file') {
+        await unlink(tmpPath).catch(() => {})
+        return
+      }
+      throw error
+    }
+
+    if (record.$isDirty) {
+      await record.save()
+    }
+  }
+
+  /**
+   * Build a new relative storage path: {checksum[0:2]}/{cuid}.{ext}
+   */
+  private buildStoragePath(checksum: string, file: MultipartFile): string {
+    const extname =
+      file.extname && SAFE_EXTNAME_REGEX.test(file.extname) ? file.extname.toLowerCase() : 'bin'
+    return posix.join(checksum.substring(0, 2), `${cuid()}.${extname}`)
+  }
+
+  private async pathKind(path: string): Promise<'file' | 'other' | 'missing'> {
+    try {
+      const stats = await stat(path)
+      return stats.isFile() ? 'file' : 'other'
+    } catch {
+      return 'missing'
     }
   }
 
