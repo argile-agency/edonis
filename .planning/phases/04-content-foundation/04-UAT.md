@@ -3,7 +3,7 @@ status: testing
 phase: 04-content-foundation
 source: [04-01-SUMMARY.md, 04-REVIEW.md, 04-HUMAN-UAT.md]
 started: 2026-10-19T11:54:58Z
-updated: 2026-10-19T13:57:27Z
+updated: 2026-10-19T14:53:00Z
 ---
 
 ## Current Test
@@ -87,5 +87,5 @@ blocked: 0
   cause: "response.forbidden() returns a JSON body even for browser navigations; no 403 status page exists yet. Plan 02-01 adds errors/forbidden + handler intercept — when it lands, make this denial go through it (throw / content-negotiate) so browsers get the 403 page."
   severity: minor
   fixed_in: f1475b1
-  fix_note: "Added errors/forbidden page + '403' status page (JSON kept for accept: application/json); FilesController throws 403/404 exceptions. 02-01 plan annotated (265a0a5). User retest pending." 
+  fix_note: "Added errors/forbidden page + '403' status page (JSON kept for accept: application/json); FilesController throws 403/404 exceptions. 02-01 plan annotated (265a0a5). User retest passed: student sees the 403 \"Accès refusé\" page when content unpublished; re-published → download resumes (browser keeps previous page displayed — expected for Content-Disposition: attachment)." 
 
