@@ -84,8 +84,10 @@ blocked: 1
 - id: OBS-02
   where: CS101 learn view, section "Concepts fondamentaux"
   reported: "La section cause une page blanche qui force à recharger la page"
-  cause: "Not yet diagnosed — likely a client render crash for one content type; needs browser console error."
+  cause: "learn.tsx renderModule read module.children.length on sub-modules; CourseContentsController.learn preloads only two levels, so sub-modules (Chapitre 1/2 of Concepts fondamentaux) arrive without `children` → TypeError on expand, whole page unmounts."
   severity: major
+  fixed_in: 2fd167c
+  fix_note: "children made optional and defaulted to []. Verified in headless Edge (Playwright) on a throwaway SQLite DB: before → TypeError + empty body; after → no error, chapter visible. User browser retest pending."
 - id: OBS-03
   where: database/seeders/course_content_seeder.ts:70 (CS101 file content)
   reported: "http://localhost:3333/files/course-plan.pdf → 404"
