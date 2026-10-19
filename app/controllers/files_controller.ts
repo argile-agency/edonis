@@ -1,13 +1,14 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { normalize } from 'node:path'
 import ContentFile from '#models/content_file'
-import CourseEnrollment from '#models/course_enrollment'
+import CourseEnrollment, { type EnrollmentStatus } from '#models/course_enrollment'
+import type Course from '#models/course'
 import type CourseContent from '#models/course_content'
 import type User from '#models/user'
 import FileStorageService, { PATH_TRAVERSAL_REGEX } from '#services/file_storage_service'
 
-/** Enrollment statuses that grant access to course material */
-const ACCESS_ENROLLMENT_STATUSES = ['active', 'completed'] as const
+/** Enrollment statuses that grant access to a published course's material */
+const ACCESS_ENROLLMENT_STATUSES: readonly EnrollmentStatus[] = ['active', 'completed']
 
 export default class FilesController {
   /**
@@ -17,8 +18,10 @@ export default class FilesController {
    * Authorized when the user is an admin, or for at least one course
    * content referencing the file:
    * - the user is course staff (owner or course_permission >= view), or
-   * - the user is enrolled (active/completed) and the content, its module
-   *   and every ancestor module are published and currently available.
+   * - the course is published and the user is enrolled (active/completed),
+   *   or the course is archived and the enrollment is completed, and the
+   *   content, its module and every ancestor module are published and
+   *   currently available. Draft courses are staff-only.
    * Files not linked to any content are admin-only.
    */
   async download({ params, response, auth }: HttpContext) {
@@ -72,11 +75,12 @@ export default class FilesController {
         return true
       }
 
-      if (await this.isVisibleToLearners(content)) {
+      const allowedStatuses = this.learnerEnrollmentStatuses(course)
+      if (allowedStatuses.length > 0 && (await this.isVisibleToLearners(content))) {
         const enrollment = await CourseEnrollment.query()
           .where('course_id', course.id)
           .where('user_id', user.id)
-          .whereIn('status', [...ACCESS_ENROLLMENT_STATUSES])
+          .whereIn('status', allowedStatuses)
           .first()
 
         if (enrollment) {
@@ -86,6 +90,22 @@ export default class FilesController {
     }
 
     return false
+  }
+
+  /**
+   * Enrollment statuses that grant learner access given the course status:
+   * - published: active or completed enrollments
+   * - archived: completed enrollments only (alumni keep their material)
+   * - draft (or anything else): nobody but staff
+   */
+  private learnerEnrollmentStatuses(course: Course): EnrollmentStatus[] {
+    if (course.isPublished()) {
+      return [...ACCESS_ENROLLMENT_STATUSES]
+    }
+    if (course.isArchived()) {
+      return ['completed']
+    }
+    return []
   }
 
   /**

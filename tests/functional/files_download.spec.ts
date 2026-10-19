@@ -9,7 +9,7 @@ import Role from '#models/role'
 import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
-import CourseEnrollment from '#models/course_enrollment'
+import CourseEnrollment, { type EnrollmentStatus } from '#models/course_enrollment'
 import CoursePermission from '#models/course_permission'
 import ContentFile from '#models/content_file'
 
@@ -59,7 +59,11 @@ async function createStoredFile(shard: string) {
  */
 async function createCourseWithFile(
   shard: string,
-  overrides: { contentPublished?: boolean; enrollmentStatus?: 'active' | 'suspended' } = {}
+  overrides: {
+    contentPublished?: boolean
+    enrollmentStatus?: EnrollmentStatus
+    courseStatus?: Course['status']
+  } = {}
 ) {
   const instructor = await createUser('instructor')
   const student = await createUser('student')
@@ -68,7 +72,7 @@ async function createCourseWithFile(
     code: uniqueCourseCode(),
     title: 'Files 101',
     instructorId: instructor.id,
-    status: 'published',
+    status: overrides.courseStatus ?? 'published',
     visibility: 'public',
   })
 
@@ -220,6 +224,43 @@ test.group('Files - download authorization', (group) => {
     const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
 
     response.assertStatus(200)
+  })
+
+  test('enrolled student cannot download from a draft course', async ({ client, route }) => {
+    const { student, file } = await createCourseWithFile(shard, { courseStatus: 'draft' })
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(student)
+
+    response.assertStatus(403)
+  })
+
+  test('course owner can still download from a draft course', async ({ client, route }) => {
+    const { instructor, file } = await createCourseWithFile(shard, { courseStatus: 'draft' })
+
+    const response = await client.get(route('files.download', { id: file.id })).loginAs(instructor)
+
+    response.assertStatus(200)
+  })
+
+  test('archived course serves completed enrollments only', async ({ client, route }) => {
+    const completed = await createCourseWithFile(shard, {
+      courseStatus: 'archived',
+      enrollmentStatus: 'completed',
+    })
+    const active = await createCourseWithFile(shard, {
+      courseStatus: 'archived',
+      enrollmentStatus: 'active',
+    })
+
+    const completedResponse = await client
+      .get(route('files.download', { id: completed.file.id }))
+      .loginAs(completed.student)
+    const activeResponse = await client
+      .get(route('files.download', { id: active.file.id }))
+      .loginAs(active.student)
+
+    completedResponse.assertStatus(200)
+    activeResponse.assertStatus(403)
   })
 
   test('suspended enrollment is forbidden', async ({ client, route }) => {
