@@ -134,9 +134,9 @@ export default class EnrollmentService {
   }
 
   /**
-   * Group step of `enroll`. Unenrolment keeps group memberships (see
-   * `unenroll`), so a user who re-enrols may already be a member: skip both
-   * the counter and the insert in that case instead of hitting
+   * Group step of `enroll`. The user may already be a member (added to the
+   * group by staff, or a membership that predates AS5 cleanup on unenrol):
+   * skip both the counter and the insert in that case instead of hitting
    * `unique(group_id, user_id)`, which would abort the whole enrolment.
    */
   private static async addToGroupIfRoom(
@@ -169,9 +169,9 @@ export default class EnrollmentService {
    * never goes negative, and they only run when this call actually deleted
    * the row (a concurrent double unenrol decrements once).
    *
-   * Group memberships and `course_groups.current_members` are deliberately
-   * left untouched: removing memberships on unenrol is AS5 (plan 02-14,
-   * behind a checkpoint).
+   * In the same transaction, the user leaves every group of this course and
+   * each group's `current_members` is decremented (AS5). Groups of other
+   * courses are untouched.
    */
   static async unenroll(enrollment: CourseEnrollment): Promise<void> {
     await db.transaction(async (trx) => {
@@ -194,7 +194,41 @@ export default class EnrollmentService {
           .where('current_enrollments', '>', 0)
           .decrement('current_enrollments', 1)
       }
+
+      await this.leaveCourseGroups(trx, enrollment.courseId, enrollment.userId)
     })
+  }
+
+  /**
+   * Unenrol step (AS5): removes the user's memberships in the groups of this
+   * course only, and decrements each group's `current_members` (guarded with
+   * `> 0`) only when its own DELETE removed the membership row.
+   */
+  private static async leaveCourseGroups(
+    client: QueryClientContract,
+    courseId: number,
+    userId: number
+  ): Promise<void> {
+    const memberships = await CourseGroupMember.query({ client })
+      .where('user_id', userId)
+      .whereIn('group_id', CourseGroup.query({ client }).where('course_id', courseId).select('id'))
+      .select('group_id')
+
+    for (const groupId of new Set(memberships.map((member) => member.groupId))) {
+      const deleted = await CourseGroupMember.query({ client })
+        .where('group_id', groupId)
+        .where('user_id', userId)
+        .delete()
+
+      if (Number(deleted[0]) < 1) {
+        continue
+      }
+
+      await CourseGroup.query({ client })
+        .where('id', groupId)
+        .where('current_members', '>', 0)
+        .decrement('current_members', 1)
+    }
   }
 
   /**

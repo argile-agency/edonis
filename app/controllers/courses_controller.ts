@@ -24,6 +24,8 @@ import {
 } from '#validators/enrollment_method'
 import { createGroupingValidator, createGroupValidator } from '#validators/course_group'
 import { scopeVisibleCourses } from '#policies/course_policy'
+import EnrollmentService from '#services/enrollment_service'
+import AlreadyEnrolledException from '#exceptions/already_enrolled_exception'
 
 /**
  * Validated date → DateTime. `undefined` (field absent) stays `undefined` and
@@ -666,18 +668,22 @@ export default class CoursesController {
     const payload = await request.validateUsing(addParticipantValidator)
     const course = await Course.findOrFail(params.id)
 
-    await CourseEnrollment.create({
-      courseId: course.id,
-      userId: payload.userId,
-      courseRole: payload.courseRole ?? 'student',
-      status: 'active',
-      enrolledBy: user.id,
-      enrolledAt: DateTime.now(),
-    })
-
-    // Update enrolled count
-    course.enrolledCount += 1
-    await course.save()
+    // Counters move only through EnrollmentService (DEBT-06)
+    try {
+      await EnrollmentService.enroll({
+        courseId: course.id,
+        userId: payload.userId,
+        methodId: null,
+        courseRole: payload.courseRole ?? 'student',
+        enrolledBy: user.id,
+      })
+    } catch (error) {
+      if (error instanceof AlreadyEnrolledException) {
+        session.flash('error', 'Cet utilisateur est déjà inscrit à ce cours.')
+        return response.redirect().back()
+      }
+      throw error
+    }
 
     session.flash('success', 'Participant added successfully')
     return response.redirect().back()
@@ -691,14 +697,10 @@ export default class CoursesController {
 
     const enrollment = await CourseEnrollment.query()
       .where('id', params.enrollmentId)
-      .preload('course')
+      .where('course_id', params.id)
       .firstOrFail()
 
-    await enrollment.delete()
-
-    // Update enrolled count
-    enrollment.course.enrolledCount = Math.max(0, enrollment.course.enrolledCount - 1)
-    await enrollment.course.save()
+    await EnrollmentService.unenroll(enrollment)
 
     session.flash('success', 'Participant removed successfully')
     return response.redirect().back()

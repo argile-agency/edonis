@@ -471,3 +471,201 @@ test.group('Enrollments - HTTP counters', (group) => {
     assert.equal(await currentEnrollments(method.id), 1)
   })
 })
+
+async function findEnrollment(courseId: number, userId: number) {
+  return CourseEnrollment.query().where('course_id', courseId).where('user_id', userId).first()
+}
+
+test.group('Counters - mixed sequence (criterion 3)', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  async function setup() {
+    const admin = await createUser({ roles: ['admin'] })
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'published', allowEnrollment: true })
+    const groupRow = await createGroup(course, { maxMembers: null })
+    const method = await createEnrollmentMethod(course, {
+      methodType: 'self',
+      maxEnrollments: null,
+    })
+    await setAutoAssignGroup(method, groupRow)
+    return { admin, course, groupRow, method }
+  }
+
+  test('counters equal COUNT(*) after enrol x3, unenrol x1 and removeParticipant x1', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { admin, course, groupRow, method } = await setup()
+    const studentA = await createUser({ roles: ['student'] })
+    const studentB = await createUser({ roles: ['student'] })
+    const studentC = await createUser({ roles: ['student'] })
+    const selfUrl = route('enrollments.enroll-self', { id: course.id })
+
+    // enrol A and B through the self method (auto-assigned to the group)
+    for (const student of [studentA, studentB]) {
+      const req = client.post(selfUrl).withCsrfToken()
+      const res = await req.json({ enrollmentMethodId: method.id }).loginAs(student).redirects(0)
+      res.assertStatus(302)
+      assertNotCsrfRejected(assert, res)
+      assert.isNotNull(await findEnrollment(course.id, student.id))
+    }
+
+    // enrol C through the admin participants endpoint (no method)
+    const addUrl = route('admin.courses.participants.add', { id: course.id })
+    const addReq = client.post(addUrl).withCsrfToken()
+    const addRes = await addReq.json({ userId: studentC.id }).loginAs(admin).redirects(0)
+    addRes.assertStatus(302)
+    assertNotCsrfRejected(assert, addRes)
+    assert.equal(addRes.flashMessage('success'), 'Participant added successfully')
+    assert.isNotNull(await findEnrollment(course.id, studentC.id))
+
+    // unenrol A (self)
+    const enrollmentA = await findEnrollment(course.id, studentA.id)
+    const unenrollUrl = route('enrollments.unenroll', { enrollmentId: enrollmentA!.id })
+    const unenrollReq = client.delete(unenrollUrl).withCsrfToken()
+    const unenrollRes = await unenrollReq.loginAs(studentA).redirects(0)
+    unenrollRes.assertStatus(302)
+    assertNotCsrfRejected(assert, unenrollRes)
+    assert.isNull(await findEnrollment(course.id, studentA.id))
+
+    // admin removes B
+    const enrollmentB = await findEnrollment(course.id, studentB.id)
+    const removeUrl = route('admin.courses.participants.remove', {
+      id: course.id,
+      enrollmentId: enrollmentB!.id,
+    })
+    const removeReq = client.delete(removeUrl).withCsrfToken()
+    const removeRes = await removeReq.loginAs(admin).redirects(0)
+    removeRes.assertStatus(302)
+    assertNotCsrfRejected(assert, removeRes)
+    assert.equal(removeRes.flashMessage('success'), 'Participant removed successfully')
+    assert.isNull(await findEnrollment(course.id, studentB.id))
+
+    // the three counters equal COUNT(*) of their source rows
+    const courseRows = await countRows('course_enrollments', 'course_id', course.id)
+    const methodRows = await countRows('course_enrollments', 'enrollment_method_id', method.id)
+    const memberRows = await countRows('course_group_members', 'group_id', groupRow.id)
+    assert.equal(courseRows, 1)
+    assert.equal(methodRows, 0)
+    assert.equal(await enrolledCount(course.id), courseRows)
+    assert.equal(await currentEnrollments(method.id), methodRows)
+    assert.equal(await currentMembers(groupRow.id), memberRows)
+  })
+
+  test('adding an already-enrolled participant flashes an error instead of a 500', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { admin, course } = await setup()
+    const student = await createUser({ roles: ['student'] })
+    const addUrl = route('admin.courses.participants.add', { id: course.id })
+
+    const firstReq = client.post(addUrl).withCsrfToken()
+    const firstRes = await firstReq.json({ userId: student.id }).loginAs(admin).redirects(0)
+    firstRes.assertStatus(302)
+    assertNotCsrfRejected(assert, firstRes)
+    assert.isNotNull(await findEnrollment(course.id, student.id))
+    const before = await enrolledCount(course.id)
+    assert.equal(before, 1)
+
+    const againReq = client.post(addUrl).withCsrfToken()
+    const againRes = await againReq.json({ userId: student.id }).loginAs(admin).redirects(0)
+    againRes.assertStatus(302)
+    assertNotCsrfRejected(assert, againRes)
+    assert.equal(againRes.flashMessage('error'), 'Cet utilisateur est déjà inscrit à ce cours.')
+    assert.equal(await enrolledCount(course.id), before)
+    assert.equal(await countRows('course_enrollments', 'course_id', course.id), 1)
+  })
+})
+
+test.group('EnrollmentService - AS5 group cleanup', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  async function joinGroup(groupRow: CourseGroup, userId: number) {
+    const place = await db.transaction((trx) =>
+      EnrollmentService.tryIncrementGroup(trx, groupRow.id)
+    )
+    if (Number(place) < 1) throw new Error('group is full')
+    await CourseGroupMember.create({ groupId: groupRow.id, userId })
+  }
+
+  async function membership(groupId: number, userId: number) {
+    return CourseGroupMember.query().where('group_id', groupId).where('user_id', userId).first()
+  }
+
+  test("unenrol removes the user's memberships in that course's groups only", async ({
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const courseX = await createCourse(owner)
+    const courseY = await createCourse(owner)
+    const g1 = await createGroup(courseX, { maxMembers: null })
+    const g2 = await createGroup(courseX, { maxMembers: null })
+    const h = await createGroup(courseY, { maxMembers: null })
+    const student = await createUser({ roles: ['student'] })
+    const classmate = await createUser({ roles: ['student'] })
+
+    const enrollment = await EnrollmentService.enroll({
+      courseId: courseX.id,
+      userId: student.id,
+      courseRole: 'student',
+      enrolledBy: null,
+    })
+    await EnrollmentService.enroll({
+      courseId: courseY.id,
+      userId: student.id,
+      courseRole: 'student',
+      enrolledBy: null,
+    })
+    await joinGroup(g1, student.id)
+    await joinGroup(g2, student.id)
+    await joinGroup(g2, classmate.id)
+    await joinGroup(h, student.id)
+    assert.equal(await currentMembers(g1.id), 1)
+    assert.equal(await currentMembers(g2.id), 2)
+
+    await EnrollmentService.unenroll(enrollment)
+
+    assert.isNull(await CourseEnrollment.find(enrollment.id))
+    assert.isNull(await membership(g1.id, student.id))
+    assert.isNull(await membership(g2.id, student.id))
+    assert.equal(await currentMembers(g1.id), 0)
+    assert.equal(await currentMembers(g2.id), 1)
+    assert.isNotNull(await membership(g2.id, classmate.id))
+    assert.equal(
+      await currentMembers(g2.id),
+      await countRows('course_group_members', 'group_id', g2.id)
+    )
+
+    // another course's group is untouched
+    assert.isNotNull(await membership(h.id, student.id))
+    assert.equal(await currentMembers(h.id), 1)
+  })
+
+  test('a second unenrol of the same enrolment does not decrement the groups again', async ({
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const groupRow = await createGroup(course, { maxMembers: null })
+    const method = await createEnrollmentMethod(course, { maxEnrollments: null })
+    await setAutoAssignGroup(method, groupRow)
+    const student = await createUser({ roles: ['student'] })
+    const other = await createUser({ roles: ['student'] })
+
+    const enrollment = await enrollVia(course, method, student.id)
+    await enrollVia(course, method, other.id)
+    assert.equal(await currentMembers(groupRow.id), 2)
+
+    await EnrollmentService.unenroll(enrollment)
+    await EnrollmentService.unenroll(enrollment)
+
+    assert.isNull(await membership(groupRow.id, student.id))
+    assert.equal(await currentMembers(groupRow.id), 1)
+    assert.equal(await countRows('course_group_members', 'group_id', groupRow.id), 1)
+    assert.isNotNull(await membership(groupRow.id, other.id))
+  })
+})
