@@ -46,7 +46,7 @@ export default class CourseEnrollmentMethod extends BaseModel {
   @column()
   declare enrollmentDurationDays: number | null
 
-  @column()
+  @column({ serializeAs: null })
   declare enrollmentKey: string | null
 
   @column()

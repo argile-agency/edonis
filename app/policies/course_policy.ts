@@ -109,6 +109,14 @@ export default class CoursePolicy extends BasePolicy {
   enroll(_user: User, course: Course): AuthorizerResponse {
     return course.canEnroll()
   }
+
+  /**
+   * Enrolment page: courses open for enrolment, or viewable ones (admins via `before`).
+   * Not `view` alone: private/unlisted courses open for enrolment are reached by shared link.
+   */
+  async viewEnrollmentPage(user: User, course: Course): Promise<AuthorizerResponse> {
+    return course.canEnroll() || (await this.view(user, course))
+  }
 }
 
 /**

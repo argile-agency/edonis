@@ -36,11 +36,32 @@ async function enrollmentRefusal(enroll: () => Promise<unknown>): Promise<string
   }
 }
 
+/**
+ * Learner-facing whitelist of an enrolment method; never includes the key.
+ */
+function toLearnerMethod(method: CourseEnrollmentMethod) {
+  return {
+    id: method.id,
+    methodType: method.methodType,
+    name: method.name,
+    // SQLite/MySQL return 1/0 for booleans
+    isEnabled: Boolean(method.isEnabled),
+    maxEnrollments: method.maxEnrollments,
+    currentEnrollments: method.currentEnrollments,
+    enrollmentStartDate: method.enrollmentStartDate?.toISO() ?? null,
+    enrollmentEndDate: method.enrollmentEndDate?.toISO() ?? null,
+    approvalMessage: method.approvalMessage,
+    welcomeMessage: method.welcomeMessage,
+    requiresKey: method.methodType === 'key',
+    isAvailable: method.isAvailable(),
+  }
+}
+
 export default class EnrollmentsController {
   /**
    * Display enrollment page for a course
    */
-  async show({ params, auth, inertia }: HttpContext) {
+  async show({ params, auth, bouncer, inertia }: HttpContext) {
     const course = await Course.query()
       .where('id', params.id)
       .preload('instructor')
@@ -49,6 +70,8 @@ export default class EnrollmentsController {
         query.where('is_enabled', true).orderBy('sort_order', 'asc')
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('viewEnrollmentPage', course)
 
     // Check if user is already enrolled
     const existingEnrollment = await CourseEnrollment.query()
@@ -65,12 +88,7 @@ export default class EnrollmentsController {
 
     return inertia.render('enrollments/show', {
       course: course.serialize(),
-      enrollmentMethods: await Promise.all(
-        course.enrollmentMethods.map(async (method) => ({
-          ...method.serialize(),
-          isAvailable: method.isAvailable(),
-        }))
-      ),
+      enrollmentMethods: course.enrollmentMethods.map(toLearnerMethod),
       existingEnrollment: existingEnrollment?.serialize(),
       pendingRequest: pendingRequest?.serialize(),
     })
