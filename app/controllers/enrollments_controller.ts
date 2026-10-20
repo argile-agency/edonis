@@ -61,7 +61,7 @@ export default class EnrollmentsController {
   /**
    * Display enrollment page for a course
    */
-  async show({ params, auth, inertia }: HttpContext) {
+  async show({ params, auth, bouncer, inertia }: HttpContext) {
     const course = await Course.query()
       .where('id', params.id)
       .preload('instructor')
@@ -70,6 +70,8 @@ export default class EnrollmentsController {
         query.where('is_enabled', true).orderBy('sort_order', 'asc')
       })
       .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('viewEnrollmentPage', course)
 
     // Check if user is already enrolled
     const existingEnrollment = await CourseEnrollment.query()
