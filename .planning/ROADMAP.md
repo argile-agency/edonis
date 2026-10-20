@@ -31,7 +31,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Course content milestone:**
 
-- [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
+- [x] **Phase 4: Content Foundation** - Database models and file storage service
+ (completed 2026-10-19)
 - [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder
 - [ ] **Phase 6: Page Content** - WYSIWYG rich text editor integration
 - [ ] **Phase 7: File Content** - File upload, storage, and download
@@ -119,7 +120,7 @@ Plans:
 > over-capacity enrolment. Phase 2 requires Phase 1 to be executed first (test infrastructure and
 > the `canEnroll()` fix).
 
-**Plans**: 14 plans in 4 waves
+**Plans**: 16 plans (14 + 2 gap closure)
 
 > Sliced by file ownership (fine granularity): same-wave plans share no files. Behaviour changes AS2–AS5
 > each ship as an isolated commit behind their own `checkpoint:human-verify`; the DEBT-08 raise is gated by a
@@ -153,6 +154,11 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 02-14-PLAN.md — Admin participants via service, COUNT(*) invariant, AS5 checkpoint, `check:debt` gates [DEBT-06]
+
+**Gap closure** *(from 02-VERIFICATION.md; 02-16 waits for 02-15, shared files)*
+
+- [ ] 02-15-PLAN.md — CR-02: enrolment keys never serialized to learners, enrollments.show gated by CoursePolicy.viewEnrollmentPage [DEBT-04]
+- [ ] 02-16-PLAN.md — CR-03: courses.show module tree only for editors; published-only view for non-staff (checkpoint) [DEBT-04]
 
 ### Phase 3: Complete Stubbed Features
 
