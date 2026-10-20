@@ -150,7 +150,13 @@ export default class CoursesController {
       .preload('permissions', (query) => {
         query.preload('user')
       })
-      .preload('modules', (moduleQuery) => {
+      .firstOrFail()
+
+    await bouncer.with('CoursePolicy').authorize('view', course)
+
+    const canEdit = await bouncer.with('CoursePolicy').allows('edit', course)
+    if (canEdit) {
+      await course.load('modules', (moduleQuery) => {
         moduleQuery
           .whereNull('parent_id')
           .orderBy('order', 'asc')
@@ -163,11 +169,7 @@ export default class CoursesController {
             contentQuery.orderBy('order', 'asc')
           })
       })
-      .firstOrFail()
-
-    await bouncer.with('CoursePolicy').authorize('view', course)
-
-    const canEdit = await bouncer.with('CoursePolicy').allows('edit', course)
+    }
     const canManage = await bouncer.with('CoursePolicy').allows('manage', course)
 
     // Check if user is enrolled
@@ -178,7 +180,8 @@ export default class CoursesController {
 
     return inertia.render('courses/show', {
       course: course.serialize(),
-      modules: course.modules.map((m) => m.serialize()),
+      // Tree (unpublished items, bodies, file and external URLs) only for editors; learners use the AS3-gated outline.
+      modules: canEdit ? course.modules.map((m) => m.serialize()) : [],
       permissions: {
         canEdit,
         canManage,

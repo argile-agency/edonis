@@ -38,11 +38,19 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
-   * Public courses are viewable by any authenticated user; otherwise the
-   * owner or anyone holding a `view` (or higher) permission.
+   * Public courses are viewable by any authenticated user once published;
+   * draft or archived public courses only by staff and enrolled users (CR-03).
+   * Otherwise the owner or anyone holding a `view` (or higher) permission.
+   * Admins pass via `before`.
    */
   async view(user: User, course: Course): Promise<AuthorizerResponse> {
-    return course.visibility === 'public' || course.hasPermission(user.id, 'view')
+    if (course.visibility === 'public' && course.isPublished()) {
+      return true
+    }
+    if (await course.hasPermission(user.id, 'view')) {
+      return true
+    }
+    return course.visibility === 'public' && isEnrolled(user, course)
   }
 
   /**
