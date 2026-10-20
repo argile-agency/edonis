@@ -45,6 +45,15 @@ export default class CoursePolicy extends BasePolicy {
     return course.visibility === 'public' || course.hasPermission(user.id, 'view')
   }
 
+  /**
+   * Owner or any `course_permission` holder (view or higher). Unlike `view`,
+   * a public course grants nothing here: gates unpublished course material,
+   * e.g. content file downloads.
+   */
+  async viewAsStaff(user: User, course: Course): Promise<AuthorizerResponse> {
+    return course.hasPermission(user.id, 'view')
+  }
+
   async edit(user: User, course: Course): Promise<AuthorizerResponse> {
     return course.hasPermission(user.id, 'edit')
   }

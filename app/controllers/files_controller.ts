@@ -25,7 +25,7 @@ export default class FilesController {
    *   currently available. Draft courses are staff-only.
    * Files not linked to any content are admin-only.
    */
-  async download({ params, response, auth }: HttpContext) {
+  async download({ params, response, auth, bouncer }: HttpContext) {
     const id = Number(params.id)
     if (!Number.isSafeInteger(id) || id <= 0) {
       throw new Exception('File not found', { status: 404, code: 'E_FILE_NOT_FOUND' })
@@ -37,7 +37,7 @@ export default class FilesController {
     }
 
     // The download name is the one attached to the content that grants access
-    const filename = await this.authorizedFilename(auth.user!, file)
+    const filename = await this.authorizedFilename(auth.user!, file, bouncer)
     if (filename === null) {
       // Thrown so the exception handler renders the 403 page for browsers
       throw new Exception('You do not have access to this file', {
@@ -71,14 +71,19 @@ export default class FilesController {
    * first content (by id) that grants access, so a user only ever sees the
    * name used in a course they can access, never another course's name.
    */
-  private async authorizedFilename(user: User, file: ContentFile): Promise<string | null> {
+  private async authorizedFilename(
+    user: User,
+    file: ContentFile,
+    bouncer: HttpContext['bouncer']
+  ): Promise<string | null> {
+    const policy = bouncer.with('CoursePolicy')
     const contents = await file
       .related('contents')
       .query()
       .preload('module', (moduleQuery) => moduleQuery.preload('course'))
       .orderBy('course_contents.id', 'asc')
 
-    if (await user.hasRole('admin')) {
+    if (await policy.allows('administer')) {
       return contents.length > 0
         ? this.pivotFilename(contents[0], file)
         : this.fallbackFilename(file)
@@ -92,7 +97,7 @@ export default class FilesController {
       const course = content.module.course
 
       if (!staffByCourse.has(course.id)) {
-        staffByCourse.set(course.id, await course.hasPermission(user.id, 'view'))
+        staffByCourse.set(course.id, await policy.allows('viewAsStaff', course))
       }
       if (staffByCourse.get(course.id)) {
         return this.pivotFilename(content, file)
