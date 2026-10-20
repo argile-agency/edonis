@@ -133,6 +133,16 @@
     scrollbar-gutter: stable;
   }
 
+  /*
+   * Radix (dropdowns, dialogs) locks scroll by hiding the root scrollbar and
+   * adding a body margin; the page then jumps sideways. Keep the scrollbar:
+   * react-remove-scroll still blocks wheel and touch scrolling in JS.
+   */
+  html body[data-scroll-locked] {
+    overflow: visible !important;
+    margin-right: 0 !important;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
