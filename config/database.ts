@@ -17,6 +17,9 @@ const dbConfig = defineConfig({
         naturalSort: true,
         paths: ['database/migrations'],
       },
+      seeders: {
+        paths: ['database/seeders/main'],
+      },
     },
     mysql: {
       client: 'mysql2',
@@ -30,6 +33,9 @@ const dbConfig = defineConfig({
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
+      },
+      seeders: {
+        paths: ['database/seeders/main'],
       },
     },
     sqlite: {
@@ -48,6 +54,9 @@ const dbConfig = defineConfig({
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
+      },
+      seeders: {
+        paths: ['database/seeders/main'],
       },
     },
   },

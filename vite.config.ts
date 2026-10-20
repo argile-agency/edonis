@@ -41,6 +41,15 @@ export default defineConfig({
             },
           },
           {
+            // Self-hosted font files are content-hashed, so they never change
+            urlPattern: /\.(woff2?|ttf)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            },
+          },
+          {
             urlPattern: /\.(css|js)$/,
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'static-assets' },

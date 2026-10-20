@@ -23,8 +23,9 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 - ✓ Assignment creation with rubrics and grading — existing
 - ✓ Student submissions with progress tracking — existing
 - ✓ Gradebook with category-based grading — existing
-- ✓ Lint, typecheck and `as any` ban enforced in code; unit and functional test suites run locally — Validated in Phase 1: Code Health Baseline (CI enforcement observed locally only; GitHub Actions proof pending, see 01-HUMAN-UAT.md)
+- ✓ Lint, typecheck and `as any` ban enforced in code; unit and functional test suites run locally — Validated in Phase 1: Code Health Baseline (GitHub Actions green on postgres/mysql/sqlite since 2026-10-19; red-PR and required-check proofs pending, see 01-HUMAN-UAT.md)
 - ✓ `Course.canEnroll()` enforces its enrollment date window — Validated in Phase 1
+- ✓ Content file storage foundation: `ContentFile` with checksum dedup, storage outside webroot (`CONTENT_STORAGE_PATH`), authorized `/files/:id/download` (course staff, or enrolled learners on published/available content incl. ancestor modules) — Validated in Phase 4: Content Foundation (redeploy persistence untested until first deployment)
 
 ### Active
 
@@ -115,4 +116,4 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 | Instructor + admin permissions only | Simple model for v1, role-based course permissions in v2 | — Pending |
 
 ---
-*Last updated: 2026-10-13 after Phase 1 (Code Health Baseline)*
+*Last updated: 2026-10-19 after Phase 4 (Content Foundation)*

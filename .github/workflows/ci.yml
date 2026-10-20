@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+# A newer push on the same branch cancels the run still in progress
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-typecheck:
     name: Lint & Type Check
@@ -77,6 +82,8 @@ jobs:
   tests:
     name: Tests (${{ matrix.db }})
     runs-on: ubuntu-latest
+    # A test process that never exits must not hold a runner for 6 hours
+    timeout-minutes: 30
 
     strategy:
       fail-fast: false
@@ -164,17 +171,21 @@ jobs:
         if: matrix.db == 'sqlite'
         run: mkdir -p tmp
 
-      - name: Run database migrations
-        run: node ace migration:run --force
-
-      - name: Run database seeders
-        run: node ace db:seed
-
+      # The functional suite migrates an empty database itself and runs
+      # migration:reset on teardown, so the schema must not be pre-seeded:
+      # rolling back over seeded rows fails (SQLite FK checks on table rebuild).
       - name: Run unit tests
         run: node ace test unit
 
       - name: Run functional tests
         run: node ace test functional
+
+      # Smoke-test migrations and seeders on every engine after the tests
+      - name: Run database migrations
+        run: node ace migration:run --force
+
+      - name: Run database seeders
+        run: node ace db:seed
 
   summary:
     name: CI Summary

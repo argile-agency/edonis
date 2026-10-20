@@ -76,4 +76,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   | no undecryptable rows there.
   */
   PII_DECRYPT_STRICT: Env.schema.boolean.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Course content file storage root (absolute, or relative to
+  | the project root). Defaults to <project>/storage/content_files.
+  | Set it to a persistent location in production.
+  |----------------------------------------------------------
+  */
+  CONTENT_STORAGE_PATH: Env.schema.string.optional(),
 })

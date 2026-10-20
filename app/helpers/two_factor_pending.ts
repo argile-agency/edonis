@@ -31,9 +31,7 @@ export const TWO_FACTOR_MAX_ATTEMPTS = 5
 export type TwoFactorPending = { userId: number; expiresAt: number; attempts: number }
 
 export type PendingReadResult =
-  | { status: 'none' }
-  | { status: 'expired' }
-  | { status: 'ok'; pending: TwoFactorPending }
+  { status: 'none' } | { status: 'expired' } | { status: 'ok'; pending: TwoFactorPending }
 
 export function createPending(userId: number, now: number): TwoFactorPending {
   return { userId, expiresAt: now + TWO_FACTOR_PENDING_TTL_MS, attempts: 0 }

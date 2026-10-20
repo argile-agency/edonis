@@ -7,12 +7,7 @@ import CourseEnrollment from '#models/course_enrollment'
 
 export type EnrollmentMethodType = 'manual' | 'self' | 'key' | 'approval' | 'bulk' | 'cohort'
 export type CourseRole =
-  | 'instructor'
-  | 'teaching_assistant'
-  | 'non_editing_teacher'
-  | 'student'
-  | 'observer'
-  | 'guest'
+  'instructor' | 'teaching_assistant' | 'non_editing_teacher' | 'student' | 'observer' | 'guest'
 
 export default class CourseEnrollmentMethod extends BaseModel {
   @column({ isPrimary: true })

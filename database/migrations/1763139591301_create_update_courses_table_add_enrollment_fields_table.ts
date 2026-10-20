@@ -37,14 +37,16 @@ export default class extends BaseSchema {
 
   async down() {
     this.schema.alterTable(this.tableName, (table) => {
+      // Foreign keys first: MySQL refuses to drop an index a foreign key relies on
+      table.dropForeign(['category_id'])
+      table.dropForeign(['approved_by'])
+
       // Drop indexes
       table.dropIndex(['category_id'], 'idx_courses_category')
       table.dropIndex(['approval_status'], 'idx_courses_approval_status')
 
       // Drop columns
-      table.dropForeign(['category_id'])
       table.dropColumn('category_id')
-      table.dropForeign(['approved_by'])
       table.dropColumn('approved_by')
       table.dropColumn('approval_status')
       table.dropColumn('approved_at')

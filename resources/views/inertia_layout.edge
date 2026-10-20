@@ -11,17 +11,13 @@
       Edonis LMS
     </title>
 
-    {{-- Typography: Source Serif Pro for headings, Inter for body --}}
-    <link rel="preconnect" href="https://fonts.bunny.net" />
-    <link
-      href="https://fonts.bunny.net/css?family=source-serif-4:400,500,600,700|inter:400,500,600,700&display=swap"
-      rel="stylesheet"
-    />
+    {{-- Typography: Source Serif 4 for headings, Inter for body.
+         Self-hosted via @fontsource-variable (imported in inertia/app/app.tsx) --}}
 
     <style>
       :root {
-        --font-heading: 'Source Serif 4', Georgia, serif;
-        --font-body: 'Inter', system-ui, sans-serif;
+        --font-heading: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
+        --font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
       }
       
       body {
@@ -63,7 +59,7 @@
       <div
         id="db-error-banner"
         style="
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
         background: #dc2626;
         color: #fff;
         font-size: 0.8125rem;
@@ -255,7 +251,7 @@
     // Font loading detection
     if ("fonts" in document) {
       document.body.classList.add("fonts-loading");
-      Promise.all([ document.fonts.load("400 1em Inter"), document.fonts.load('400 1em "Source Serif 4"') ]).then(() => {
+      Promise.all([ document.fonts.load('400 1em "Inter Variable"'), document.fonts.load('400 1em "Source Serif 4 Variable"') ]).then(() => {
         document.body.classList.remove("fonts-loading");
         document.body.classList.add("fonts-loaded");
       });

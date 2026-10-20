@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: GSD install verified at v1.42.3 across both runtime roots; planning
-last_updated: "2026-10-13T13:30:43.379Z"
-last_activity: 2026-10-13 -- Phase 2 execution started
+stopped_at: Phase 2 — 13/14 plans merged; 02-14 awaiting AS5 / Q4 checkpoint. Phase 04 complete on origin/main.
+last_updated: "2026-10-20T00:00:00.000Z"
+last_activity: 2026-10-20 -- merged origin/main (phase 4) into the phase 2 line
 progress:
   total_phases: 12
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 20
-  completed_plans: 5
-  percent: 8
+  completed_plans: 6
+  percent: 17
 ---
 
 # Project State
@@ -21,21 +21,27 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with seamless Moodle migration
-**Current focus:** Phase 2 — security-correctness-hardening
+**Current focus:** Phase 2 — security-correctness-hardening (Phase 4 already complete; Phase 5 next)
 
 ## Current Position
 
 Phase: 2 (security-correctness-hardening) — EXECUTING
-Plan: 1 of 14
+Plan: 13 of 14 merged; 02-14 paused at its AS5 / Q4 checkpoint
 Status: Executing Phase 2
-Last activity: 2026-10-13 -- Phase 2 execution started
+Last activity: 2026-10-20 -- merged origin/main (phase 4) into the phase 2 line
 
-Next recommended run: `/gsd:execute-phase 2`
+Next recommended run: `/gsd:execute-phase 2` (planned, 14 plans; Phase 5 depends only on Phase 4
+and can be discussed/planned in parallel)
 
-Open items from Phase 1: `01-HUMAN-UAT.md` (3 pending) — GitHub Actions proof for plan 01-05
-(green PR, deliberately-red PR, required-check names). CI enforcement is proven locally only.
+Open items from Phase 1: `01-HUMAN-UAT.md` (2 pending) — deliberately-red PR and required-check
+names. Green CI on postgres/mysql/sqlite proven 2026-10-19 (push run of e4f777d).
 
-Progress (12-phase roadmap): [#.........] 8% (1/12 phases)
+Open items from Phase 4: `04-HUMAN-UAT.md` test 2 skipped — storage persistence across a redeploy,
+re-test at first deployment with `CONTENT_STORAGE_PATH` on persistent storage. Out-of-scope
+observations OBS-03 (legacy `file_url` seed data → Phase 7) and header dropdown hydration/`asChild`
+warnings remain open; OBS-01/02/04 fixed.
+
+Progress (12-phase roadmap): [##........] 17% (2/12 phases)
 
 > **Important:** the 0% figure measures the *content milestone roadmap only*.
 > The product itself is substantially built — see "Codebase Reality Check" below.
@@ -126,7 +132,7 @@ completion triggers.
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -135,6 +141,7 @@ completion triggers.
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 5 | - | - |
+| 04 | 1 | - | - |
 
 **Recent Trend:**
 
@@ -142,6 +149,7 @@ completion triggers.
 - Trend: N/A (no completed plans under GSD yet)
 
 *Updated after each plan completion*
+| Phase 04 P01 | 11min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -159,6 +167,9 @@ Recent decisions affecting current work:
   roadmap, not as a separate milestone. GSD forbids decimal insertion before
   Phase 1, so the content phases were renumbered 1-9 -> 4-12. Safe because zero
   plans had been executed.
+
+- [Phase 04]: 04-01: Content file downloads require auth + per-course authorization (admin, course staff via hasPermission view, or active/completed enrollment on published+available content); orphan files admin-only
+- [Phase 04]: 04-01: Content blobs stored outside webroot at storage/content_files/{sha256[0:2]}/{cuid}.{ext}, deduped by UNIQUE checksum; DB stores POSIX relative path
 
 ### Roadmap Evolution
 
@@ -231,10 +242,11 @@ Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
   `(course_id, user_id)`, `(is_published, created_at)`.
 
 - Roles reloaded from DB on every request (no cache).
+- Local Windows env: node ace processes segfault on exit (139); node ace test can report exit 1 with lost output. See .planning/phases/04-content-foundation/deferred-items.md
 
 ## Session Continuity
 
-Last session: 2026-10-09
+Last session: 2026-10-19T09:53:20.135Z
 Stopped at: GSD install verified at v1.42.3 across both runtime roots; planning
 restructure committed; lint baseline brought to zero errors (`af99ea1`).
 Working tree is clean. Ready to plan Phase 1.

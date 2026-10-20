@@ -33,6 +33,7 @@ const TwoFactorController = () => import('#controllers/two_factor_controller')
 const SocialAuthController = () => import('#controllers/social_auth_controller')
 const AccountController = () => import('#controllers/account_controller')
 const AuditLogsController = () => import('#controllers/audit_logs_controller')
+const FilesController = () => import('#controllers/files_controller')
 
 /*
 |--------------------------------------------------------------------------
@@ -338,6 +339,9 @@ router
     router
       .post('/contents/:contentId/complete', [CourseContentsController, 'markComplete'])
       .as('contents.complete')
+
+    // Content file downloads (authorized per course in FilesController)
+    router.get('/files/:id/download', [FilesController, 'download']).as('files.download')
   })
   .use(middleware.auth())
 

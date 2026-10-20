@@ -6,12 +6,7 @@ import User from '#models/user'
 import CourseEnrollmentMethod from '#models/course_enrollment_method'
 
 export type CourseRole =
-  | 'instructor'
-  | 'teaching_assistant'
-  | 'non_editing_teacher'
-  | 'student'
-  | 'observer'
-  | 'guest'
+  'instructor' | 'teaching_assistant' | 'non_editing_teacher' | 'student' | 'observer' | 'guest'
 
 export type EnrollmentStatus = 'active' | 'pending' | 'suspended' | 'completed' | 'expired'
 
