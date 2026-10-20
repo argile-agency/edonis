@@ -36,6 +36,27 @@ async function enrollmentRefusal(enroll: () => Promise<unknown>): Promise<string
   }
 }
 
+/**
+ * Learner-facing whitelist of an enrolment method; never includes the key.
+ */
+function toLearnerMethod(method: CourseEnrollmentMethod) {
+  return {
+    id: method.id,
+    methodType: method.methodType,
+    name: method.name,
+    // SQLite/MySQL return 1/0 for booleans
+    isEnabled: Boolean(method.isEnabled),
+    maxEnrollments: method.maxEnrollments,
+    currentEnrollments: method.currentEnrollments,
+    enrollmentStartDate: method.enrollmentStartDate?.toISO() ?? null,
+    enrollmentEndDate: method.enrollmentEndDate?.toISO() ?? null,
+    approvalMessage: method.approvalMessage,
+    welcomeMessage: method.welcomeMessage,
+    requiresKey: method.methodType === 'key',
+    isAvailable: method.isAvailable(),
+  }
+}
+
 export default class EnrollmentsController {
   /**
    * Display enrollment page for a course
@@ -65,12 +86,7 @@ export default class EnrollmentsController {
 
     return inertia.render('enrollments/show', {
       course: course.serialize(),
-      enrollmentMethods: await Promise.all(
-        course.enrollmentMethods.map(async (method) => ({
-          ...method.serialize(),
-          isAvailable: method.isAvailable(),
-        }))
-      ),
+      enrollmentMethods: course.enrollmentMethods.map(toLearnerMethod),
       existingEnrollment: existingEnrollment?.serialize(),
       pendingRequest: pendingRequest?.serialize(),
     })

@@ -28,11 +28,10 @@ interface EnrollmentMethod {
   currentEnrollments: number
   enrollmentStartDate: string | null
   enrollmentEndDate: string | null
-  enrollmentKey: string | null
-  requiresApproval: boolean
   approvalMessage: string | null
   welcomeMessage: string | null
-  autoAssignGroupId: number | null
+  requiresKey: boolean
+  isAvailable: boolean
   autoAssignGroup?: {
     id: number
     name: string

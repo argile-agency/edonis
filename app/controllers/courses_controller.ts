@@ -323,7 +323,10 @@ export default class CoursesController {
 
     return inertia.render('courses/enrollment-methods', {
       course: course.serialize(),
-      enrollmentMethods: course.enrollmentMethods.map((m) => m.serialize()),
+      enrollmentMethods: course.enrollmentMethods.map((m) => ({
+        ...m.serialize(),
+        enrollmentKey: m.enrollmentKey,
+      })),
       groups: course.groups.map((g) => g.serialize()),
     })
   }
