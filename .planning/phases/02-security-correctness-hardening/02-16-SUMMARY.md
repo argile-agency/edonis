@@ -3,7 +3,7 @@ phase: 02-security-correctness-hardening
 plan: 16
 subsystem: authorization
 tags: [cr-03, courses, policy, information-disclosure, gap-closure]
-status: awaiting-checkpoint
+status: complete
 requires: [02-15]
 provides:
   - "courses.show sends the module/content tree only to edit-rights holders"
@@ -23,23 +23,25 @@ key-files:
 decisions:
   - "Module tree recipients = canEdit only (owner, edit/manage co-instructors, admins); enrolled students get modules: []"
   - "CoursePolicy.view: public+published for everyone; draft/archived public only for view-permission holders and enrolled users; no widening of private/unlisted"
-  - "Task 3 (user approval of the view narrowing) is PENDING"
+  - "Task 3: user APPROVED the view narrowing (\"Approved.\"); 96cc522 kept"
 metrics:
   completed: 2026-10-20
-  tasks_done: 2
+  tasks_done: 3
   tasks_total: 3
 requirements: [DEBT-04]
 ---
 
 # Phase 02 Plan 16: CR-03 course tree leak and unpublished public course visibility Summary
 
-`GET /courses/:id` now loads and sends the module/content tree only to editors (owner, edit/manage co-instructors, admins). In a separate commit that can be reverted alone, `CoursePolicy.view` hides draft and archived public courses from users who are neither staff nor enrolled. That second change waits for the user's decision (Task 3).
+`GET /courses/:id` now loads and sends the module/content tree only to editors (owner, edit/manage co-instructors, admins). In a separate commit that can be reverted alone, `CoursePolicy.view` hides draft and archived public courses from users who are neither staff nor enrolled. The user approved that second change at the Task 3 checkpoint, so it stays.
 
 ## Status
 
 - Task 1: done, commit `74770ad` `fix(courses): send the module tree only to course editors`
 - Task 2: done, commit `96cc522` `fix(policies): hide unpublished public courses from non-staff viewers` (the SHA to revert on reject)
-- Task 3 (checkpoint:human-verify): **AWAITING USER DECISION** ("approved" / "reject"). On reject: `git revert --no-edit 96cc522`, then the full functional suite must exit 0.
+- Task 3 (checkpoint:human-verify): done. Decision: **APPROVED**. User reply: "Approved." Commit `96cc522` is kept; no revert, and no new test run was needed (functional 190/190 and unit 28/28 were already green on this tree).
+
+3 of 3 tasks complete.
 
 ## What changed
 
@@ -56,7 +58,7 @@ requirements: [DEBT-04]
 
 1. **Deliberate deviation from the verifier's wording (planner decision, kept).** The module tree is sent only when `canEdit`, because `inertia/pages/courses/show.tsx` renders `modules` only inside the edit tab. The "titles-only outline for non-editors" was dropped on purpose: no page renders it. Enrolled students now get `modules: []` and read material through the AS3-gated outline and learn routes.
 2. Task 1 and Task 2 each went in as one `fix(...)` commit, with no separate `test(...)` RED commit, so Task 2 stays revertable alone. RED was checked by running the tests before each change (above).
-3. Correction to the checkpoint brief: the seeded draft course (AI301) is `private` and the seeded archived course (SCI201) is `unlisted`. **No seeded course is a public draft or a public archived course.** So the visibility change hides none of the demo courses that were visible before; those two were already blocked for non-staff by `view`.
+3. Correction to the checkpoint brief: the seeded draft course (AI301) is `private` and the seeded archived course (SCI201) is `unlisted`. **No seeded course is a public draft or a public archived course.** So the visibility change hides none of the demo courses that were visible before; those two were already blocked for non-staff by `view`. The optional read-only query on the dev database (public courses that are not published) was **not** run, so non-seeded dev data was not checked.
 
 ## Known follow-ups (not fixed here)
 
