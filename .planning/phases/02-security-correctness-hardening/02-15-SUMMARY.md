@@ -63,6 +63,7 @@ The enrolment page no longer sends the plaintext enrolment key to learners: meth
 
 - All tests ran from the worktree, not the main checkout as the plan's verify command says (`cd .../edonis` would have tested the main checkout's code). Each run used `DB_CONNECTION=sqlite`, its own PORT (3415-3417) and a temp sqlite file that was deleted afterwards.
 - `bun run typecheck` 0, `bun run lint` 0, `bun run check:debt` 0.
+- `serializeAs: null` consumers: the only frontend reader of `enrollmentKey` is `inertia/pages/courses/enrollment/methods.tsx`, which gets its props only from `manageEnrollmentMethods`, where the key is now added back explicitly (Test C). No other controller serializes enrolment methods. No browser spec (`tests/browser`) opens `/courses/:id/enroll`, so the new 403 breaks no E2E flow. E2E was not run locally.
 - Acceptance greps: serializeAs null on enrollmentKey = 1; `method.serialize()` in enrollments_controller = 0; `toLearnerMethod` = 2; `enrollmentKey: m.enrollmentKey` = 1; `enrollmentKey: string` in show.tsx = 0; `viewEnrollmentPage` in policy = 1; `authorize('viewEnrollmentPage', course)` = 1; `bouncer.with(` in enrollments_controller = 5.
 
 ## Deviations from Plan
