@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Technical debt remediation:**
 
 - [x] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite (completed 2026-10-13)
-- [ ] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions
+- [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form
 
 **Course content milestone:**
@@ -152,7 +152,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-14-PLAN.md — Admin participants via service, COUNT(*) invariant, AS5 checkpoint, `check:debt` gates [DEBT-06]
+- [x] 02-14-PLAN.md — Admin participants via service, COUNT(*) invariant, AS5 checkpoint, `check:debt` gates [DEBT-06]
 
 ### Phase 3: Complete Stubbed Features
 
@@ -379,7 +379,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
-| 2. Security and Correctness Hardening | 13/14 | In Progress|  |
+| 2. Security and Correctness Hardening | 14/14 | Complete   | 2026-10-20 |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
