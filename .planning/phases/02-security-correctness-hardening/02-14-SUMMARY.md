@@ -2,7 +2,7 @@
 phase: 02-security-correctness-hardening
 plan: 14
 subsystem: enrollments
-status: paused-at-checkpoint (Task 3, AS5 decision pending)
+status: complete
 tags: [enrollments, counters, groups, ci-gates, DEBT-06, DEBT-04, DEBT-05]
 requires:
   - 02-13 (EnrollmentService, AlreadyEnrolledException)
@@ -33,16 +33,18 @@ decisions:
   - "removeParticipant only finds an enrolment of the course in the URL (where course_id = params.id)"
   - "check:debt also greps hasAnyRole( so the role check cannot be dodged by a sibling helper"
   - "AS5 cleanup runs inside unenroll's transaction and only when the enrolment row was actually deleted"
+  - "AS5 approved by the user (Task 3); commit 975ec59 kept"
+  - "Q4 / T-02-53 deferred to a later phase by the user; teachers may still create courses as published in Phase 2"
 metrics:
   duration: ~35min
-  completed: 2026-10-13
-  tasks: 2 of 3 (Task 3 is the AS5 human checkpoint)
+  completed: 2026-10-20
+  tasks: 3 of 3
   files: 4
 ---
 
 # Phase 2 Plan 14: Admin participants via EnrollmentService, AS5, check:debt Summary
 
-Admin "add participant" and "remove participant" now go through `EnrollmentService`, so all eleven DEBT-06 counter sites (C1 to C11) use one transactional path. A mixed enrol/unenrol/remove sequence leaves `enrolled_count`, `current_enrollments` and `current_members` equal to the `COUNT(*)` of their source rows. Adding someone who is already enrolled now shows a French flash instead of a 500. `bun run check:debt` makes both phase grep gates enforceable. AS5 (unenrolling also removes the user from that course's groups) is shipped as its own commit and is **waiting for the user's decision** at Task 3.
+Admin "add participant" and "remove participant" now go through `EnrollmentService`, so all eleven DEBT-06 counter sites (C1 to C11) use one transactional path. A mixed enrol/unenrol/remove sequence leaves `enrolled_count`, `current_enrollments` and `current_members` equal to the `COUNT(*)` of their source rows. Adding someone who is already enrolled now shows a French flash instead of a 500. `bun run check:debt` makes both phase grep gates enforceable. AS5 (unenrolling also removes the user from that course's groups) is shipped as its own commit and was **approved by the user** at Task 3. Q4 (force teacher-created courses to draft?) was **deferred by the user to a later phase**, with a requirement recorded below.
 
 ## Tasks
 
@@ -50,7 +52,7 @@ Admin "add participant" and "remove participant" now go through `EnrollmentServi
 |------|------|---------|
 | 1 | Admin participants via EnrollmentService, mixed-sequence invariant, check:debt | `55be558` test (RED), `9086b3e` fix(courses) (GREEN), `f814ea0` chore(ci) |
 | 2 | AS5: unenrol removes the course's group memberships | `975ec59` feat(enrollments) |
-| 3 | Checkpoint: confirm AS5 | pending (user decision) |
+| 3 | Checkpoint: confirm AS5 | none (user approved AS5; no code change) |
 
 ### Task 1
 - `addParticipant`: after `authorize('administer')`, validation and `Course.findOrFail`, it calls `EnrollmentService.enroll({ methodId: null, courseRole: payload.courseRole ?? 'student', enrolledBy: user.id })`. `AlreadyEnrolledException` becomes `session.flash('error', 'Cet utilisateur est déjà inscrit à ce cours.')` plus a redirect back. The `enrolledCount += 1; save()` lines are gone.
@@ -122,13 +124,39 @@ The `members` relation is read only by `courses_controller.ts:422/428`, which pr
 
 ## AS5 decision
 
-**PENDING.** The user's answer will be recorded here verbatim by the continuation agent.
-- "approved": nothing changes.
-- "reject AS5": `git revert --no-edit 975ec59`, then the full functional suite and `bun run check:debt`. Both must exit 0, because the mixed-sequence invariant holds without AS5.
+**APPROVED.** User's reply, verbatim: "AS5 : approved".
+
+- Commit `975ec59` is kept. Nothing was reverted.
+- No new test run was needed; the verification results above were taken with AS5 in place.
 
 ## Q4 / T-02-53 (teacher `status: 'published'` bypass)
 
-**Deferred, pending user decision (NOT accepted).** The question asked at phase close: "Should non-admin course creation be forced to `draft` (approval required), or may teachers keep publishing directly?" Answer: **still open** (asked in the Task 3 checkpoint).
+**Deferred to a later phase by the user. No code change in Phase 2.** The question asked at the Task 3 checkpoint: "Should non-admin course creation be forced to `draft` (approval required), or may teachers keep publishing directly?"
+
+User's reply, verbatim (French):
+
+> J'aimerais 2 boutons à la création « sauvegarder » et « publier » avec au minimum ces paramètres avec un réglage plateforme ou un plugin qui autorise ou non « la demande de création de cours », par un rôle supérieur ou des users définis, restreint dans certains cas à des catégories (comme des filières), possible de reporter ces correctifs dans des phases ultérieures
+
+English translation (translated, not the user's words):
+
+> I would like 2 buttons on creation, "save" and "publish", with at least these settings: a platform setting or a plugin that allows or forbids "course creation requests", by a higher role or by defined users, restricted in some cases to categories (such as programmes/schools). These fixes can be postponed to later phases.
+
+The user also attached a screenshot of a Moodle-style "Demande de création de cours" form as reference.
+
+Current behaviour stays for Phase 2: a teacher may create a course directly as published.
+
+Requirement recorded for the later phase:
+- **(a) Two buttons on the create form:** "Sauvegarder" saves as draft, and "Publier" publishes.
+- **(b) A platform setting (or plugin)** that allows or forbids "course creation requests".
+- **(c) Who may request or create courses:** a higher role, or a defined list of users.
+- **(d) Category restriction:** in some cases, limited to specific categories (for example filières/schools).
+- **(e) A Moodle-style request form** with these fields:
+  - full name
+  - short name
+  - course category, as a "Sélectionner votre filière/école" selector with search
+  - rich-text summary
+
+The orchestrator records this as a backlog item. This plan does not edit ROADMAP.md or create todo files.
 
 ## Phase 2 release checklist
 
@@ -136,7 +164,7 @@ The `members` relation is read only by `courses_controller.ts:422/428`, which pr
 2. **02-03:** users who are in the middle of a 2FA challenge at deploy time are sent back to the login page once. This is harmless; they re-enter their password.
 3. **02-07:** deploy with `PII_DECRYPT_STRICT` unset or false. Set `PII_DECRYPT_STRICT=true` in an environment **only after** its `pii:scan` reports 0 undecryptable (or after the user-approved remedy was applied). Environments with it on today: **none** (02-07's Q1 production checks were skipped).
 4. **02-13:** run `node ace enrollment:recount --dry-run`, then `node ace enrollment:recount` (audited as `cli.enrollment.recount`) in each environment.
-5. **02-14:** `bun run check:debt` is available. The CI workflow does not call it yet, so wiring it into `ci.yml` is a follow-up. If AS5 is kept, memberships that predate it (users who unenrolled earlier but are still in a group) stay in place. The recount fixes counters, not memberships.
+5. **02-14:** `bun run check:debt` is available. The CI workflow does not call it yet, so wiring it into `ci.yml` is a follow-up. AS5 is kept, but memberships that predate it stay in place: users who unenrolled before the deploy are still in their groups. `enrollment:recount` fixes counters, not membership lists.
 
 ## Backlog (out of scope for Phase 2; do not make worse)
 
@@ -145,9 +173,10 @@ The `members` relation is read only by `courses_controller.ts:422/428`, which pr
 - `Math.random` passwords in `SocialAuthController`
 - no TOTP replay protection
 - `inertia/pages/admin/categories/edit.tsx` is missing
-- **Q4 / T-02-53, teacher `status: 'published'` bypass: deferred, pending user decision (NOT accepted)**
+- **Q4 / T-02-53, teacher `status: 'published'` bypass: deferred by the user to a later phase.** Requirement: "Sauvegarder"/"Publier" buttons, a platform setting for course creation requests, allowed roles or users, category restriction, and a Moodle-style request form (see the Q4 section above)
 - C12, cohort `memberCount`, is outside DEBT-06's wording
 - `check:debt` is not yet run by CI
+- memberships left over from before AS5 are not cleaned up, and `enrollment:recount` does not fix membership lists
 
 ## Deviations from Plan
 
@@ -179,11 +208,16 @@ None.
 
 ## Self-Check: PASSED
 
-- Commits on the branch: `55be558`, `9086b3e`, `f814ea0`, `975ec59`, `bc7e392`.
+- Commits on the branch: `55be558`, `9086b3e`, `f814ea0`, `975ec59`, `bc7e392`, `9ac3f5a`.
+- Task 3: the user's AS5 approval and the Q4 deferral are recorded above. The step-2 grep result is recorded in "AS5 group-usage grep".
 - Modified files exist: `app/controllers/courses_controller.ts`, `app/services/enrollment_service.ts`, `tests/functional/enrollment_counters.spec.ts`, `package.json`.
 - CSRF gate one-liner exits 0 (12 `withCsrfToken()` ≥ 12 write calls).
 - The admin UI (`inertia/pages/admin/courses/participants.tsx:147`) builds the remove URL from `course.id`, so the new `course_id` scoping does not break it.
 
 ## Requirement status
 
-DEBT-06, DEBT-04 and DEBT-05 are met by the code and gates above. They are left for the orchestrator or continuation agent to mark complete once the AS5 checkpoint is answered.
+What this plan contributes:
+- **DEBT-06:** the last counter sites, C10 and C11, now go through `EnrollmentService`, and the mixed-sequence `COUNT(*)` test covers them.
+- **DEBT-04 and DEBT-05:** `bun run check:debt` makes the authorization and validation grep gates enforceable, and both are at 0.
+
+Task 3 does not require editing REQUIREMENTS.md, so this plan leaves it unchanged. The orchestrator decides whether to mark these three requirements complete after the merge.
