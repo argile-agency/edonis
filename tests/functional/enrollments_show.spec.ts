@@ -4,6 +4,7 @@ import {
   createCourse,
   createEnrollmentMethod,
   createUser,
+  enrollUser,
   grantPermission,
   uniqueSuffix,
 } from '#tests/functional/helpers/factories'
@@ -136,6 +137,38 @@ test.group('Enrollments - show page authorization', (group) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner, { visibility: 'public', allowEnrollment: false })
     const student = await createUser({ roles: ['student'] })
+
+    const response = await client
+      .get(route('enrollments.show', { id: course.id }))
+      .withInertia()
+      .loginAs(student)
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('enrollments/show')
+  })
+
+  test('public draft course gives the 403 page to an unrelated student', async ({
+    client,
+    route,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'draft' })
+    const student = await createUser({ roles: ['student'] })
+
+    const response = await client
+      .get(route('enrollments.show', { id: course.id }))
+      .withInertia()
+      .loginAs(student)
+
+    response.assertStatus(403)
+    response.assertInertiaComponent('errors/forbidden')
+  })
+
+  test('enrolled student still opens a public archived course', async ({ client, route }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'archived' })
+    const student = await createUser({ roles: ['student'] })
+    await enrollUser(course, student)
 
     const response = await client
       .get(route('enrollments.show', { id: course.id }))

@@ -88,6 +88,32 @@ test.group('CoursePolicy / EnrollmentPolicy - decision matrix', (group) => {
     assert.isTrue(await coursePolicy(admin).allows('view', privateCourse))
   })
 
+  test('view: unpublished public courses only for staff and enrolled users', async ({ assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const draft = await createCourse(owner, { status: 'draft' })
+    const archived = await createCourse(owner, { status: 'archived' })
+    const published = await createCourse(owner)
+    const privateCourse = await createCourse(owner, { visibility: 'private' })
+    const unrelated = await createUser({ roles: ['student'] })
+    const enrolled = await createUser({ roles: ['student'] })
+    const viewer = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    await enrollUser(archived, enrolled)
+    await enrollUser(privateCourse, enrolled)
+    await grantPermission(draft, viewer, 'view')
+
+    assert.isFalse(await coursePolicy(unrelated).allows('view', draft))
+    assert.isFalse(await coursePolicy(unrelated).allows('view', archived))
+    assert.isTrue(await coursePolicy(unrelated).allows('view', published))
+    assert.isTrue(await coursePolicy(enrolled).allows('view', archived))
+    assert.isTrue(await coursePolicy(viewer).allows('view', draft))
+    assert.isTrue(await coursePolicy(owner).allows('view', draft))
+    assert.isTrue(await coursePolicy(admin).allows('view', draft))
+    // No widening: enrolment does not open a private course.
+    assert.isFalse(await coursePolicy(unrelated).allows('view', privateCourse))
+    assert.isFalse(await coursePolicy(enrolled).allows('view', privateCourse))
+  })
+
   test('administer: admin only', async ({ assert }) => {
     const admin = await createUser({ roles: ['admin'] })
     const teacher = await createUser({ roles: ['teacher'] })

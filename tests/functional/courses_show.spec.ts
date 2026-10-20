@@ -146,3 +146,37 @@ test.group('Courses - show page (CR-03)', (group) => {
     }
   })
 })
+
+test.group('Courses - show page visibility (CR-03)', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('public draft course gives the 403 page to an unrelated student', async ({
+    client,
+    route,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'draft' })
+    const student = await createUser({ roles: ['student'] })
+
+    const response = await client
+      .get(route('courses.show', { id: course.id }))
+      .withInertia()
+      .loginAs(student)
+
+    response.assertStatus(403)
+    response.assertInertiaComponent('errors/forbidden')
+  })
+
+  test('owner still opens the public draft course', async ({ client, route }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner, { status: 'draft' })
+
+    const response = await client
+      .get(route('courses.show', { id: course.id }))
+      .withInertia()
+      .loginAs(owner)
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('courses/show')
+  })
+})
