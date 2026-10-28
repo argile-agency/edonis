@@ -332,7 +332,7 @@ function fromEnv(): Transport | null {
 }
 
 export default class MailService {
-  /** Test seam: specs assign a fake transport and restore it in teardown. */
+  /** Test seam: specs set BOTH `transport` and `from` (`.env.test` has no SMTP vars, so both are null) and restore both in teardown. */
   static transport: Transport | null = fromEnv()
   static from = env.get('MAIL_FROM_ADDRESS') ?? env.get('SMTP_USERNAME') ?? null
 }
@@ -440,7 +440,7 @@ router.post('/contact', [PagesController, 'store']).as('contact.store').use(cont
 The dashboard shows the Évaluations card to every teacher (`isTeacher` in dashboard.tsx). Under D-04, a teacher with no owned or edit/manage course gets the 403 page. See Open Question 1.
 
 ### Pitfall 3: PII in page props
-`User.serialize()` exposes decrypted phone, address, identification number, and more. `Course.serialize()` embeds the instructor (02-REVIEW CR-01). Map each row to a DTO: `{ id, submittedAt: s.submittedAt?.toISO() ?? null, isLate: Boolean(s.isLate), attemptNumber, student: { id, fullName, email }, assignment: { id, title }, course: { id, title, code } }`. `Boolean()` is needed because MySQL and SQLite return 0/1 for booleans (the model column has no cast).
+`User.serialize()` exposes decrypted phone, address, identification number, and more. `Course.serialize()` embeds the instructor (02-REVIEW CR-01). Map each row to a DTO: `{ id, submittedAt: s.submittedAt?.toISO() ?? null, isLate: Boolean(s.isLate), attemptNumber, student: { id, fullName, email }, assignment: { id, title }, course: { id, title, code } }`. `Boolean()` is needed because MySQL and SQLite return 0/1 for booleans (the model column has no cast). Never call `page.serialize()` (it serializes the preloaded User and Course). Pass `{ data: page.all().map(toDto), meta: page.getMeta() }`.
 
 ### Pitfall 4: Rows that the gradebook does not show
 The gradebook lists only `is_published = true` assignments and **enrolled** students. [VERIFIED: grades_controller.ts] Restrict the evaluations base query to published assignments; Assignment A3 covers this. Submissions of since-unenrolled students still link to a gradebook row that is not there. Known limitation of D-07, document it.
@@ -452,7 +452,7 @@ The gradebook lists only `is_published = true` assignments and **enrolled** stud
 Sorting by `full_name`, `title` or `submitted_at` has ties. Add `orderBy('submissions.id')` last. NULL ordering of `submitted_at` differs (PG puts NULLs last on ASC, MySQL and SQLite first). A `submitted` row should never have a null `submitted_at`; the seeder and factory must set it.
 
 ### Pitfall 7: Per-IP throttle may be site-wide in production
-`http` config has no `trustProxy`, and the AdonisJS default trusts only loopback (`proxyAddr.compile("loopback")`). [VERIFIED: http-server chunk line 4596] On Infomaniak's Kubernetes ingress, `request.ip()` may be the proxy IP, which would make login, register and contact limits global. Check: `SELECT DISTINCT ip_address FROM audit_logs WHERE action LIKE 'user.login%' ...` in prod. Do **not** blindly set `trustProxy: true` (spoofable `X-Forwarded-For`). Open Question 2 / HUMAN-UAT.
+`http` config has no `trustProxy`, and the AdonisJS default trusts only loopback (`proxyAddr.compile("loopback")`). [VERIFIED: http-server chunk line 4596] On Infomaniak's Kubernetes ingress, `request.ip()` may be the proxy IP, which would make login, register and contact limits global. Check: `SELECT DISTINCT ip_address FROM audit_logs WHERE action LIKE 'user.login%'` in prod (actions `user.login`, `user.login.failed`, `user.login.blocked`, `user.login.2fa_required` verified in auth_controller.ts). Do **not** blindly set `trustProxy: true` (spoofable `X-Forwarded-For`). Open Question 2 / HUMAN-UAT.
 
 ### Pitfall 8: Empty query strings
 `?courseId=&sort=` arrives as `''`. Without `.parse(emptyToNull)`, validation rejects every unfiltered submit. Write a regression test with exactly the payload the UI sends.
@@ -466,7 +466,7 @@ Once you join users or assignments, use `select('submissions.*')` and qualify `s
 ### Pitfall 11: Test environment
 - The default shell has Node 24, which breaks `node ace`. Prefix commands with `export PATH="$HOME/.local/share/fnm/node-versions/v22.19.0/installation/bin:$PATH"`.
 - The user's dev server occupies 3333 and 24678, so run tests with a unique `PORT` and `DB_FILENAME`: `PORT=3433 DB_FILENAME=./tmp/test-03.sqlite3 node ace test functional`. The `Port 24678 is already in use` Vite warning is non-fatal. [VERIFIED: 02-12-SUMMARY]
-- `.env.test` has no SMTP vars, so `MailService.transport` is `null` in tests unless a spec assigns one.
+- `.env.test` has no SMTP vars, so `MailService.transport` **and** `MailService.from` are `null` in tests. A spec that sets only `transport` silently takes the "not configured" branch.
 - The test DB has no `app_settings` row: create an `AppSetting` with `contactEmail` and `isActive: true` in the notification tests.
 
 ### Pitfall 12: `check:debt` gate 2
@@ -565,7 +565,7 @@ See Patterns 1-7 above. They are built from verified repo code (`course_policy.t
 ### Wave 0 Gaps
 - [ ] `tests/functional/helpers/factories.ts`: add `createAssignment(course, overrides)` (default `isPublished: true`, `title`) and `createSubmission(assignment, student, overrides)` (default `status: 'submitted'`, `submittedAt: DateTime.now()`, `attemptNumber: 1`).
 - [ ] `tests/functional/evaluations.spec.ts`
-- [ ] `tests/functional/contact.spec.ts`: restore `MailService.transport` in `group.each.teardown`, and `limiter.clear()` in setup.
+- [ ] `tests/functional/contact.spec.ts`: set `MailService.transport` and `MailService.from` per test, restore both in `group.each.teardown`, and call `limiter.clear()` in setup.
 - No framework install is needed.
 
 ## Security Domain
