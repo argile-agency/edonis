@@ -45,6 +45,7 @@ Code scout findings shown to the user before the discussion: the pencil and tras
 | Je laisse le planificateur décider | A reasonable documented limit | |
 
 **User's choice:** Limiter à 3 niveaux
+**REVISED 2026-10-28 after research:** the builder, the learner player and outline, the progress summary and the course page only handle two levels, so the user switched to "Limiter à 2 niveaux (Recommandé)" (alternative offered: keep 3 levels and extend those five views). CONTEXT.md D-02 reflects the revision. The user also approved a one-line change in `tests/bootstrap.ts` so the browser-test URL follows `PORT` (D-10).
 
 ### Where a content can be dropped
 
