@@ -208,6 +208,7 @@ tests/
 - **Section drag:** on `onDragStart`, compute the list as **section rows only**, without the active section's descendants. Hide content rows during the drag, as the official example hides children of the active item. Apply the official `getProjection` (depth from `delta.x / indentationWidth` for pointers, ←/→ for keyboard), then clamp so that `projectedDepth + subtreeHeight(active) ≤ 2` (0-based depth, so 3 levels). `parentId` comes from the projection. Position = index among the new parent's section children.
 - Keyboard `coordinateGetter` branches on the active id prefix: `c-` → `sortableKeyboardCoordinates` (vertical), `s-` → the example's `sortableTreeKeyboardCoordinates` (vertical + ←/→ depth).
 - `cancelDrop` (DndContext prop) or an `onDragEnd` guard refuses invalid projections, such as depth overflow or a content above every section.
+- **Keyboard risk of the sections-only list:** the official example hides only rows *below* the active item, so the active row never moves. Hiding content rows *above* the active section makes the row jump up at drag start, while the keyboard sensor's starting rect may still be the pre-reflow position, so the first ArrowDown can skip rows. Pointer drags are unaffected (the overlay follows the pointer). Cover it with a browser test (keyboard-move a section that sits below expanded content rows). **Fallback if it misbehaves:** keep content rows mounted during section drags and clamp section positions to after the destination parent's content rows.
 
 ### Pattern 2: Collapsed and empty sections as targets (D-03)
 - A collapsed section's header row stays in the list. When a content drop lands right after it, the nearest section above is that section, so the content goes **at its end**. Compute position = its content count, not 0, when the section is collapsed.
@@ -227,7 +228,8 @@ Algorithm (both), all inside `db.transaction(async (trx) => …)`:
 4. Destination scoped to the course: `CourseModule.query({client: trx}).where('id', dest).where('course_id', course.id).first()`. Missing → 422, same discipline as `PARENT_ERROR`.
 5. Modules only: load `id, parent_id` of all course modules once, then:
    - `wouldCreateCycle(parentById, module.id, parentId)` → 422.
-   - `depthOf(parentById, parentId) + 1 + subtreeHeight(childrenByParent, module.id) > 2` → 422 ("Profondeur maximale : 3 niveaux").
+   - `newDepth + subtreeHeight(childrenByParent, module.id) > 2` → 422 ("Profondeur maximale : 3 niveaux"), where `newDepth = parentId === null ? 0 : depthOf(parentById, parentId) + 1`.
+   - Conventions (use the same in the unit test names): `depthOf(root module) = 0`; a `null` parent means the moved section lands at depth 0; `subtreeHeight(section without sub-sections) = 0`. Max allowed depth is 2 (= 3 levels).
    - Both helpers must stay pure and terminate on cyclic data (same style as `wouldCreateCycle`).
 6. Destination siblings: `ORDER BY order, id`, excluding the item. Splice the item at `clamp(position, 0, n)`. Write `order = i + 1` only where it changed. If the parent changed, renumber the source siblings too (dense 1..n). Siblings are renumbered with the query builder (no `updated_at` bump). **The moved item is saved through the model** (`item.merge({ moduleId|parentId, order }).useTransaction(trx).save()`), so `autoUpdate` bumps its `updatedAt`.
 7. Return `200 { item: { id, updatedAt } }`.
@@ -336,7 +338,7 @@ Controller negotiation for the existing `updateModule`/`updateContent`/`deleteMo
 
 ### Pitfall 2: Learners cannot see depth-3 sections (D-02 vs 2-level loaders)
 **What goes wrong:** a sub-section with children moved into another section becomes depth 3. `learn`/`outline`/`getCourseProgress`/`courses.show` preload only `children`, not grandchildren, so the content disappears from the player, outline and progress percentage.
-**How to avoid:** a task that adds a third `.preload('children', …)` level, or replaces the nested preloads with one flat course query + in-memory tree, in: `CourseContentsController.builder|learn|outline|getCourseProgress`, `CoursesController.show` (line ~159). Make `outline.tsx` render recursively and make the `allContents` / first-content loops in `learn.tsx` and the `learn` controller recursive. Builder: flat load (`sections`, `contents` props).
+**How to avoid:** a task that adds a third `.preload('children', …)` level, or replaces the nested preloads with one flat course query + in-memory tree. In `learn` and `outline` the third level **must repeat the same `is_published` filters on the module and on its contents** as the first two levels. Otherwise unpublished depth-3 sections and their bodies reach learners (the WR-02 / CR-03 class of leak). Apply it in: `CourseContentsController.builder|learn|outline|getCourseProgress`, `CoursesController.show` (line ~159). Make `outline.tsx` render recursively and make the `allContents` / first-content loops in `learn.tsx` and the `learn` controller recursive. Builder: flat load (`sections`, `contents` props).
 **Warning signs:** the builder shows a section that the learner outline does not.
 
 ### Pitfall 3: Timestamp precision breaks the conflict check across engines
@@ -351,6 +353,10 @@ Controller negotiation for the existing `updateModule`/`updateContent`/`deleteMo
 ### Pitfall 5: Delete-empty race with cascading FKs
 **What goes wrong:** teacher A deletes an empty section while teacher B moves a content into it; without a shared lock the delete cascades B's content away.
 **How to avoid:** delete and move take the same course-row `forUpdate()` lock inside the transaction and re-check emptiness after acquiring it.
+
+### Pitfall 5b: Deleting a content with attachments
+**What goes wrong:** `content_content_files.course_content_id` is `ON DELETE CASCADE`, so `deleteContent` removes the pivot rows but leaves the `content_files` rows and their stored blobs. Blobs are SHA-256 deduplicated and may be shared, and phase 4 deliberately makes orphan files admin-only downloadable.
+**How to avoid:** no new code in this phase (do not delete blobs: they may be shared; cleanup belongs to the trash phase). Add a functional case: deleting a content with an attachment returns 200, removes the pivot row, and leaves the `content_files` row. [VERIFIED: migration 1792402903468, 04-01-SUMMARY]
 
 ### Pitfall 6: Collapsed or unrendered rows are not drop targets
 **What goes wrong:** with nested containers, a collapsed section has no rendered container to drop into.
@@ -516,6 +522,8 @@ There is **no React component test runner** (no Vitest/RTL in `package.json`). D
 | All | authorization: non-editor teacher 403 on every new route; admin passes | functional | authorization_contents.spec.ts (extend) | ⚠ extend |
 | BUILD-01/02/03, D-07 | keyboard drag: focus handle, Space, ArrowDown×n, (ArrowRight for sections), Space → DOM order changed, reload → persisted | browser | `node ace test browser tests/browser/builder.spec.ts` | ❌ |
 | D-07 | "Déplacer vers…" dialog moves a content; Monter/Descendre reorder | browser | builder.spec.ts | ❌ |
+| BUILD-03 | keyboard-move a section located below expanded content rows lands where announced (sections-only reflow risk) | browser | builder.spec.ts | ❌ |
+| BUILD-09 | delete a content with an attachment: 200, pivot row gone, `content_files` row kept | functional | builder_moves.spec.ts | ❌ |
 | BUILD-10 | indicator shows "Enregistré" in `role=status` after an action | browser | builder.spec.ts | ❌ |
 | D-07/a11y | builder page: no critical/serious axe violations (closed, with a panel open, with menu open) | browser | `tests/browser/accessibility.spec.ts` (add case) | ⚠ extend |
 | SSR | no hydration warning on builder (listen to `page.on('console')` for "hydrat") | browser | builder.spec.ts | ❌ |
