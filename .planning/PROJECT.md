@@ -26,6 +26,7 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 - ✓ Lint, typecheck and `as any` ban enforced in code; unit and functional test suites run locally — Validated in Phase 1: Code Health Baseline (GitHub Actions green on postgres/mysql/sqlite since 2026-10-19; red-PR and required-check proofs pending, see 01-HUMAN-UAT.md)
 - ✓ `Course.canEnroll()` enforces its enrollment date window — Validated in Phase 1
 - ✓ Content file storage foundation: `ContentFile` with checksum dedup, storage outside webroot (`CONTENT_STORAGE_PATH`), authorized `/files/:id/download` (course staff, or enrolled learners on published/available content incl. ancestor modules) — Validated in Phase 4: Content Foundation (redeploy persistence untested until first deployment)
+- ✓ Authorization and validation applied uniformly: `app/policies/` (CoursePolicy, EnrollmentPolicy) replaces inline controller checks, every input action validated, transactional enrollment counters (`EnrollmentService`), category cycle rejection, PII decryption failures never returned raw (`PII_DECRYPT_STRICT`, `pii:scan`), 2FA pending timeout plus admin/CLI recovery — Validated in Phase 2: Security and Correctness Hardening (verified on SQLite only; CI on postgres/mysql, DEBT-08 production gate and browser checks pending, see 02-HUMAN-UAT.md)
 
 ### Active
 
@@ -114,6 +115,10 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 | Core types before plugin system | Build concrete implementations first, extract abstraction later | — Pending |
 | Inline editing in builder | Better UX than separate edit pages, matches modern course builders | — Pending |
 | Instructor + admin permissions only | Simple model for v1, role-based course permissions in v2 | — Pending |
+| Gradebook instructor view for admins and edit/manage co-instructors (AS2) | Matches every other course surface; they were wrongly refused | ✓ Approved 2026-10-13 |
+| Course outline and progress limited to enrolled students, editors and admins (AS3); module tree sent only to editors; public draft/archived courses visible only to owner, collaborators, enrolled and admins | Closes outline/content exposure to any logged-in user | ✓ Approved 2026-10-13 (AS3) / 2026-10-28 (visibility) |
+| Self and key enrolment refused when `canEnroll()` is false (AS4); leaving a course removes the user from its groups (AS5) | The server enforces what the UI only hid; group lists no longer show people who left | ✓ Approved 2026-10-13 / 2026-10-20 |
+| Teachers may still publish courses directly; "Sauvegarder"/"Publier" buttons plus a platform setting for course creation requests deferred | User wants a configurable request flow (roles or users, per category) rather than forcing drafts | — Deferred (todo 2026-10-20) |
 
 ---
-*Last updated: 2026-10-19 after Phase 4 (Content Foundation)*
+*Last updated: 2026-10-28 after Phase 2 (Security and Correctness Hardening)*
