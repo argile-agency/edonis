@@ -159,7 +159,7 @@ Plans:
 **Gap closure** *(from 02-VERIFICATION.md; 02-16 waits for 02-15, shared files)*
 
 - [x] 02-15-PLAN.md — CR-02: enrolment keys never serialized to learners, enrollments.show gated by CoursePolicy.viewEnrollmentPage [DEBT-04]
-- [ ] 02-16-PLAN.md — CR-03: courses.show module tree only for editors; published-only view for non-staff (checkpoint) [DEBT-04]
+- [x] 02-16-PLAN.md — CR-03: courses.show module tree only for editors; published-only view for non-staff (checkpoint) [DEBT-04]
 
 ### Phase 3: Complete Stubbed Features
 
@@ -375,7 +375,7 @@ Plans:
 
 Plans:
 
-- [ ] 12-01: Builder access control via the Phase 2 policy layer
+- [x] 12-01: Builder access control via the Phase 2 policy layer (completed 2026-10-28)
 - [ ] 12-02: Final polish and edge cases
 
 ## Progress
@@ -386,7 +386,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
-| 2. Security and Correctness Hardening | 15/16 | In Progress|  |
+| 2. Security and Correctness Hardening | 16/16 | Complete   | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/2 | Not started | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 0/3 | Not started (rescoped) | - |
