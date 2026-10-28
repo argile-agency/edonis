@@ -495,17 +495,17 @@ See Patterns 1-7 above. They are built from verified repo code (`course_policy.t
 | A6 | Throttle 5 per 10 min, block 15 min per IP | Rate limit | Too tight if the proxy IP is shared (Pitfall 7) |
 | A7 | Inline send with 10-15 s timeouts is acceptable (no queue) | Pattern 6 | Slow submit when SMTP is degraded |
 | A8 | Infomaniak SMTP: `mail.infomaniak.com`, 587 STARTTLS or 465 TLS, full mailbox address as username, auth mandatory; From must be that mailbox. Outbound SMTP from the Node.js pods is allowed | Environment | No delivery in prod. Row still kept. |
-| A9 | Widening `viewGradebook`/`viewGradebookAsInstructor` to managers is accepted as a consequence of D-03 + D-07 | Pattern 1 | A manager sees every student's grades, name and email in every course |
+| A9 | ~~Widening `viewGradebook`/`viewGradebookAsInstructor` to managers is accepted as a consequence of D-03 + D-07~~ REJECTED by the user on 2026-10-28: managers get no global view; only admins see all courses (CONTEXT.md D-03 revised). Gradebook rules are not widened. | Pattern 1 | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Teacher without any gradable course.**
+1. **Teacher without any gradable course.** RESOLVED: plan 03-06 (dashboard card shown only when `viewEvaluations` allows it).
    - What we know: the dashboard card shows for every teacher, and D-04 gives such a teacher a 403.
    - Recommendation: keep the 403, since D-04 is literal, and confirm with the user. Alternative: let any `teacher` role in and show an empty list.
-2. **Is `request.ip()` the client IP on Infomaniak?**
+2. **Is `request.ip()` the client IP on Infomaniak?** RESOLVED: accepted risk in plan 03-02, HUMAN-UAT follow-up.
    - Recommendation: before deploying, check distinct `audit_logs.ip_address` for logins in prod. If they are all one private IP, configure `trustProxy` to the ingress CIDR in a separate change. Add a HUMAN-UAT item.
-3. **Counters vs filters (A2).** Recommend filters apply. The planner may pick either, provided it is tested.
-4. **Production mail settings.** Set `SMTP_*`, `MAIL_FROM_ADDRESS` and a real `AppSetting.contactEmail` (seed is `support@edonis.local`) in prod. The Node version on Infomaniak is unknown, and nodemailer 10 needs Node >= 20. HUMAN-UAT: one real message delivered.
+3. **Counters vs filters (A2).** RESOLVED by CONTEXT.md D-01 (counters ignore the filters; plan 03-03). Original recommendation was that filters apply. The planner may pick either, provided it is tested.
+4. **Production mail settings.** RESOLVED: plan 03-04 (HUMAN-UAT item). Set `SMTP_*`, `MAIL_FROM_ADDRESS` and a real `AppSetting.contactEmail` (seed is `support@edonis.local`) in prod. The Node version on Infomaniak is unknown, and nodemailer 10 needs Node >= 20. HUMAN-UAT: one real message delivered.
 
 ## Environment Availability
 

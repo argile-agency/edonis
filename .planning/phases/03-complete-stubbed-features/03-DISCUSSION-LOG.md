@@ -90,6 +90,8 @@ Areas offered but not selected: E-mail de notification, Contact : stockage et an
 
 **User's choice:** Comme un admin : toutes les soumissions de tous les cours
 
+**REVISED 2026-10-28 (plan-checker raised the privacy impact of letting managers open every gradebook):** the user reversed this choice and chose "Non : retirer l'accès global des managers (comme un enseignant)". Notes: « Un supervisor ou un manager de cours ne voit pas forcément tous les cours. Il ne voit que les cours qu'il manage. À la limite, il faudrait qu'il y ait des permissions pour manager tous les cours d'une catégorie si besoin. Mais autrement, c'est vraiment uniquement les cours concernés. Seuls les admins voient tous les cours de la plateforme. Personne d'autre. » Category-level manager permissions were noted as a deferred idea. CONTEXT.md D-03 and D-04 reflect the revised decision.
+
 ---
 
 ## Claude's Discretion
