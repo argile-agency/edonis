@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 2 — 13/14 plans merged; 02-14 awaiting AS5 / Q4 checkpoint. Phase 04 complete on origin/main.
-last_updated: "2026-10-20T00:00:00.000Z"
-last_activity: 2026-10-20 -- merged origin/main (phase 4) into the phase 2 line
+status: ready_to_plan
+stopped_at: Phase 02 complete (16/16, verification human_needed) — ready to discuss Phase 3 or Phase 5
+last_updated: "2026-10-28T09:22:23.503Z"
+last_activity: 2026-10-28
 progress:
   total_phases: 12
-  completed_phases: 2
-  total_plans: 20
-  completed_plans: 6
-  percent: 17
+  completed_phases: 3
+  total_plans: 22
+  completed_plans: 22
+  percent: 25
 ---
 
 # Project State
@@ -21,17 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with seamless Moodle migration
-**Current focus:** Phase 2 — security-correctness-hardening (Phase 4 already complete; Phase 5 next)
+**Current focus:** Phase 3 — complete stubbed features (Phase 5 depends only on Phase 4 and can be discussed/planned in parallel)
 
 ## Current Position
 
-Phase: 2 (security-correctness-hardening) — EXECUTING
-Plan: 13 of 14 merged; 02-14 paused at its AS5 / Q4 checkpoint
-Status: Executing Phase 2
-Last activity: 2026-10-20 -- merged origin/main (phase 4) into the phase 2 line
+Phase: 03
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-28
 
-Next recommended run: `/gsd:execute-phase 2` (planned, 14 plans; Phase 5 depends only on Phase 4
-and can be discussed/planned in parallel)
+Next recommended run: `/gsd-discuss-phase 3` (or `/gsd-discuss-phase 5`)
+
+Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
+gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
+accessibility suite incl. the 403 page, manual check of `/courses/:id/enroll` and `/courses/:id`.
+Out of scope for Phase 2 (see `02-REVIEW.md`): CR-01 instructor PII in page props, CR-04 GDPR export
+queries `submissions.user_id`, CR-05 decrypted PII in `audit_logs`, CR-06 `maxStudents` oversell,
+20 warnings. Todo: `course-creation-requests-with-save-and-publish-buttons` (Q4, deferred).
 
 Open items from Phase 1: `01-HUMAN-UAT.md` (2 pending) — deliberately-red PR and required-check
 names. Green CI on postgres/mysql/sqlite proven 2026-10-19 (push run of e4f777d).
@@ -41,7 +47,7 @@ re-test at first deployment with `CONTENT_STORAGE_PATH` on persistent storage. O
 observations OBS-03 (legacy `file_url` seed data → Phase 7) and header dropdown hydration/`asChild`
 warnings remain open; OBS-01/02/04 fixed.
 
-Progress (12-phase roadmap): [##........] 17% (2/12 phases)
+Progress (12-phase roadmap): [###.......] 25% (3/12 phases)
 
 > **Important:** the 0% figure measures the *content milestone roadmap only*.
 > The product itself is substantially built — see "Codebase Reality Check" below.
@@ -132,7 +138,7 @@ completion triggers.
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 22
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -142,6 +148,7 @@ completion triggers.
 |-------|-------|-------|----------|
 | 01 | 5 | - | - |
 | 04 | 1 | - | - |
+| 2 | 16 | - | - |
 
 **Recent Trend:**
 

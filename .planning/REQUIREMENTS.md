@@ -25,12 +25,12 @@ against the working tree. These gate the v1 content work (Phases 1-3).*
 
 ### Security and Correctness
 
-- [ ] **DEBT-04**: Resource-ownership authorization is centralized in `app/policies/` instead of inline controller checks
-- [ ] **DEBT-05**: Every controller action accepting user input has a validator (5 validators for 16 controllers today)
-- [ ] **DEBT-06**: Enrollment counter mutations (`enrolledCount`, `currentEnrollments`) run inside a database transaction
-- [ ] **DEBT-07**: Category tree building detects and rejects cycles instead of looping indefinitely
-- [ ] **DEBT-08**: Decryption failures are logged and never returned raw in all modes; raises when PII_DECRYPT_STRICT=true
-- [ ] **DEBT-09**: 2FA pending state has an explicit timeout and a documented recovery path (recovery codes or admin unlock)
+- [x] **DEBT-04**: Resource-ownership authorization is centralized in `app/policies/` instead of inline controller checks
+- [x] **DEBT-05**: Every controller action accepting user input has a validator (5 validators for 16 controllers today)
+- [x] **DEBT-06**: Enrollment counter mutations (`enrolledCount`, `currentEnrollments`) run inside a database transaction
+- [x] **DEBT-07**: Category tree building detects and rejects cycles instead of looping indefinitely
+- [x] **DEBT-08**: Decryption failures are logged and never returned raw in all modes; raises when PII_DECRYPT_STRICT=true
+- [x] **DEBT-09**: 2FA pending state has an explicit timeout and a documented recovery path (recovery codes or admin unlock)
 
 ### Evaluations Module
 
@@ -173,12 +173,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBT-01 | Phase 1 | Complete |
 | DEBT-02 | Phase 1 | Complete |
 | DEBT-03 | Phase 1 | Complete |
-| DEBT-04 | Phase 2 | Pending |
-| DEBT-05 | Phase 2 | Pending |
-| DEBT-06 | Phase 2 | Pending |
-| DEBT-07 | Phase 2 | Pending |
-| DEBT-08 | Phase 2 | Pending |
-| DEBT-09 | Phase 2 | Pending |
+| DEBT-04 | Phase 2 | Complete |
+| DEBT-05 | Phase 2 | Complete |
+| DEBT-06 | Phase 2 | Complete |
+| DEBT-07 | Phase 2 | Complete |
+| DEBT-08 | Phase 2 | Complete |
+| DEBT-09 | Phase 2 | Complete |
 | DEBT-10 | Backlog | Pending |
 | EVAL-01 | Phase 3 | Pending |
 | EVAL-02 | Phase 3 | Pending |
