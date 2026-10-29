@@ -41,25 +41,32 @@ Notes: the default shell Node 24 breaks `node ace`; use Node 22 as above. The de
 
 ## Per-Task Verification Map
 
-Task IDs are assigned by the plans; each row must be covered by at least one task's automated verify.
+Each row is covered by at least one task's automated verify (`<automated>` in the named task).
 
-| Requirement | Behavior | Test Type | Automated Command | File Exists |
-|-------------|----------|-----------|-------------------|-------------|
-| BUILD-01 | content move within a section renumbers densely; position clamped | functional | `--files tests/functional/builder_moves.spec.ts` | ❌ W0 |
-| BUILD-01 | projection: content slot gives (parent, position) | unit | `node ace test unit --files tests/unit/builder_tree.spec.ts` | ❌ W0 |
-| BUILD-02 | content to another section (including an empty one); source and destination renumbered; foreign `moduleId` (another course) refused, nothing written | functional | builder_moves.spec.ts | ❌ W0 |
-| BUILD-03 | module reorder and re-parent; cycle refused; depth plus sub-tree height above 2 refused; parent `null` accepted; foreign ids refused | functional + unit (`depthOf`, `subtreeHeight`) | as above, plus `tests/unit/category_tree.spec.ts` | ⚠ extend |
-| BUILD-04 | `createModule` and `updateModule` refuse depth above 2 | functional | builder_moves.spec.ts | ❌ W0 |
-| BUILD-05, BUILD-08 | PUT JSON returns `updatedAt`; stale token gives 409 with the fresh item; dates clearable (null); start after end gives 422 | functional | builder_moves.spec.ts | ❌ W0 |
-| BUILD-06 | deleting a non-empty section gives 409 and deletes nothing; an empty one gives 200 | functional | builder_moves.spec.ts | ❌ W0 |
-| BUILD-09 | delete content JSON 200; teacher without edit permission gets 403; attached file row kept | functional | builder_moves.spec.ts | ❌ W0 |
-| BUILD-10 | CSRF failure is not a 200 JSON (302 with `redirects(0)`), so the client takes its error path | functional | builder_moves.spec.ts | ❌ W0 |
-| All | non-editor teacher gets 403 on every new route; admin passes | functional | `tests/functional/authorization_contents.spec.ts` | ⚠ extend |
-| BUILD-01..03, D-07 | keyboard drag: focus handle, Space, arrows, Space; DOM order changed and persisted after reload | browser | `tests/browser/builder.spec.ts` | ❌ W0 |
-| D-07 | "Déplacer vers…" moves a content or section; Monter / Descendre reorder | browser | builder.spec.ts | ❌ W0 |
-| BUILD-10 | indicator shows "Enregistré" in a `role=status` region after an action | browser | builder.spec.ts | ❌ W0 |
-| a11y | builder page: no critical or serious axe violations (closed, panel open, menu open) | browser | `tests/browser/accessibility.spec.ts` | ⚠ extend |
-| SSR | no hydration warning on the builder page (console listener) | browser | builder.spec.ts | ❌ W0 |
+| Requirement | Behavior | Test Type | Covered by (plan / task) | Automated Command | File Exists | Status |
+|-------------|----------|-----------|--------------------------|-------------------|-------------|--------|
+| BUILD-01 | content move within a section renumbers densely; position clamped | functional | 05-01 T2 | `--files tests/functional/builder_moves.spec.ts` | ❌ W0 (05-01 T2) | ⬜ |
+| BUILD-01 | projection: content slot gives (parent, position); optimistic renumber mirrors server | unit | 05-02 T2 | `node ace test unit --files tests/unit/builder_tree.spec.ts` | ❌ W0 (05-02 T1) | ⬜ |
+| BUILD-02 | content to another section (including an empty one); source and destination renumbered; foreign `moduleId` refused, nothing written; legacy level-3 destination refused | functional | 05-01 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-03 | module reorder and re-parent; cycle refused; depth plus sub-tree height above 2 levels refused; parent `null` accepted; foreign ids refused; PUT no longer re-parents | functional + unit | 05-01 T1, T3 | builder_moves.spec.ts, `tests/unit/category_tree.spec.ts`, `authorization_contents.spec.ts` (A8 moved to `modules.move`) | ⚠ extend | ⬜ |
+| BUILD-04 | `createModule` refuses a parent that is a sub-section (depth above 2 levels); `updateModule` cannot re-parent | functional | 05-04 T2, 05-01 T3 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-05, BUILD-08 | PUT JSON returns `updatedAt`; stale token gives 409 with the fresh item; description and dates clearable (null); start after end gives 422 | functional | 05-04 T1 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-06 | deleting a non-empty section gives 409 and deletes nothing; an empty one gives 200 | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-07 | content creation with the type selector still works; refused into a legacy level-3 section | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-09 | delete content JSON 200; teacher without edit permission gets 403; attached file row kept | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-10 | CSRF failure is not a 200 JSON (302 with `redirects(0)`), so the client takes its error path | functional | 05-04 T2 | `tests/functional/csrf.spec.ts` (kept out of builder_moves.spec.ts so its withCsrfToken gate holds) | ⚠ extend | ⬜ |
+| BUILD-10 | serial queue: ordering, reverse rollback of failed + cancelled ops, retry, dismiss | unit | 05-03 T1 | `node ace test unit --files tests/unit/save_queue.spec.ts` | ❌ W0 (05-03 T1) | ⬜ |
+| All | non-editor teacher gets 403 on every new or JSON route; admin passes | functional | 05-01 T2, T3; 05-04 T1, T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| All | builder props are flat, column-selected, include legacy deep sections, no page bodies | functional | 05-06 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| D-07 | "Déplacer vers…" moves a content or a section; Monter / Descendre reorder; invalid destinations aria-disabled with reason | browser | 05-06 T3 | `tests/browser/builder.spec.ts` | ❌ W0 (05-06 T3) | ⬜ |
+| BUILD-05, BUILD-06, BUILD-08, BUILD-09 | inline rename, details panel, delete with confirmation, non-empty delete explained, focus after delete | browser | 05-06 T3 | builder.spec.ts | ❌ W0 | ⬜ |
+| BUILD-10 | indicator shows "Enregistré" in a `role=status` region after an action; two rapid actions on one item never self-conflict | browser | 05-06 T3 | builder.spec.ts | ❌ W0 | ⬜ |
+| BUILD-01..03, D-07 | keyboard drag: focus handle, Space, arrows (Left/Right for section level), Space; order changed and persisted after reload; Escape cancels; reflow case | browser | 05-07 T3 | builder.spec.ts | ❌ W0 | ⬜ |
+| SSR | no dnd-kit hydration mismatch on the builder page (console listener) | browser | 05-07 T1 | builder.spec.ts | ❌ W0 | ⬜ |
+| a11y | builder page: no critical or serious axe violations (at rest, panel open, menu open, move dialog open) | browser | 05-08 T1 | `tests/browser/accessibility.spec.ts` | ⚠ extend | ⬜ |
+| Build | production build compiles SSR + client with dnd-kit | build | 05-08 T2 | `bun run build` | ✅ | ⬜ |
+
+Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok` (probe in 05-02 T1); otherwise CI `e2e.yml` is authoritative, plus the 05-08 human checkpoint. Frontend files are type-checked with a filtered `tsc -p inertia/tsconfig.json` gate, because `bun run typecheck` excludes `inertia/**` and the client config has unrelated pre-existing errors.
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
