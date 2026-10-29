@@ -179,25 +179,26 @@ Plans:
 
 > Sliced by file ownership (fine granularity): same-wave plans share no files. The `/evaluations` route stays
 > `auth`-only (student 403 via the `viewEvaluations` policy action, not `middleware.role`), so `start/routes.ts`
-> belongs to the contact work only. Manager gradebook widening (A9) and the dashboard card gating (OQ1) each ship
-> as an isolated revertable commit; OQ1 has a blocking human check. Mail uses nodemailer 10 directly
+> belongs to the contact work only. Only admins see every course; managers are scoped like any user (D-03 revised,
+> no gradebook widening). The teacher dashboard card gating (OQ1) ships as an isolated revertable commit with a
+> blocking human check. Mail uses nodemailer 10 directly
 > (`@adonisjs/mail` 9 pins vulnerable nodemailer 6; 10 needs AdonisJS 7). 03-05 also fixes 02-REVIEW CR-04.
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — CoursePolicy `viewEvaluations` + `scopeGradableCourses`, managers on the instructor gradebook, assignment/submission factories [EVAL-01, EVAL-03]
+- [ ] 03-01-PLAN.md — CoursePolicy `viewEvaluations` + `scopeGradableCourses` (admin-only unrestricted scope), assignment/submission factories [EVAL-01, EVAL-03]
 - [ ] 03-02-PLAN.md — `POST /contact`: contact_messages table, validator with honeypot, persist-first, per-IP `contactThrottle` [CONTACT-01, CONTACT-02, CONTACT-03]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-03-PLAN.md — Evaluations list: scoped counters, course/assignment filters, sorts, 20 per page, gradebook links [EVAL-01, EVAL-02, EVAL-03]
+- [ ] 03-03-PLAN.md — Evaluations list: counters over the whole gradable scope (filters ignored), course/assignment filters, sorts, 20 per page, gradebook links [EVAL-01, EVAL-02, EVAL-03]
 - [ ] 03-04-PLAN.md — nodemailer 10 `MailService`, optional SMTP env, notify after persist with `notified_at` [CONTACT-02]
 - [ ] 03-05-PLAN.md — Contact page posts for real, GDPR export/deletion of contact messages, CR-04 `student_id` fix, retention note [CONTACT-01, CONTACT-02]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-06-PLAN.md — Seeded submissions for the demo teacher, axe cases for /evaluations and /contact, dashboard card only when allowed (checkpoint) [EVAL-01, CONTACT-01]
+- [ ] 03-06-PLAN.md — Seeded submissions for the demo teacher, axe cases for /evaluations and /contact, dashboard cards only when allowed and reworded (checkpoint) [EVAL-01, CONTACT-01]
 
 ### Phase 4: Content Foundation
 

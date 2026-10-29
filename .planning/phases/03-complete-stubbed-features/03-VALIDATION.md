@@ -42,16 +42,16 @@ Task IDs are assigned by the plans; each row below must be covered by at least o
 
 | Requirement | Behavior | Test Type | Automated Command | File Exists |
 |-------------|----------|-----------|-------------------|-------------|
-| EVAL-01 | student gets 403 `errors/forbidden`; guest redirected to `/login` | functional | `--files tests/functional/evaluations.spec.ts` | ❌ W0 |
-| EVAL-01 | owner and edit/manage co-instructor see pending rows; view-only and unrelated teacher do not; admin and manager see all | functional | same | ❌ W0 |
+| EVAL-01 | student and manager without a gradable course get 403 `errors/forbidden`; guest redirected to `/login` | functional | `--files tests/functional/evaluations.spec.ts` | ❌ W0 |
+| EVAL-01 | owner and edit/manage co-instructor see pending rows; view-only and unrelated teacher do not; only admin sees all; a manager sees only own/permitted courses | functional | same | ❌ W0 |
 | EVAL-01 | `courseId` of a non-gradable course yields an empty list, no leak | functional | same | ❌ W0 |
 | EVAL-01 | `scopeGradableCourses` agrees with `hasPermission(..., 'edit')`; `viewEvaluations` matrix | functional (policy) | `--files tests/functional/authorization.spec.ts` | ✅ extend |
 | EVAL-01 | draft rows never listed; graded/returned not in the list | functional | evaluations.spec | ❌ W0 |
 | EVAL-01 | default order `submittedAt` asc; `direction=desc`; `sort=student`, `sort=assignment`; 20 per page | functional | evaluations.spec | ❌ W0 |
 | EVAL-01 | empty filters (`?courseId=&assignmentId=&sort=&direction=`) give 200; `sort=bogus` gives 302 + `inputErrorsBag.sort` | functional | evaluations.spec | ❌ W0 |
 | EVAL-01 | row props carry no `phone` or `address` (minimal DTO) | functional | evaluations.spec | ❌ W0 |
-| EVAL-02 | `stats.total === stats.pending + stats.graded`; counts across more than 20 rows; `returned` counted as graded | functional | evaluations.spec | ❌ W0 |
-| EVAL-03 | each row has `course.id`; manager GET `/grades/courses/:id` of a non-owned course gives 200 with `isInstructor: true` | functional | `--files tests/functional/grades.spec.ts` | ✅ extend |
+| EVAL-02 | `stats.total === stats.pending + stats.graded`; counts across more than 20 rows; `returned` counted as graded; a course/assignment filter changes the list and `meta.total` but not `stats` | functional | evaluations.spec | ❌ W0 |
+| EVAL-03 | each row has `course.id`; every listed row's `/grades/courses/:id` gives 200 with `isInstructor: true` for that user (owner, edit/manage co-instructor, manager with edit) | functional | evaluations.spec | ❌ W0 |
 | CONTACT-01 | valid guest POST with CSRF gives 302 + success flash | functional | `--files tests/functional/contact.spec.ts` | ❌ W0 |
 | CONTACT-01 | missing CSRF token gives `E_BAD_CSRF_TOKEN`, no row; invalid email or empty message gives `inputErrorsBag`, no row; filled honeypot gives success flash, no row, no mail | functional | contact.spec | ❌ W0 |
 | CONTACT-02 | row persisted; authenticated user gives `user_id` set | functional | contact.spec | ❌ W0 |
