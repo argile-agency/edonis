@@ -239,13 +239,37 @@ Plans:
   5. Changes are autosaved with visible save indicator
   6. Drag interactions have keyboard-accessible equivalents (a11y baseline is already enforced by axe-core tests)
 
-**Plans**: TBD
+**Plans**: 8 plans in 5 waves
+
+> **Re-planned 2026-10-29 from research.** The roadmap's three placeholder plans assumed the existing
+> reorder endpoints were enough. They are not: cross-section moves and re-parenting need two new locked
+> move endpoints, the edit/delete endpoints need JSON + conflict detection, and D-02 was revised to
+> 2 levels. Plans are split by file ownership so same-wave plans never touch the same file.
 
 Plans:
 
-- [ ] 05-01: Drag-and-drop with dnd-kit over existing reorder endpoints
-- [ ] 05-02: Inline editing to replace dialog forms
-- [ ] 05-03: Autosave and state management
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Move endpoints: `POST /contents/:id/move` and `/modules/:id/move` with course-row lock, cycle + 2-level depth checks, `updated_at` conflict token; `parentId` dropped from module update [BUILD-01, BUILD-02, BUILD-03]
+- [ ] 05-02-PLAN.md — Pure `inertia/lib/builder_tree.ts` (rows, drop projections, move targets, optimistic apply) unit-tested; D-10 browser base URL from `PORT` + local browser probe [BUILD-01, BUILD-02, BUILD-03, BUILD-06]
+- [ ] 05-03-PLAN.md — Serial save queue (pure core + `useSaveQueue` + strict `sendJson`) and accessible save indicator [BUILD-10]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
+- [ ] 05-05-PLAN.md — Inline title, details panel, actions menu (Monter / Descendre / Déplacer vers… / Supprimer with confirmation) [BUILD-05, BUILD-06, BUILD-08, BUILD-09]
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 05-06-PLAN.md — Builder page rebuilt on flat props: rows, optimistic autosave, menu moves, deletes, creation dialogs; browser tests [BUILD-01..BUILD-10]
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 05-07-PLAN.md — dnd-kit (pinned) drag layer: content and section drag, auto-expand, keyboard with French announcements, touch via handle; SSR smoke + keyboard browser tests [BUILD-01, BUILD-02, BUILD-03, BUILD-10]
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 05-08-PLAN.md — axe coverage of the builder, full gate incl. build, French walkthrough (checkpoint) [BUILD-01..BUILD-10]
 
 ### Phase 6: Page Content
 
