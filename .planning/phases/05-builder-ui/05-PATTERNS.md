@@ -35,7 +35,7 @@ RESEARCH.md was written when D-02 said "3 levels". CONTEXT.md D-02 was revised: 
 | `inertia/lib/builder_tree.ts` (new, pure: rows, projection, depth/height, positions) | utility (pure, client) | transform | `app/helpers/category_tree.ts` (pure, no imports, terminates on cycles) | role-match |
 | `inertia/lib/builder_save_queue.ts` (new: `useSaveQueue`, `sendJson`, `xsrfToken`) | hook / utility | request-response (fetch JSON) | `inertia/pages/courses/learn.tsx` 75-79, 111-136 | partial (fetch + CSRF only) |
 | `inertia/components/builder/builder-row.tsx` (new: sortable row + handle) | component | event-driven | `builder.tsx` 154-242 (current row markup) | partial (no dnd analog) |
-| `inertia/components/builder/move-menu.tsx` (new: Monter / Descendre / Déplacer vers… / Supprimer) | component | event-driven | `inertia/pages/admin/courses/index.tsx` 265-301 (DropdownMenu) + `admin/categories/index.tsx` 104-133 (AlertDialog) | role-match |
+| `inertia/components/builder/item-actions-menu.tsx` (new: Monter / Descendre / Déplacer vers… / Supprimer) | component | event-driven | `inertia/pages/admin/courses/index.tsx` 265-301 (DropdownMenu) + `admin/categories/index.tsx` 104-133 (AlertDialog) | role-match |
 | `inertia/components/builder/save-status.tsx` (new) | component | event-driven | `inertia/components/flash-toaster.tsx` 30-34 (aria-live) | partial |
 | `inertia/components/builder/inline-title.tsx` (new) | component | event-driven | none | no analog |
 | Details panel (inside builder-row or own file) | component | event-driven | `builder.tsx` 322-339 (Textarea + Switch fields) | partial |
@@ -344,7 +344,7 @@ fetch(`/contents/${currentContent.id}/progress`, {
 
 ---
 
-### `inertia/components/builder/move-menu.tsx` (component)
+### `inertia/components/builder/item-actions-menu.tsx` (component)
 
 **DropdownMenu analog:** `inertia/pages/admin/courses/index.tsx` 265-301:
 ```tsx

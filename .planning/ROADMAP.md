@@ -245,32 +245,34 @@ Plans:
 > **Re-planned 2026-10-29 from research.** The roadmap's three placeholder plans assumed the existing
 > reorder endpoints were enough. They are not: cross-section moves and re-parenting need two new locked
 > move endpoints, the edit/delete endpoints need JSON + conflict detection, and D-02 was revised to
-> 2 levels. Plans are split by file ownership so same-wave plans never touch the same file.
+> 2 levels. Plans are split by file ownership so same-wave plans never touch the same file; same-wave plans run in
+> parallel git worktrees (default `workflow.use_worktrees`), with file-scoped per-task gates and full suites at the plan and post-merge gates.
+> Autonomy: 05-01..05-06 autonomous; 05-07 not autonomous (pauses for a French library decision only if classic dnd-kit misbehaves); 05-08 not autonomous (French walkthrough checkpoint).
 
 Plans:
 
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Move endpoints: `POST /contents/:id/move` and `/modules/:id/move` with course-row lock, cycle + 2-level depth checks, `updated_at` conflict token; `parentId` dropped from module update [BUILD-01, BUILD-02, BUILD-03]
+- [ ] 05-01-PLAN.md — Move endpoints: `POST /contents/:id/move` and `/modules/:id/move` with course-row lock, cycle + 2-level depth checks, `updated_at` conflict token; `parentId` dropped from module update; one ids-only audit row per move [BUILD-01, BUILD-02, BUILD-03]
 - [ ] 05-02-PLAN.md — Pure `inertia/lib/builder_tree.ts` (rows, drop projections, move targets, optimistic apply) unit-tested; D-10 browser base URL from `PORT` + local browser probe [BUILD-01, BUILD-02, BUILD-03, BUILD-06]
 - [ ] 05-03-PLAN.md — Serial save queue (pure core + `useSaveQueue` + strict `sendJson`) and accessible save indicator [BUILD-10]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
+- [ ] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create under the course lock, audit rows on deletes, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
 - [ ] 05-05-PLAN.md — Inline title, details panel, actions menu (Monter / Descendre / Déplacer vers… / Supprimer with confirmation) [BUILD-05, BUILD-06, BUILD-08, BUILD-09]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-06-PLAN.md — Builder page rebuilt on flat props: rows, optimistic autosave, menu moves, deletes, creation dialogs; browser tests [BUILD-01..BUILD-10]
+- [ ] 05-06-PLAN.md — Builder page rebuilt on flat props (4 tasks: row, flat props + functional test, page, browser tests): optimistic autosave, menu moves, deletes, creation dialogs with new sections auto-expanded; browser tests incl. add flows [BUILD-01..BUILD-10]
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 05-07-PLAN.md — dnd-kit (pinned) drag layer: content and section drag, auto-expand, keyboard with French announcements, touch via handle; SSR smoke + keyboard browser tests [BUILD-01, BUILD-02, BUILD-03, BUILD-10]
+- [ ] 05-07-PLAN.md — dnd-kit (pinned) drag layer: content and section drag, auto-expand, keyboard with French announcements, touch via handle; SSR smoke + keyboard browser tests; *not autonomous: conditional French library decision* [BUILD-01, BUILD-02, BUILD-03, BUILD-10]
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 05-08-PLAN.md — axe coverage of the builder, full gate incl. build, French walkthrough (checkpoint) [BUILD-01..BUILD-10]
+- [ ] 05-08-PLAN.md — axe coverage of the builder, full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows (checkpoint, not autonomous) [BUILD-01..BUILD-10]
 
 ### Phase 6: Page Content
 

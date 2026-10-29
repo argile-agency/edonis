@@ -32,8 +32,8 @@ Notes: the default shell Node 24 breaks `node ace`; use Node 22 as above. The de
 
 ## Sampling Rate
 
-- **After every task commit:** the touched spec via `--files`, plus `bun run typecheck`
-- **After every plan wave:** `node ace test unit functional`, `bun run lint`, `bun run check:debt`
+- **After every task commit:** the touched spec via `--files`, plus eslint and `tsc` output filtered to the plan's own files (same-wave plans run in parallel git worktrees, so per-task gates never depend on another plan's files); `bun run check:debt` where `app/controllers` is touched
+- **After every plan wave:** `node ace test unit functional`, `bun run typecheck`, `bun run lint`, `bun run check:debt` (each plan's `<verification>` gate, then the orchestrator's post-merge gate on the merged wave)
 - **Before `/gsd:verify-work`:** full unit + functional green locally; browser and axe green in CI (`e2e.yml`) or locally on a free port
 - **Max feedback latency:** 180 seconds
 
@@ -50,6 +50,7 @@ Each row is covered by at least one task's automated verify (`<automated>` in th
 | BUILD-02 | content to another section (including an empty one); source and destination renumbered; foreign `moduleId` refused, nothing written; legacy level-3 destination refused | functional | 05-01 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
 | BUILD-03 | module reorder and re-parent; cycle refused; depth plus sub-tree height above 2 levels refused; parent `null` accepted; foreign ids refused; PUT no longer re-parents | functional + unit | 05-01 T1, T3 | builder_moves.spec.ts, `tests/unit/category_tree.spec.ts`, `authorization_contents.spec.ts` (A8 moved to `modules.move`) | ⚠ extend | ⬜ |
 | BUILD-04 | `createModule` refuses a parent that is a sub-section (depth above 2 levels); `updateModule` cannot re-parent | functional | 05-04 T2, 05-01 T3 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| BUILD-04, BUILD-07 | `createModule` and `createContent` take the course-row `forUpdate()` lock before re-reading the parent and creating (race with delete / move not reproducible on SQLite) | acceptance check | 05-04 T2 | bounded `awk '/async createModule\(/…'` and `createContent` windows each contain exactly one `forUpdate()`, before `.create(` | ✅ (controller) | ⬜ |
 | BUILD-05, BUILD-08 | PUT JSON returns `updatedAt`; stale token gives 409 with the fresh item; description and dates clearable (null); start after end gives 422 | functional | 05-04 T1 | builder_moves.spec.ts | ❌ W0 | ⬜ |
 | BUILD-06 | deleting a non-empty section gives 409 and deletes nothing; an empty one gives 200 | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
 | BUILD-07 | content creation with the type selector still works; refused into a legacy level-3 section | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
@@ -57,16 +58,19 @@ Each row is covered by at least one task's automated verify (`<automated>` in th
 | BUILD-10 | CSRF failure is not a 200 JSON (302 with `redirects(0)`), so the client takes its error path | functional | 05-04 T2 | `tests/functional/csrf.spec.ts` (kept out of builder_moves.spec.ts so its withCsrfToken gate holds) | ⚠ extend | ⬜ |
 | BUILD-10 | serial queue: ordering, reverse rollback of failed + cancelled ops, retry, dismiss | unit | 05-03 T1 | `node ace test unit --files tests/unit/save_queue.spec.ts` | ❌ W0 (05-03 T1) | ⬜ |
 | All | non-editor teacher gets 403 on every new or JSON route; admin passes | functional | 05-01 T2, T3; 05-04 T1, T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| Audit | one ids-only audit row per committed content move and section move (`course.content.move`, `course.module.move`); none after a refused move | functional | 05-01 T2, T3 | builder_moves.spec.ts | ❌ W0 | ⬜ |
+| Audit | one ids-only audit row per committed section delete and content delete (`course.module.delete`, `course.content.delete`), JSON and HTML branches; none after a refused delete | functional | 05-04 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
 | All | builder props are flat, column-selected, include legacy deep sections, no page bodies | functional | 05-06 T2 | builder_moves.spec.ts | ❌ W0 | ⬜ |
-| D-07 | "Déplacer vers…" moves a content or a section; Monter / Descendre reorder; invalid destinations aria-disabled with reason | browser | 05-06 T3 | `tests/browser/builder.spec.ts` | ❌ W0 (05-06 T3) | ⬜ |
-| BUILD-05, BUILD-06, BUILD-08, BUILD-09 | inline rename, details panel, delete with confirmation, non-empty delete explained, focus after delete | browser | 05-06 T3 | builder.spec.ts | ❌ W0 | ⬜ |
-| BUILD-10 | indicator shows "Enregistré" in a `role=status` region after an action; two rapid actions on one item never self-conflict | browser | 05-06 T3 | builder.spec.ts | ❌ W0 | ⬜ |
+| D-07 | "Déplacer vers…" moves a content or a section; Monter / Descendre reorder; invalid destinations aria-disabled with reason | browser | 05-06 T4 | `tests/browser/builder.spec.ts` | ❌ W0 (05-06 T4) | ⬜ |
+| BUILD-05, BUILD-06, BUILD-08, BUILD-09 | inline rename, details panel, delete with confirmation, non-empty delete explained, focus after delete | browser | 05-06 T4 | builder.spec.ts | ❌ W0 | ⬜ |
+| BUILD-10 | indicator shows "Enregistré" in a `role=status` region after an action; two rapid actions on one item never self-conflict | browser | 05-06 T4 | builder.spec.ts | ❌ W0 | ⬜ |
+| BUILD-04, BUILD-07 | add flows (roadmap criterion 4): "Nouveau module" creates a root section, "+ Sous-section" on it creates a sub-section, "+ Contenu" with a type from the selector creates a content item; each new row appears (new section auto-expanded), no scroll jump, DB row exists | browser | 05-06 T4 | builder.spec.ts (test 9) | ❌ W0 | ⬜ |
 | BUILD-01..03, D-07 | keyboard drag: focus handle, Space, arrows (Left/Right for section level), Space; order changed and persisted after reload; Escape cancels; reflow case | browser | 05-07 T3 | builder.spec.ts | ❌ W0 | ⬜ |
 | SSR | no dnd-kit hydration mismatch on the builder page (console listener) | browser | 05-07 T1 | builder.spec.ts | ❌ W0 | ⬜ |
 | a11y | builder page: no critical or serious axe violations (at rest, panel open, menu open, move dialog open) | browser | 05-08 T1 | `tests/browser/accessibility.spec.ts` | ⚠ extend | ⬜ |
 | Build | production build compiles SSR + client with dnd-kit | build | 05-08 T2 | `bun run build` | ✅ | ⬜ |
 
-Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok` (probe in 05-02 T1); otherwise CI `e2e.yml` is authoritative, plus the 05-08 human checkpoint. Frontend files are type-checked with a filtered `tsc -p inertia/tsconfig.json` gate, because `bun run typecheck` excludes `inertia/**` and the client config has unrelated pre-existing errors.
+Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok` (probe in 05-02 T1); otherwise CI `e2e.yml` is authoritative, plus the 05-08 human checkpoint. A browser row is marked ✅ only after it really ran green (locally, or in a CI run whose link is recorded); otherwise it stays `⬜ not run: <reason>` and `nyquist_compliant` stays false (05-08 T2). Frontend files are type-checked with a filtered `tsc -p inertia/tsconfig.json` gate, because `bun run typecheck` excludes `inertia/**` and the client config has unrelated pre-existing errors.
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

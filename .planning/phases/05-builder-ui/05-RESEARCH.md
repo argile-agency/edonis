@@ -469,16 +469,20 @@ await db.transaction(async (trx) => {
 | A7 | A unit test can import a React-free `inertia/lib/builder_tree.ts` via a relative `.js` path under the backend tsconfig (root `tsconfig.json` excludes `inertia/**` from its initial set, imports still compile) | Validation | If it fails, move the pure helper to `app/helpers/` and import it from the client through a relative path, or test it only through the browser suite |
 | A8 | pragmatic-dnd / hello-pangea assessment | Alternatives | None (not recommended anyway) |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Conflict token: `updated_at` (second precision) or a new `lock_version` column?**
    - What we know: `updated_at` exists, is maintained by Lucid on model save, and has seconds precision on SQLite/MySQL.
    - Recommendation: use `updated_at` with `toUnixInteger()` (no migration); revisit only if the user wants stronger guarantees.
+   - RESOLVED: `updated_at` compared to the second, no new column; same-second blind spot documented with a `shortcut:` comment (decided in 05-01, `<decisions_applied>` "Conflict token").
 2. **Keep or remove `reorderModules`/`reorderContents` and `updateModule.parentId`?**
    - Recommendation: the new UI uses only the move endpoints. Remove `parentId` from `updateModuleValidator` (and move its A8 tests to the move endpoint) so there is a single re-parenting path with depth checks. Leave the `reorder*` endpoints in place (scoped, tested), unused, so the phase scope stays small.
+   - RESOLVED: `parentId` removed from `updateModuleValidator`, A8 test moved to `modules.move`, `reorder*` endpoints kept unused (decided in 05-01, objective and Task 3).
 3. **Depth-3 support in learner pages: this phase or a prerequisite plan?**
    - Recommendation: a small plan in this phase (05-01 or a dedicated wave-1 plan) before re-parenting ships. It is a correctness fix and BUILD-03 is unsafe without it.
+   - RESOLVED (obsolete): D-02 was revised to 2 levels, so learner pages stay 2-level and need no change. Existing deeper data is handled per assumption A3: shown in the builder with a badge, no content moved into it, movable back within the limit (05-01, 05-06).
 4. **Browser suite locally** (see Validation): changing `baseURL` in `tests/bootstrap.ts` to follow `PORT` is a one-line Wave 0 change, but 02-01 treated `bootstrap.ts` as off-limits. The user should confirm.
+   - RESOLVED: confirmed by the user as D-10 (one-line `baseURL` from `PORT`, default 3333), shipped in 05-02 Task 1 with a local browser probe.
 
 ## Environment Availability
 
