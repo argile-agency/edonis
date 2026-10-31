@@ -56,7 +56,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 12: Permissions and Polish** - Access control and final refinements (12-01 already done by Phase 2)
 - [ ] **Phase 9: Assignment Integration** - Link assignments to course sections (confirmed in v1.0 by the owner, 2026-10-31)
 - [ ] **Phase 13: Unified rubric and per-question marking** - Lot B 🟡 ~5 d
-- [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 d (E1-dependent items)
+- [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 d (cross-engine by decision of 2026-10-31)
 - [ ] **Phase 15: AI Act article 5 and 50 compliance** - Lot E 🟡 ~2 d
 - [ ] **Phase 16: Accommodation profile** - Lot F 🟡 ~2 d
 - [ ] **Phase 17: Installability backup and admin docs** - Lot H 🟡 ~3 d — prerequisite of the paid installation offer and subscriptions
