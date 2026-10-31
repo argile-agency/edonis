@@ -26,7 +26,18 @@ const CONFLICT_ERROR = 'Cet élément a été modifié par un autre enseignant.'
 
 async function createModule(
   course: Course,
-  overrides: Partial<Pick<CourseModule, 'parentId' | 'order' | 'isPublished' | 'title'>> = {}
+  overrides: Partial<
+    Pick<
+      CourseModule,
+      | 'parentId'
+      | 'order'
+      | 'isPublished'
+      | 'title'
+      | 'description'
+      | 'availableFrom'
+      | 'availableUntil'
+    >
+  > = {}
 ): Promise<CourseModule> {
   return CourseModule.create({
     courseId: course.id,
@@ -39,7 +50,12 @@ async function createModule(
 
 async function createContent(
   module: CourseModule,
-  overrides: Partial<Pick<CourseContent, 'order' | 'isPublished' | 'title'>> = {}
+  overrides: Partial<
+    Pick<
+      CourseContent,
+      'order' | 'isPublished' | 'title' | 'description' | 'availableFrom' | 'availableUntil'
+    >
+  > = {}
 ): Promise<CourseContent> {
   return CourseContent.create({
     moduleId: module.id,
@@ -698,5 +714,260 @@ test.group('Builder - section moves', (group) => {
     const after = await CourseModule.findOrFail(r1.id)
     assert.equal(after.title, 'Renommé')
     assert.isNull(after.parentId)
+  })
+})
+
+const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
+
+async function putJson(client: ApiClient, url: string, user: User, body: Record<string, unknown>) {
+  const req = client.put(url).withCsrfToken()
+  return req.header('accept', 'application/json').json(body).loginAs(user)
+}
+
+async function moduleTitle(id: number) {
+  const row = await CourseModule.findOrFail(id)
+  return row.title
+}
+
+async function contentTitle(id: number) {
+  const row = await CourseContent.findOrFail(id)
+  return row.title
+}
+
+function day(iso: string): DateTime {
+  return DateTime.fromISO(iso)
+}
+
+test.group('Builder - edits and deletes', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('rename a section through JSON returns the new token (BUILD-05)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+
+    const url = route('modules.update', { moduleId: s.id })
+    const response = await putJson(client, url, owner, {
+      title: 'Nouveau titre',
+      updatedAt: token(s),
+    })
+
+    response.assertStatus(200)
+    assert.equal(response.body().item.id, s.id)
+    assert.isString(response.body().item.updatedAt)
+    const after = await CourseModule.findOrFail(s.id)
+    assert.equal(after.title, 'Nouveau titre')
+  })
+
+  test('edit a content item through JSON (BUILD-08)', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s)
+
+    const url = route('contents.update', { contentId: c.id })
+    const response = await putJson(client, url, owner, {
+      description: 'Texte',
+      isPublished: false,
+      availableFrom: '2026-11-01',
+      availableUntil: '2026-11-30',
+      updatedAt: token(c),
+    })
+
+    response.assertStatus(200)
+    assert.equal(response.body().item.id, c.id)
+    const after = await CourseContent.findOrFail(c.id)
+    assert.equal(after.description, 'Texte')
+    assert.isFalse(Boolean(after.isPublished)) // SQLite reads booleans back as 0/1
+    assert.equal(after.availableFrom?.toISODate(), '2026-11-01')
+    assert.equal(after.availableUntil?.toISODate(), '2026-11-30')
+  })
+
+  test('description and dates can be cleared on a content item and a section (WR-20)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const filled = {
+      description: 'Texte',
+      availableFrom: day('2026-11-01'),
+      availableUntil: day('2026-11-30'),
+    }
+    const s = await createModule(course, filled)
+    const c = await createContent(s, filled)
+    const cleared = { description: null, availableFrom: null, availableUntil: null }
+
+    const contentUrl = route('contents.update', { contentId: c.id })
+    const contentRes = await putJson(client, contentUrl, owner, {
+      ...cleared,
+      updatedAt: token(c),
+    })
+    contentRes.assertStatus(200)
+    const contentAfter = await CourseContent.findOrFail(c.id)
+    assert.isNull(contentAfter.description)
+    assert.isNull(contentAfter.availableFrom)
+    assert.isNull(contentAfter.availableUntil)
+
+    const moduleUrl = route('modules.update', { moduleId: s.id })
+    const moduleRes = await putJson(client, moduleUrl, owner, { ...cleared, updatedAt: token(s) })
+    moduleRes.assertStatus(200)
+    const moduleAfter = await CourseModule.findOrFail(s.id)
+    assert.isNull(moduleAfter.description)
+    assert.isNull(moduleAfter.availableFrom)
+    assert.isNull(moduleAfter.availableUntil)
+  })
+
+  test('fields not sent are left untouched', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s, {
+      availableFrom: day('2026-11-01'),
+      availableUntil: day('2026-11-30'),
+    })
+
+    const url = route('contents.update', { contentId: c.id })
+    const response = await putJson(client, url, owner, { title: 'Seul le titre' })
+
+    response.assertStatus(200)
+    const after = await CourseContent.findOrFail(c.id)
+    assert.equal(after.title, 'Seul le titre')
+    assert.equal(after.availableFrom?.toISODate(), '2026-11-01')
+    assert.equal(after.availableUntil?.toISODate(), '2026-11-30')
+  })
+
+  test('an end date before the start date is refused with 422, also on a partial update', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s, { title: 'Avant' })
+
+    const url = route('contents.update', { contentId: c.id })
+    const inverted = await putJson(client, url, owner, {
+      title: 'Après',
+      availableFrom: '2026-12-01',
+      availableUntil: '2026-11-01',
+    })
+    inverted.assertStatus(422)
+    assert.equal(inverted.body().errors[0].field, 'availableUntil')
+    assert.equal(inverted.body().errors[0].message, DATE_ORDER_ERROR)
+    const unchanged = await CourseContent.findOrFail(c.id)
+    assert.equal(unchanged.title, 'Avant')
+    assert.isNull(unchanged.availableFrom)
+
+    const m = await createModule(course, { availableFrom: day('2026-12-01') })
+    const moduleUrl = route('modules.update', { moduleId: m.id })
+    const partial = await putJson(client, moduleUrl, owner, { availableUntil: '2026-11-01' })
+    partial.assertStatus(422)
+    assert.equal(partial.body().errors[0].field, 'availableUntil')
+    const moduleAfter = await CourseModule.findOrFail(m.id)
+    assert.isNull(moduleAfter.availableUntil)
+  })
+
+  test('stale token gives 409 with the fresh item; a retry with its token passes (D-09)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course, { title: 'Titre stocké' })
+    const staleToken = token(s)
+
+    // Another teacher saved the section meanwhile
+    await CourseModule.query()
+      .where('id', s.id)
+      .update({ updated_at: DateTime.now().plus({ minutes: 1 }).toFormat('yyyy-MM-dd HH:mm:ss') })
+
+    const url = route('modules.update', { moduleId: s.id })
+    const conflict = await putJson(client, url, owner, {
+      title: 'Mon titre',
+      updatedAt: staleToken,
+    })
+
+    conflict.assertStatus(409)
+    assert.equal(conflict.body().code, 'E_CONFLICT')
+    assert.equal(conflict.body().message, CONFLICT_ERROR)
+    assert.equal(conflict.body().item.title, 'Titre stocké')
+    assert.equal(await moduleTitle(s.id), 'Titre stocké')
+
+    const retry = await putJson(client, url, owner, {
+      title: 'Mon titre',
+      updatedAt: conflict.body().item.updatedAt,
+    })
+    retry.assertStatus(200)
+    assert.equal(await moduleTitle(s.id), 'Mon titre')
+  })
+
+  test('a stale token on a content item also gives 409', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s, { title: 'Titre stocké' })
+    const staleToken = token(c)
+    await CourseContent.query()
+      .where('id', c.id)
+      .update({ updated_at: DateTime.now().plus({ minutes: 1 }).toFormat('yyyy-MM-dd HH:mm:ss') })
+
+    const url = route('contents.update', { contentId: c.id })
+    const conflict = await putJson(client, url, owner, {
+      title: 'Mon titre',
+      updatedAt: staleToken,
+    })
+
+    conflict.assertStatus(409)
+    assert.equal(conflict.body().item.title, 'Titre stocké')
+    assert.equal(await contentTitle(c.id), 'Titre stocké')
+  })
+
+  test('an HTML caller without a token keeps the flash and redirect', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s)
+
+    const req = client.put(route('contents.update', { contentId: c.id })).withCsrfToken()
+    const response = await req.json({ title: 'Renommé' }).loginAs(owner).redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.isDefined(response.flashMessage('success'))
+    assert.equal(await contentTitle(c.id), 'Renommé')
+  })
+
+  test('authorization: an outsider gets 403 JSON on both update routes', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const outsider = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course, { title: 'Avant' })
+    const c = await createContent(s, { title: 'Avant' })
+
+    const moduleUrl = route('modules.update', { moduleId: s.id })
+    const m = await putJson(client, moduleUrl, outsider, { title: 'Pirate', updatedAt: token(s) })
+    m.assertStatus(403)
+    const contentUrl = route('contents.update', { contentId: c.id })
+    const ct = await putJson(client, contentUrl, outsider, { title: 'Pirate', updatedAt: token(c) })
+    ct.assertStatus(403)
+
+    assert.equal(await moduleTitle(s.id), 'Avant')
+    assert.equal(await contentTitle(c.id), 'Avant')
   })
 })

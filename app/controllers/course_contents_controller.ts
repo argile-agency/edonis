@@ -24,6 +24,42 @@ import CourseStructureService, {
   sameSecond,
 } from '#services/course_structure_service'
 
+const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
+const DATE_ORDER_BODY = { errors: [{ field: 'availableUntil', message: DATE_ORDER_ERROR }] }
+
+/** Same negotiation as the exception handler: Inertia and no Accept header resolve to html. */
+function wantsJson(request: HttpContext['request']): boolean {
+  return request.accepts(['html', 'json']) === 'json'
+}
+
+type Dated = { availableFrom: DateTime | null; availableUntil: DateTime | null }
+
+/**
+ * Maps incoming availability dates (undefined = untouched, null = cleared) and
+ * checks the resulting range against the stored values. Null when start > end.
+ */
+function availability(
+  stored: Dated,
+  from: Date | null | undefined,
+  until: Date | null | undefined
+): Partial<Dated> | null {
+  const changes: Partial<Dated> = {}
+  if (from !== undefined) changes.availableFrom = from ? DateTime.fromJSDate(from) : null
+  if (until !== undefined) changes.availableUntil = until ? DateTime.fromJSDate(until) : null
+  const start = from === undefined ? stored.availableFrom : changes.availableFrom
+  const end = until === undefined ? stored.availableUntil : changes.availableUntil
+  return start && end && start > end ? null : changes
+}
+
+/** 409 body; attributes only, so preloaded relations are not sent back. */
+function conflictBody(row: CourseModule | CourseContent) {
+  return { code: 'E_CONFLICT', message: CONFLICT_ERROR, item: row.serializeAttributes() }
+}
+
+function savedItem(row: CourseModule | CourseContent) {
+  return { id: row.id, updatedAt: row.updatedAt?.toISO() ?? null }
+}
+
 export default class CourseContentsController {
   /**
    * Display course content builder for instructors
@@ -251,19 +287,25 @@ export default class CourseContentsController {
     await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
     const payload = await request.validateUsing(updateModuleValidator)
+    const { updatedAt: expected, availableFrom, availableUntil, ...changes } = payload
+    const json = wantsJson(request)
 
-    await module
-      .merge({
-        ...payload,
-        availableFrom: payload.availableFrom
-          ? DateTime.fromJSDate(payload.availableFrom)
-          : undefined,
-        availableUntil: payload.availableUntil
-          ? DateTime.fromJSDate(payload.availableUntil)
-          : undefined,
-      })
-      .save()
+    if (expected !== undefined && !sameSecond(module.updatedAt, expected)) {
+      if (json) return response.status(409).json(conflictBody(module))
+      session.flash('error', CONFLICT_ERROR)
+      return response.redirect().back()
+    }
 
+    const dates = availability(module, availableFrom, availableUntil)
+    if (!dates) {
+      if (json) return response.status(422).json(DATE_ORDER_BODY)
+      session.flash('error', DATE_ORDER_ERROR)
+      return response.redirect().back()
+    }
+
+    await module.merge({ ...changes, ...dates }).save()
+
+    if (json) return response.json({ item: savedItem(module) })
     session.flash('success', 'Module mis à jour avec succès')
     return response.redirect().back()
   }
@@ -415,20 +457,31 @@ export default class CourseContentsController {
     await bouncer.with('CoursePolicy').authorize('edit', content.module.course)
 
     const payload = await request.validateUsing(updateContentValidator)
+    const { updatedAt: expected, availableFrom, availableUntil, dueDate, ...changes } = payload
+    const json = wantsJson(request)
+
+    if (expected !== undefined && !sameSecond(content.updatedAt, expected)) {
+      if (json) return response.status(409).json(conflictBody(content))
+      session.flash('error', CONFLICT_ERROR)
+      return response.redirect().back()
+    }
+
+    const dates = availability(content, availableFrom, availableUntil)
+    if (!dates) {
+      if (json) return response.status(422).json(DATE_ORDER_BODY)
+      session.flash('error', DATE_ORDER_ERROR)
+      return response.redirect().back()
+    }
 
     await content
       .merge({
-        ...payload,
-        availableFrom: payload.availableFrom
-          ? DateTime.fromJSDate(payload.availableFrom)
-          : undefined,
-        availableUntil: payload.availableUntil
-          ? DateTime.fromJSDate(payload.availableUntil)
-          : undefined,
-        dueDate: payload.dueDate ? DateTime.fromJSDate(payload.dueDate) : undefined,
+        ...changes,
+        ...dates,
+        dueDate: dueDate ? DateTime.fromJSDate(dueDate) : undefined,
       })
       .save()
 
+    if (json) return response.json({ item: savedItem(content) })
     session.flash('success', 'Contenu mis à jour avec succès')
     return response.redirect().back()
   }

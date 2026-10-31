@@ -19,13 +19,15 @@ export const createModuleValidator = vine.compile(
 export const updateModuleValidator = vine.compile(
   vine.object({
     title: vine.string().trim().minLength(1).maxLength(255).optional(),
-    description: vine.string().trim().optional(),
+    description: vine.string().trim().nullable().optional(),
     order: vine.number().optional(),
     isPublished: vine.boolean().optional(),
-    availableFrom: vine.date().optional(),
-    availableUntil: vine.date().optional(),
+    availableFrom: vine.date().nullable().optional(),
+    availableUntil: vine.date().nullable().optional(),
     requirePreviousCompletion: vine.boolean().optional(),
     estimatedTime: vine.number().optional(),
+    // Conflict token: absent = no check, present (even null) = compared to the second
+    updatedAt: vine.string().nullable().optional(),
   })
 )
 
@@ -73,7 +75,7 @@ export const createContentValidator = vine.compile(
 export const updateContentValidator = vine.compile(
   vine.object({
     title: vine.string().trim().minLength(1).maxLength(255).optional(),
-    description: vine.string().trim().optional(),
+    description: vine.string().trim().nullable().optional(),
     content: vine.string().optional(),
     fileUrl: vine.string().trim().url().maxLength(500).optional(),
     fileName: vine.string().trim().maxLength(255).optional(),
@@ -83,8 +85,8 @@ export const updateContentValidator = vine.compile(
     metadata: vine.object({}).optional(),
     order: vine.number().optional(),
     isPublished: vine.boolean().optional(),
-    availableFrom: vine.date().optional(),
-    availableUntil: vine.date().optional(),
+    availableFrom: vine.date().nullable().optional(),
+    availableUntil: vine.date().nullable().optional(),
     completionRequired: vine.boolean().optional(),
     completionType: vine.enum(['manual', 'view', 'submit', 'grade']).optional(),
     minTimeRequired: vine.number().optional(),
@@ -93,6 +95,8 @@ export const updateContentValidator = vine.compile(
     allowLateSubmissions: vine.boolean().optional(),
     latePenaltyPercent: vine.number().min(0).max(100).optional(),
     estimatedTime: vine.number().optional(),
+    // Conflict token: absent = no check, present (even null) = compared to the second
+    updatedAt: vine.string().nullable().optional(),
   })
 )
 
