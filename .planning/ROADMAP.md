@@ -288,9 +288,9 @@ Plans:
 
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Move endpoints: `POST /contents/:id/move` and `/modules/:id/move` with course-row lock, cycle + 2-level depth checks, `updated_at` conflict token; `parentId` dropped from module update; one ids-only audit row per move [BUILD-01, BUILD-02, BUILD-03]
-- [ ] 05-02-PLAN.md — Pure `inertia/lib/builder_tree.ts` (rows, drop projections, move targets, optimistic apply) unit-tested; D-10 browser base URL from `PORT` + local browser probe [BUILD-01, BUILD-02, BUILD-03, BUILD-06]
-- [ ] 05-03-PLAN.md — Serial save queue (pure core + `useSaveQueue` + strict `sendJson`) and accessible save indicator [BUILD-10]
+- [x] 05-01-PLAN.md — Move endpoints: `POST /contents/:id/move` and `/modules/:id/move` with course-row lock, cycle + 2-level depth checks, `updated_at` conflict token; `parentId` dropped from module update; one ids-only audit row per move [BUILD-01, BUILD-02, BUILD-03]
+- [x] 05-02-PLAN.md — Pure `inertia/lib/builder_tree.ts` (rows, drop projections, move targets, optimistic apply) unit-tested; D-10 browser base URL from `PORT` + local browser probe [BUILD-01, BUILD-02, BUILD-03, BUILD-06]
+- [x] 05-03-PLAN.md — Serial save queue (pure core + `useSaveQueue` + strict `sendJson`) and accessible save indicator [BUILD-10]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -476,7 +476,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 0/10 | Planned (v0.1, incl. bulk actions) | - |
+| 5. Builder UI | 3/10 | In Progress|  |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
