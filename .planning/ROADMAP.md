@@ -21,7 +21,7 @@ Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10
 | Milestone | Date | Repo phases | 🟡 days | Capacity (vault) |
 |---|---|---|---|---|
 | Course editor | 2026-11-30 | 5 | 13-15 | part of the Nov-Dec evenings |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 13-15 (Ph. 5) + 10-20 (Ph. 6, Tiptap-class editor, decided) + 3-4 (Ph. 3) = **26-39** | **~10 days (owner, 2026-10-31) — does not fit the date as scoped**; see RECONCILIATION §8 |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 13-15 (Ph. 5) + 10-20 (Ph. 6, Tiptap-class editor, decided) + 3-4 (Ph. 3) = **26-39** | ~10 days at first; **owner chose option (iii) on 2026-10-31: capacity raised to cover 26-39 🟡 days (≈ 3.7-5.6 d/week to 2026-12-20)**, date and scope kept; fallback option (i) if the pace is not reached (RECONCILIATION §8) |
 | v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ 30 | ~7 days unless the 2027 budget (≥ 20 d/year, to fix) is raised |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
 | v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — |

@@ -156,7 +156,9 @@ The vault documents say PostgreSQL-only; the repo runs the three engines in CI (
 | 7 | Date shift (C6) | Acknowledged, kept as is: BUILD-13 stays in Phase 5; the vault's V1.1 "date shift" is treated as the instantiation offset of BUILD-V2-07 until the vault says otherwise | — |
 | 8 | Phase 5 OQ-1..3 | Defaults accepted: bulk date shift leaves the `assignments` table alone; copies start as drafts; a bulk delete may include a non-empty section only when its whole sub-tree is selected | `05-09-PLAN.md`, `05-CONTEXT.md` D-13 |
 
-**Consequence to confront next (not decided here).** With decisions 1 and 6 the MVP needs **26-39 🟡 days** (Phase 5 13-15 + Phase 6 10-20 + Phase 3 3-4) against **~10 available**: 2026-12-20 does not hold as scoped. The three honest moves are (i) keep the date and cut: execute Phase 5 waves 1-4 and 05-08 first (drag-and-drop without the bulk plans 05-09/05-10, ~8-10 d), postpone the bulk plans, Phase 3 and most of Phase 6 past the date; (ii) move the MVP date to match 26-39 days at the real pace; (iii) raise the Nov-Dec capacity. Each one is the owner's call; the roadmap records the gap, not a choice.
+**Consequence confronted.** With decisions 1 and 6 the MVP needs **26-39 🟡 days** (Phase 5 13-15 + Phase 6 10-20 + Phase 3 3-4) against the ~10 days first announced: 2026-12-20 did not hold as scoped. Three honest moves were put to the owner: (i) keep the date and cut (Phase 5 waves 1-4 and 05-08 first, bulk plans, Phase 3 and most of Phase 6 postponed); (ii) move the MVP date; (iii) raise the Nov-Dec capacity.
+
+**Decided 2026-10-31: option (iii).** Date (2026-12-20) and scope are kept; the Nov-Dec capacity is raised to cover 26-39 🟡 days, which means **about 3.7-5.6 days per week over the 7 remaining weeks**, close to full time. Phase order stays 5 → 6 → 3; if the pace is not reached, option (i) is the fallback (Phase 3 drops first, then the bulk plans 05-09/05-10).
 
 ---
 
