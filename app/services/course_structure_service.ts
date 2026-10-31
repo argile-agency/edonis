@@ -2,7 +2,7 @@ import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import { DateTime } from 'luxon'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
-import { depthOf } from '../helpers/category_tree.js'
+import { depthOf, subtreeHeight, wouldCreateCycle } from '../helpers/category_tree.js'
 
 /**
  * Structural moves of a course (sections and contents), shared by the builder
@@ -107,6 +107,64 @@ export default class CourseStructureService {
     }
 
     return { ok: true, fromParentId: fromModuleId, toParentId: dest.id, position: index }
+  }
+
+  /**
+   * Moves `module` to `position` (0-based, clamped, item excluded) under
+   * `parentId` (null = course root). Same-course and cycle checks run before
+   * the depth check, which counts the moved section's own sub-sections.
+   * Precondition: the caller holds the course-row lock, re-read the row with `trx` and checked its token.
+   */
+  static async moveModule(
+    trx: TransactionClientContract,
+    courseId: number,
+    module: CourseModule,
+    parentId: number | null,
+    position: number
+  ): Promise<MoveOutcome> {
+    const parentById = await this.parentMap(trx, courseId)
+    if (parentId !== null) {
+      if (!parentById.has(parentId)) return INVALID_DESTINATION
+      if (wouldCreateCycle(parentById, module.id, parentId)) return INVALID_DESTINATION
+    }
+
+    const newDepth = parentId === null ? 0 : depthOf(parentById, parentId) + 1
+    if (newDepth + subtreeHeight(parentById, module.id) > MAX_SECTION_DEPTH) return TOO_DEEP
+
+    const fromParentId = module.parentId
+    const siblings = await this.siblingsOf(trx, courseId, parentId, module.id)
+    const index = Math.min(position, siblings.length)
+    const final = siblings.map((s) => ({ id: s.id, order: s.order }))
+    final.splice(index, 0, { id: module.id, order: index + 1 })
+    await this.renumber(trx, final, CourseModule)
+
+    module.useTransaction(trx)
+    await module.merge({ parentId, order: index + 1 }).save()
+
+    if (fromParentId !== parentId) {
+      const source = await this.siblingsOf(trx, courseId, fromParentId, module.id)
+      await this.renumber(trx, source, CourseModule)
+    }
+
+    return { ok: true, fromParentId, toParentId: parentId, position: index }
+  }
+
+  /** Sections under `parentId` (null = roots) other than `excludeId`, in display order. */
+  private static async siblingsOf(
+    trx: TransactionClientContract,
+    courseId: number,
+    parentId: number | null,
+    excludeId: number
+  ): Promise<CourseModule[]> {
+    const query = CourseModule.query({ client: trx })
+      .where('course_id', courseId)
+      .whereNot('id', excludeId)
+    if (parentId === null) {
+      query.whereNull('parent_id')
+    } else {
+      query.where('parent_id', parentId)
+    }
+    return query.orderBy('order', 'asc').orderBy('id', 'asc')
   }
 
   /** `id -> parent_id` of every section of the course. */

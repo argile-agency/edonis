@@ -7,7 +7,12 @@ import type User from '#models/user'
 import AuditLog from '#models/audit_log'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
-import { createCourse, createUser, grantPermission } from '#tests/functional/helpers/factories'
+import {
+  assertNotCsrfRejected,
+  createCourse,
+  createUser,
+  grantPermission,
+} from '#tests/functional/helpers/factories'
 
 /**
  * Intent-based move endpoints of the course builder (phase 05, plan 01).
@@ -62,6 +67,21 @@ async function contentOrders(moduleId: number): Promise<[number, number][]> {
     .where('module_id', moduleId)
     .orderBy('order', 'asc')
     .orderBy('id', 'asc')
+  return rows.map((r) => [r.id, r.order])
+}
+
+/** `[id, order]` pairs of the sections under `parentId` (null = roots), in display order. */
+async function moduleOrders(
+  courseId: number,
+  parentId: number | null
+): Promise<[number, number][]> {
+  const query = CourseModule.query().where('course_id', courseId)
+  if (parentId === null) {
+    query.whereNull('parent_id')
+  } else {
+    query.where('parent_id', parentId)
+  }
+  const rows = await query.orderBy('order', 'asc').orderBy('id', 'asc')
   return rows.map((r) => [r.id, r.order])
 }
 
@@ -377,5 +397,306 @@ test.group('Builder - content moves', (group) => {
       updatedAt: byEditor.body().item.updatedAt,
     })
     byAdmin.assertStatus(200)
+  })
+})
+
+test.group('Builder - section moves', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('reorder roots: moving to position 0 renumbers densely (BUILD-03)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const r2 = await createModule(course, { order: 2 })
+    const r3 = await createModule(course, { order: 3 })
+
+    const url = route('modules.move', { moduleId: r3.id })
+    const response = await postMove(client, url, owner, {
+      parentId: null,
+      position: 0,
+      updatedAt: token(r3),
+    })
+
+    response.assertStatus(200)
+    assert.equal(response.body().item.id, r3.id)
+    assert.isString(response.body().item.updatedAt)
+    assert.deepEqual(await moduleOrders(course.id, null), [
+      [r3.id, 1],
+      [r1.id, 2],
+      [r2.id, 3],
+    ])
+  })
+
+  test('re-parent: a leaf root goes under another root, both lists renumbered, one audit row (D-01)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const leaf = await createModule(course, { order: 2 })
+    const r2 = await createModule(course, { order: 3 })
+    const c = await createModule(course, { parentId: r1.id, order: 4 })
+
+    const url = route('modules.move', { moduleId: leaf.id })
+    const response = await postMove(client, url, owner, {
+      parentId: r1.id,
+      position: 0,
+      updatedAt: token(leaf),
+    })
+
+    response.assertStatus(200)
+    const moved = await CourseModule.findOrFail(leaf.id)
+    assert.equal(moved.parentId, r1.id)
+    assert.deepEqual(await moduleOrders(course.id, r1.id), [
+      [leaf.id, 1],
+      [c.id, 2],
+    ])
+    assert.deepEqual(await moduleOrders(course.id, null), [
+      [r1.id, 1],
+      [r2.id, 2],
+    ])
+
+    const audits = await auditRows('course.module.move', leaf.id)
+    assert.lengthOf(audits, 1)
+    assert.deepEqual(audits[0].metadata, {
+      courseId: course.id,
+      fromParentId: null,
+      toParentId: r1.id,
+      position: 0,
+    })
+  })
+
+  test('back to root: a sub-section lands at the clamped position among the roots', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const r2 = await createModule(course, { order: 2 })
+    const c = await createModule(course, { parentId: r1.id, order: 1 })
+
+    const url = route('modules.move', { moduleId: c.id })
+    const response = await postMove(client, url, owner, {
+      parentId: null,
+      position: 99,
+      updatedAt: token(c),
+    })
+
+    response.assertStatus(200)
+    assert.deepEqual(await moduleOrders(course.id, null), [
+      [r1.id, 1],
+      [r2.id, 2],
+      [c.id, 3],
+    ])
+    assert.deepEqual(await moduleOrders(course.id, r1.id), [])
+  })
+
+  test('cycle: a section cannot go under itself or its child', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const c1 = await createModule(course, { parentId: r1.id })
+    const url = route('modules.move', { moduleId: r1.id })
+
+    for (const parentId of [c1.id, r1.id]) {
+      const response = await postMove(client, url, owner, {
+        parentId,
+        position: 0,
+        updatedAt: token(r1),
+      })
+      response.assertStatus(422)
+      assert.equal(response.body().code, 'E_INVALID_DESTINATION')
+      assert.equal(response.body().message, PARENT_ERROR)
+      const after = await CourseModule.findOrFail(r1.id)
+      assert.isNull(after.parentId)
+      assert.equal(after.order, 1)
+    }
+    assert.lengthOf(await auditRows('course.module.move', r1.id), 0)
+  })
+
+  test('depth: a section with sub-sections cannot become a sub-section; a leaf can', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const r2 = await createModule(course, { order: 2 })
+    const leaf = await createModule(course, { order: 3 })
+    await createModule(course, { parentId: r1.id })
+
+    const refused = await postMove(client, route('modules.move', { moduleId: r1.id }), owner, {
+      parentId: r2.id,
+      position: 0,
+      updatedAt: token(r1),
+    })
+    refused.assertStatus(422)
+    assert.equal(refused.body().code, 'E_DEPTH')
+    assert.equal(refused.body().message, DEPTH_ERROR)
+    const after = await CourseModule.findOrFail(r1.id)
+    assert.isNull(after.parentId)
+    assert.equal(after.order, 1)
+
+    const accepted = await postMove(client, route('modules.move', { moduleId: leaf.id }), owner, {
+      parentId: r2.id,
+      position: 0,
+      updatedAt: token(leaf),
+    })
+    accepted.assertStatus(200)
+    const movedLeaf = await CourseModule.findOrFail(leaf.id)
+    assert.equal(movedLeaf.parentId, r2.id)
+  })
+
+  test('legacy third level: can be brought back within the limit, not kept too deep', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r = await createModule(course, { order: 1 })
+    const c = await createModule(course, { parentId: r.id })
+    const g = await createModule(course, { parentId: c.id })
+    const r2 = await createModule(course, { order: 2 })
+    const c2 = await createModule(course, { parentId: r2.id })
+    const url = route('modules.move', { moduleId: g.id })
+
+    const refused = await postMove(client, url, owner, {
+      parentId: c2.id,
+      position: 0,
+      updatedAt: token(g),
+    })
+    refused.assertStatus(422)
+    assert.equal(refused.body().message, DEPTH_ERROR)
+    const stillDeep = await CourseModule.findOrFail(g.id)
+    assert.equal(stillDeep.parentId, c.id)
+
+    const accepted = await postMove(client, url, owner, {
+      parentId: r2.id,
+      position: 0,
+      updatedAt: token(g),
+    })
+    accepted.assertStatus(200)
+    assert.deepEqual(await moduleOrders(course.id, r2.id), [
+      [g.id, 1],
+      [c2.id, 2],
+    ])
+  })
+
+  test('foreign parent is refused with 422 and nothing is written', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const other = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const foreignCourse = await createCourse(other)
+    const r1 = await createModule(course, { order: 3 })
+    const foreign = await createModule(foreignCourse)
+
+    const response = await postMove(client, route('modules.move', { moduleId: r1.id }), owner, {
+      parentId: foreign.id,
+      position: 0,
+      updatedAt: token(r1),
+    })
+
+    response.assertStatus(422)
+    assert.equal(response.body().message, PARENT_ERROR)
+    const after = await CourseModule.findOrFail(r1.id)
+    assert.isNull(after.parentId)
+    assert.equal(after.order, 3)
+  })
+
+  test('stale token gives 409 with the fresh item and writes nothing', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const r2 = await createModule(course, { order: 2 })
+    const staleToken = token(r1)
+    await CourseModule.query()
+      .where('id', r1.id)
+      .update({ updated_at: DateTime.now().plus({ minutes: 1 }).toFormat('yyyy-MM-dd HH:mm:ss') })
+
+    const response = await postMove(client, route('modules.move', { moduleId: r1.id }), owner, {
+      parentId: null,
+      position: 1,
+      updatedAt: staleToken,
+    })
+
+    response.assertStatus(409)
+    assert.equal(response.body().code, 'E_CONFLICT')
+    assert.equal(response.body().message, CONFLICT_ERROR)
+    assert.equal(response.body().item.id, r1.id)
+    assert.deepEqual(await moduleOrders(course.id, null), [
+      [r1.id, 1],
+      [r2.id, 2],
+    ])
+  })
+
+  test('authorization: outsider 403, admin 200', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const outsider = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    await createModule(course, { order: 2 })
+    const url = route('modules.move', { moduleId: r1.id })
+
+    const denied = await postMove(client, url, outsider, {
+      parentId: null,
+      position: 1,
+      updatedAt: token(r1),
+    })
+    denied.assertStatus(403)
+    const afterDenied = await CourseModule.findOrFail(r1.id)
+    assert.equal(afterDenied.order, 1)
+
+    const byAdmin = await postMove(client, url, admin, {
+      parentId: null,
+      position: 1,
+      updatedAt: token(r1),
+    })
+    byAdmin.assertStatus(200)
+  })
+
+  test('PUT modules.update no longer re-parents a section (single move path)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const r1 = await createModule(course, { order: 1 })
+    const r2 = await createModule(course, { order: 2 })
+
+    const req = client.put(route('modules.update', { moduleId: r1.id })).withCsrfToken()
+    const response = await req
+      .json({ title: 'Renommé', parentId: r2.id })
+      .loginAs(owner)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    const after = await CourseModule.findOrFail(r1.id)
+    assert.equal(after.title, 'Renommé')
+    assert.isNull(after.parentId)
   })
 })

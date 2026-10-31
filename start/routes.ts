@@ -361,6 +361,9 @@ router
       .delete('/modules/:moduleId', [CourseContentsController, 'deleteModule'])
       .as('modules.delete')
     router
+      .post('/modules/:moduleId/move', [CourseContentsController, 'moveModule'])
+      .as('modules.move')
+    router
       .post('/courses/:id/modules/reorder', [CourseContentsController, 'reorderModules'])
       .as('courses.modules.reorder')
 
