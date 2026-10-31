@@ -14,14 +14,15 @@ import {
   reorderContentsValidator,
   updateProgressValidator,
   learnQueryValidator,
+  moveContentValidator,
 } from '#validators/course_content'
+import AuditService from '#services/audit_service'
+import CourseStructureService, {
+  CONFLICT_ERROR,
+  PARENT_ERROR,
+  sameSecond,
+} from '#services/course_structure_service'
 import { wouldCreateCycle } from '../helpers/category_tree.js'
-
-/**
- * Flash shown when a module parent is outside the course, the module itself,
- * or one of its descendants.
- */
-const PARENT_ERROR = 'Module parent invalide.'
 
 export default class CourseContentsController {
   /**
@@ -409,6 +410,64 @@ export default class CourseContentsController {
 
     session.flash('success', 'Contenu supprimé avec succès')
     return response.redirect().back()
+  }
+
+  /**
+   * Move a content item to `position` in a section of the same course (JSON).
+   * 409 on a stale `updatedAt` token, 422 on an invalid destination.
+   */
+  async moveContent(ctx: HttpContext) {
+    const { params, request, response, bouncer } = ctx
+    const content = await CourseContent.query()
+      .where('id', params.contentId)
+      .preload('module', (query) => query.preload('course'))
+      .firstOrFail()
+    const course = content.module.course
+
+    await bouncer.with('CoursePolicy').authorize('edit', course)
+
+    const payload = await request.validateUsing(moveContentValidator)
+
+    // Every check runs before the first write, so an early return writes nothing
+    const result = await db.transaction(async (trx) => {
+      await Course.query({ client: trx }).where('id', course.id).forUpdate().first()
+
+      const fresh = await CourseContent.query({ client: trx }).where('id', content.id).firstOrFail()
+      if (!sameSecond(fresh.updatedAt, payload.updatedAt)) {
+        const body = { code: 'E_CONFLICT', message: CONFLICT_ERROR, item: fresh.serialize() }
+        return { status: 409, body, moved: null }
+      }
+
+      const outcome = await CourseStructureService.moveContent(
+        trx,
+        course.id,
+        fresh,
+        payload.moduleId,
+        payload.position
+      )
+      if (!outcome.ok) {
+        return { status: 422, body: { code: outcome.code, message: outcome.message }, moved: null }
+      }
+
+      const item = { id: fresh.id, updatedAt: fresh.updatedAt?.toISO() ?? null }
+      return { status: 200, body: { item }, moved: outcome }
+    })
+
+    if (result.moved) {
+      await AuditService.logFromContext(ctx, {
+        action: 'course.content.move',
+        resourceType: 'CourseContent',
+        resourceId: content.id,
+        metadata: {
+          courseId: course.id,
+          fromModuleId: result.moved.fromParentId,
+          toModuleId: result.moved.toParentId,
+          position: result.moved.position,
+        },
+      })
+    }
+
+    return response.status(result.status).json(result.body)
   }
 
   /**

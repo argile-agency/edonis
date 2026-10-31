@@ -109,6 +109,18 @@ export const reorderContentsValidator = vine.compile(
 )
 
 /**
+ * Move a content item. `position` is the 0-based index among the destination
+ * section's contents, with the moved item excluded; `updatedAt` is the conflict token.
+ */
+export const moveContentValidator = vine.compile(
+  vine.object({
+    moduleId: vine.number().positive(),
+    position: vine.number().withoutDecimals().min(0),
+    updatedAt: vine.string().nullable(),
+  })
+)
+
+/**
  * Query string of the learn player: `?content=<id>` must be a positive integer id.
  */
 export const learnQueryValidator = vine.compile(
