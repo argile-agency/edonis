@@ -34,12 +34,15 @@ export function InlineTitle({
   titleClassName,
 }: InlineTitleProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const wasEditing = useRef(editing)
+  // Set by Enter/Escape only: after a blur exit, focus already went where the teacher chose.
+  const refocusOnExit = useRef(false)
 
-  // Back to read mode: return focus to the title button (not on first mount).
+  // Back to read mode after a keyboard exit: return focus to the title button.
   useEffect(() => {
-    if (wasEditing.current && !editing) buttonRef.current?.focus()
-    wasEditing.current = editing
+    if (!editing && refocusOnExit.current) {
+      refocusOnExit.current = false
+      buttonRef.current?.focus()
+    }
   }, [editing])
 
   if (!editing) {
@@ -68,6 +71,9 @@ export function InlineTitle({
       errorMessage={errorMessage}
       onCancel={onCancel}
       onSubmit={onSubmit}
+      onKeyboardExit={() => {
+        refocusOnExit.current = true
+      }}
     />
   )
 }
@@ -79,6 +85,7 @@ interface TitleInputProps {
   errorMessage?: string | null
   onCancel(): void
   onSubmit(value: string): void
+  onKeyboardExit(): void
 }
 
 /** Mounted per edit session, so its local value starts from the draft each time. */
@@ -89,6 +96,7 @@ function TitleInput({
   errorMessage,
   onCancel,
   onSubmit,
+  onKeyboardExit,
 }: TitleInputProps) {
   const [value, setValue] = useState(initialValue)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -101,18 +109,20 @@ function TitleInput({
     inputRef.current?.select()
   }, [])
 
-  const submit = () => {
+  const submit = (byKeyboard: boolean) => {
     const trimmed = value.trim()
     if (trimmed === '') {
       setLocalError(REQUIRED_MESSAGE)
       return
     }
     settled.current = true
+    if (byKeyboard) onKeyboardExit()
     onSubmit(trimmed)
   }
 
-  const cancel = () => {
+  const cancel = (byKeyboard: boolean) => {
     settled.current = true
+    if (byKeyboard) onKeyboardExit()
     onCancel()
   }
 
@@ -139,18 +149,18 @@ function TitleInput({
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
-            submit()
+            submit(true)
           } else if (e.key === 'Escape') {
             e.preventDefault()
             e.stopPropagation()
-            cancel()
+            cancel(true)
           }
         }}
         onBlur={() => {
           if (settled.current) return
           // Compared with the saved title, so a kept conflict draft is still sent.
-          if (value.trim() !== title) submit()
-          else cancel()
+          if (value.trim() !== title) submit(false)
+          else cancel(false)
         }}
         className="h-8"
       />
