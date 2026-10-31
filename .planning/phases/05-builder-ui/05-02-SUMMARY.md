@@ -43,8 +43,8 @@ The module path stayed `inertia/lib/builder_tree.ts`. The backend runner compile
 BROWSER_LOCAL: blocked: browserType.launch: Executable doesn't exist at /Users/vdelaleu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell
 
 - **Cause: environmental.** Playwright expects headless shell build 1248, and only builds up to 1243 are installed in `~/Library/Caches/ms-playwright/`. Migration and `db:seed` on the temp sqlite DB succeeded. No test assertion ran.
-- **Remedy (user action):** `npx playwright install chromium` downloads the matching headless shell. Pointing the launcher at chromium-1243 instead would require editing `tests/bootstrap.ts` beyond the D-10 line, which this plan forbids.
-- **Command:** the probe ran with `DB_CONNECTION=sqlite` added, because `.env` points at the dev Postgres and the probe does not go through `.env.test`. The temp DB was deleted afterwards.
+- **Remedy (user action):** `./node_modules/.bin/playwright install chromium` downloads the build this Playwright version expects (1248). Pointing the launcher at chromium-1243 instead would require editing `tests/bootstrap.ts` beyond the D-10 line, which this plan forbids.
+- **Command:** the probe ran with `DB_CONNECTION=sqlite` added as a precaution (see Deviation 2). The temp DB was deleted afterwards.
 
 ## Commits
 
@@ -71,9 +71,8 @@ BROWSER_LOCAL: blocked: browserType.launch: Executable doesn't exist at /Users/v
 - **Files:** inertia/lib/builder_tree.ts
 - **Commit:** 02982f1
 
-**2. [Rule 3 - Blocking] `DB_CONNECTION=sqlite` added to the browser probe command**
-- **Issue:** the plan's probe command sets only `DB_FILENAME`, and `.env` selects Postgres, so the probe would have migrated the user's dev Postgres.
-- **Fix:** added `DB_CONNECTION=sqlite` to that one run. Unit runs already resolve to sqlite through `.env.test`.
+**2. [Precaution] `DB_CONNECTION=sqlite` added to the browser probe command**
+- **Why:** the plan's probe command sets only `DB_FILENAME`, and `.env` selects Postgres. With `NODE_ENV=test`, the tracked `.env.test` (`DB_CONNECTION=sqlite`) probably already selects sqlite, but that was not checked for `migration:run` / `db:seed`. The override makes sure the run cannot touch the dev Postgres.
 
 **Note:** a test file whose `test.group` body throws at import (the RED run against throwing stubs) leaves `node ace test` hanging. Only my own processes were killed.
 
