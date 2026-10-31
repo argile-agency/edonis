@@ -47,3 +47,6 @@ tmp/*.sqlite3-shm
 # Course content file storage (outside webroot; keep directory via .gitkeep)
 storage/content_files/*
 !storage/content_files/.gitkeep
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/
