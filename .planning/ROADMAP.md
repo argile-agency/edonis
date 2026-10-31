@@ -14,6 +14,19 @@ The debt-first ordering is deliberate. Phases 5 and 10 modify code that currentl
 has no policy layer and incomplete validator coverage; hardening first means the
 builder work lands on a trustworthy foundation instead of widening the gap.
 
+## Milestones (date-aligned with the company roadmap, 2026-10-31)
+
+Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10-10); mapping, collisions and capacity in `RECONCILIATION-2026-10-31.md`. 🟡 = day estimates (vault for the governance lots, repo estimate from plan counts for content phases).
+
+| Milestone | Date | Repo phases | 🟡 days | Capacity (vault) |
+|---|---|---|---|---|
+| Course editor | 2026-11-30 | 5 | 13-15 | part of the Nov-Dec evenings |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 16-19 (Markdown editor) · 23-29 (Tiptap) · +3-4 with Phase 3 | "Nov-Dec evenings", not quantified |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | 7, 8, 10, 12, 9 (if cheap) · 13 Rubric, 14 AI governance, 15 AI Act, 16 Accommodation, 17 Installability | ~8 content + 22 governance ≈ 30 | ~7 days unless the 2027 budget (≥ 20 d/year, to fix) is raised |
+| Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
+| v1.1 | autumn 2027 | requirements only: EDITOR-V11-01, ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | 10-20 for the editor alone | — |
+| v2 | undated, not committed | 11 Moodle import (parked); PAPER-V2-01/02, LTI-V2-01, QTI-V2-01, QA-V2-01, BUILD-V2-06 | — | — |
+
 ## Phases
 
 **Phase Numbering:**
@@ -23,25 +36,36 @@ builder work lands on a trustworthy foundation instead of widening the gap.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-**Technical debt remediation:**
+> **Milestones realigned on 2026-10-31** with the company roadmap (dates, not phase numbers; no phase was
+> renumbered). See `RECONCILIATION-2026-10-31.md` for the mapping, the collisions and the capacity view.
+
+**Milestone v0.1 — MVP (2026-12-20):** a teacher creates a course (sections + pages), a learner follows it end to end; internal use. Phase 5 alone is the vault's "Course editor" milestone (2026-11-30).
 
 - [x] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite (completed 2026-10-13)
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
-- [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form
+- [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
+- [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans)
+- [ ] **Phase 6: Page Content** - Page content type — *editor choice pending: Markdown (vault, MVP) vs WYSIWYG/Tiptap (PAGE-01..05)*
+- [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip*
 
-**Course content milestone:**
+**Milestone v1.0 — Governance baseline + first pilots (2027-03-31):** files, links, progress tracking, plus the five governance lots (B, C+D, E, F, H). Capacity: ~7 available days vs ~30 🟡 days (RECONCILIATION §3); sequencing option (a) or (b) to be chosen by the owner.
 
-- [x] **Phase 4: Content Foundation** - Database models and file storage service
- (completed 2026-10-19)
-
-- [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder
-- [ ] **Phase 6: Page Content** - WYSIWYG rich text editor integration
 - [ ] **Phase 7: File Content** - File upload, storage, and download
 - [ ] **Phase 8: URL Content** - External link management
-- [ ] **Phase 9: Assignment Integration** - Link assignments to course sections
 - [ ] **Phase 10: Engagement Tracking** - Teacher-facing completion views
-- [ ] **Phase 11: Moodle Import** - Parse and import .mbz backup files
-- [ ] **Phase 12: Permissions and Polish** - Access control and final refinements
+- [ ] **Phase 12: Permissions and Polish** - Access control and final refinements (12-01 already done by Phase 2)
+- [ ] **Phase 9: Assignment Integration** - Link assignments to course sections — *"if cheap" (owner decision)*
+- [ ] **Phase 13: Unified rubric and per-question marking** - Lot B 🟡 ~5 d
+- [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 d (E1-dependent items)
+- [ ] **Phase 15: AI Act article 5 and 50 compliance** - Lot E 🟡 ~2 d
+- [ ] **Phase 16: Accommodation profile** - Lot F 🟡 ~2 d
+- [ ] **Phase 17: Installability backup and admin docs** - Lot H 🟡 ~3 d — prerequisite of the paid installation offer and subscriptions
+
+**Milestone v1.1 (autumn 2027):** requirements only, no phase yet — EDITOR-V11-01, ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 placed here by the vault (IDs kept).
+
+**Milestone v2 (undated, not committed):**
+
+- [ ] **Phase 11: Moodle Import** - Parse and import .mbz backup files — *moved from v1 on 2026-10-31 (company roadmap); IMPORT-01..11 deferred*
 
 ## Phase Details
 
@@ -163,6 +187,7 @@ Plans:
 
 ### Phase 3: Complete Stubbed Features
 
+**Milestone**: v0.1 MVP (2026-12-20) — placed after Phases 5 and 6 on 2026-10-31: not on the MVP critical path (evaluations list and contact form), first to drop to v1.0 if 5-6 slip. Owner decision pending (RECONCILIATION §7.3).
 **Goal**: Nothing in the UI promises a capability the backend does not deliver
 **Depends on**: Phase 2
 **Requirements**: EVAL-01, EVAL-02, EVAL-03, CONTACT-01, CONTACT-02, CONTACT-03
@@ -291,6 +316,7 @@ Plans:
 
 ### Phase 6: Page Content
 
+**Milestone**: v0.1 MVP (2026-12-20). **Editor choice pending (2026-10-31, RECONCILIATION C1):** the vault says a Markdown editor is enough for the MVP and puts Tiptap + typed JSON blocks + revisions in V1.1 (🟡 10-20 d, EDITOR-V11-01); this block and PAGE-01..05 still say WYSIWYG/TipTap. Not decided here; the success criteria and plan 06-01 must be re-read once the owner decides.
 **Goal**: Teachers can create rich text pages with embedded media
 **Depends on**: Phase 5
 **Requirements**: PAGE-01, PAGE-02, PAGE-03, PAGE-04, PAGE-05, PAGE-06, PAGE-07
@@ -396,6 +422,7 @@ Plans:
 
 ### Phase 11: Moodle Import
 
+**Milestone**: **v2 (undated, not committed) — moved from v1 on 2026-10-31** because the company roadmap (`01-STRATEGIE-ARGILE` §4, design note 07 §10) places Moodle `.mbz` import in V2. The phase keeps its number and its IMPORT-01..11 requirements (status Deferred). Phase 4's storage foundation and Phase 6-9 content types remain its prerequisites.
 **Goal**: Teachers can import existing Moodle courses via .mbz backup files
 **Depends on**: Phase 6, Phase 7, Phase 8, Phase 9
 **Requirements**: IMPORT-01, IMPORT-02, IMPORT-03, IMPORT-04, IMPORT-05, IMPORT-06, IMPORT-07, IMPORT-08, IMPORT-09, IMPORT-10, IMPORT-11
@@ -439,16 +466,16 @@ Plans:
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+**Execution Order (realigned 2026-10-31):**
+v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0: content 7 -> 8 -> 10 -> 12 -> 9 and governance 17 -> 15 -> 16 -> 13 -> 14, interleaving per the sequencing option the owner chooses (RECONCILIATION §3) · v2: 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Code Health Baseline | 5/5 | Complete    | 2026-10-13 |
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
-| 3. Complete Stubbed Features | 0/2 | Not started | - |
+| 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 0/3 | Not started (rescoped) | - |
+| 5. Builder UI | 0/10 | Planned (v0.1, incl. bulk actions) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
@@ -457,7 +484,106 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 11. Moodle Import | 0/4 | Not started | - |
 | 12. Permissions and Polish | 0/2 | Not started | - |
 
+### Phase 13: Unified rubric and per-question marking
+
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot B, 🟡 ~5 d (vault estimate). Added 2026-10-31.
+**Goal**: One versioned `rubric` object marks any assessment (online, paper, oral, practical) per criterion, with lock, audit and retroactive recompute — without a quiz builder
+**Depends on**: Phase 2 (policies, audit logging); uses the existing assignments / submissions / grades model (see RECONCILIATION §2 for what lot B needs and does not need)
+**Requirements**: RUBRIC-01, RUBRIC-02, RUBRIC-03, RUBRIC-04, RUBRIC-05, RUBRIC-06, RUBRIC-07
+**Success Criteria** (what must be TRUE):
+
+  1. One rubric can be attached to an `essay` assignment and to an `offline` (paper / oral / practical) assignment; marking either records one row per criterion and the submission total equals the sum of the rows (functional test)
+  2. Editing a rubric version that already has marks creates a new version; the used version's rows cannot be updated (immutability enforced at the data layer, tested)
+  3. Switching an assignment to a newer grid version recomputes the affected totals and produces a delta report shown to the marker before anything applies
+  4. An out-of-range or missing-criterion mark lands in the resolution queue; the submission total stays unchanged until it is resolved
+  5. A finalised mark cannot change without an explicit unlock, which writes an `audit_logs` row
+  6. Legacy `assignments.rubric_data` / `submissions.rubric_scores` remain readable after migration; `bun run check:debt` stays 0; CI green on the three engines
+
+**Plans**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 13 to break down)
+
+### Phase 14: AI governance core and OpenAI-compatible provider
+
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lots C (🟡 ~8 d) + D (🟡 ~2 d). Added 2026-10-31. **E1-dependent:** AIGOV-06 (`UPDATE … RETURNING` is not available on MySQL/MariaDB) and AIGOV-07 (partitions, JSONB/GIN) were designed for PostgreSQL; the arbitrage is open (RECONCILIATION §4).
+**Goal**: AI is off by default and every call is policy-routed, data-classed, budgeted and ledgered, with one real provider and CI coverage — never AI-text detection, proctoring, decisional grading or dropout prediction
+**Depends on**: Phase 2 (policies, audit logging, PII handling)
+**Requirements**: AIGOV-01, AIGOV-02, AIGOV-03, AIGOV-04, AIGOV-05, AIGOV-06, AIGOV-07, AIGOV-08, AIGOV-09, AIGOV-10, AIGOV-11, AIGOV-12
+**Success Criteria** (what must be TRUE):
+
+  1. On a fresh install and after running all migrations on an existing database, no AI placement is enabled (tested)
+  2. A request classed `student_work` sent to a provider whose manifest says `maxDataClass = pedagogical` is refused by the router, and the resolution trace names the rule that refused it (functional test, not a checkbox)
+  3. A course-level setting cannot enable what the department disabled (monotone restriction), and the trace shows every level consulted
+  4. Two concurrent calls against a budget with room for one: exactly one reservation succeeds, the other is refused — tested on every CI engine
+  5. `ai_usage` has no prompt-content column, is insert-only (updates and deletes refused, tested), stores `cost_micros`, cached/reasoning tokens and `billed_to`; `ai_audit_log` is a separate table
+  6. MCQ generation always yields `status = draft` items invisible to learners until a human validates them; accessibility assistance uses the WCAG system prompt (snapshot test)
+  7. CI runs the AI functional tests against Ollama; the provider is configured by `baseURL` only (no SDK-specific wiring)
+  8. No capability type and no code path exists for AI-text detection, proctoring, decisional automatic grading or dropout prediction (registry test + grep gate); the Vercel AI SDK is the only AI dependency, no external gateway
+
+**Plans**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 14 to break down)
+
+### Phase 15: AI Act article 5 and 50 compliance
+
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot E, 🟡 ~2 d. Added 2026-10-31. Only meaningful once Phase 14 exists.
+**Goal**: People always know when they interact with an AI, can opt out and ask for human review, and the prohibited practices of article 5 are structurally absent
+**Depends on**: Phase 14
+**Requirements**: AIACT-01, AIACT-02, AIACT-03
+**Success Criteria** (what must be TRUE):
+
+  1. Every AI placement renders the "you are interacting with an AI" notice; a theme or customization override that tries to hide it fails (browser test + axe)
+  2. The capability registry has no type for emotion recognition, attention tracking or proctoring; a test asserts their absence and the admin docs list them as never-build
+  3. The opt-out / human-review form persists a traceable request (audit row, visible to the requester), and AI placements honour the opt-out for that person
+
+**Plans**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 15 to break down)
+
+### Phase 16: Accommodation profile
+
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot F, 🟡 ~2 d. Added 2026-10-31.
+**Goal**: Accommodations follow the person: time and format overrides come from a profile attached to the user and are never retyped per attempt
+**Depends on**: Phase 2 (PII encryption, GDPR export and anonymization)
+**Requirements**: ACCOM-01, ACCOM-02, ACCOM-03
+**Success Criteria** (what must be TRUE):
+
+  1. A profile with a 1.5 time multiplier yields the extended deadline or duration on an attempt with no per-attempt input (functional test)
+  2. Profile fields are encrypted where personal and readable only by the person, course staff with the right permission and admins (403 tests)
+  3. The GDPR export includes the profile and account anonymization removes it (tests extend the account GDPR spec)
+
+**Plans**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 16 to break down)
+
+### Phase 17: Installability backup and admin docs
+
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot H, 🟡 ~3 d. Added 2026-10-31. **Without it the paid "installation" offer and the subscriptions do not exist.** INSTALL-02 is E1-dependent (one backup procedure per engine while the arbitrage is open).
+**Goal**: An institution installs Edonis in under 30 minutes and can back up and restore it, from the admin documentation alone
+**Depends on**: Phase 4 (`CONTENT_STORAGE_PATH`), Phase 2
+**Requirements**: INSTALL-01, INSTALL-02, INSTALL-03
+**Success Criteria** (what must be TRUE):
+
+  1. A timed fresh install from the install guide on a clean machine completes in under 30 minutes (recorded as a HUMAN-UAT item)
+  2. A backup then a restore onto a fresh database and content storage reproduce the row counts and a sample file checksum (functional test on SQLite; manual on the production engine until E1 is decided)
+  3. The admin docs cover install, upgrade, backup/restore and every environment variable declared in `start/env.ts` (grep gate: each env key appears in the docs)
+
+**Plans**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 17 to break down)
+
 ---
 *Roadmap created: 2026-02-03*
 *Restructured: 2026-10-09 — tech debt phases 1-3 prepended, content phases renumbered 1-9 -> 4-12, phases 5 and 10 rescoped against verified codebase reality*
-*Total phases: 12 | Total plans: 40 (estimated)*
+*Realigned: 2026-10-31 — milestones v0.1 / v1.0 / v1.1 / v2 aligned with the company roadmap; Phase 11 parked in v2; Phases 13-17 added for the governance lots B, C+D, E, F, H (no phase renumbered). Flat format kept on purpose: the installed GSD treats any heading containing `vX.Y` as a milestone section and then filters phase directories by the current milestone, which would hide phases 1-4 from the tooling; milestones are therefore expressed in the `## Phases` grouping, the per-phase `**Milestone**` lines and the `## Milestones` table.*
+*Total phases: 17 (Phase 11 parked in v2) | Total plans: 38 planned (phases 1-5) + unplanned phases 6-10, 12-17*

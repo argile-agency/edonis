@@ -101,6 +101,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Moodle Import
 
+> **Moved to v2 on 2026-10-31** (kept here so the IDs stay stable): the company roadmap (`01-STRATEGIE-ARGILE` §4, design note 07 §10) places Moodle `.mbz` import in V2 (undated, not committed). Phase 11 keeps its number and is parked in the v2 milestone of `ROADMAP.md`. See `RECONCILIATION-2026-10-31.md`.
+
 - [ ] **IMPORT-01**: Teacher can upload Moodle .mbz backup file
 - [ ] **IMPORT-02**: System parses .mbz and shows import preview (sections, activities)
 - [ ] **IMPORT-03**: Preview shows which activities will be imported vs skipped
@@ -125,6 +127,55 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PERM-01**: Course instructor can access builder for their courses
 - [ ] **PERM-02**: Admin can access builder for any course
 - [ ] **PERM-03**: Students cannot access course builder
+
+### Rubric and Marking (lot B — milestone v1.0, 🟡 ~5 d, vault 2026-10-10; added 2026-10-31)
+
+Needs the existing assignments / submissions / grades model; needs NO quiz builder (see `RECONCILIATION-2026-10-31.md` §2).
+
+- [ ] **RUBRIC-01**: A `rubric` object (criteria × levels × points) exists independently of any assignment and is attached by reference to an assessment, whatever its modality (online, paper, oral, practical)
+- [ ] **RUBRIC-02**: Rubrics are versioned; a version that has been used to mark anything is immutable, and editing it creates a new version (same convention the future quiz slots will use for `fixed_version`)
+- [ ] **RUBRIC-03**: Marking is recorded per criterion / per question against a specific rubric version; the submission total is recomputed from the parts, never typed
+- [ ] **RUBRIC-04**: When the attached grid version changes, affected marks are recomputed retroactively and the deltas are reported to the marker before they apply
+- [ ] **RUBRIC-05**: Edge cases (missing criterion, out-of-range points, conflicting marks) land in a resolution queue instead of being resolved silently
+- [ ] **RUBRIC-06**: Finalised marks are locked; unlocking is an explicit action that writes an `audit_logs` entry
+- [ ] **RUBRIC-07**: Existing `assignments.rubric_data` / `submissions.rubric_scores` JSON is migrated to rubric objects (or kept read-only as legacy) with no data loss
+
+### AI Governance (lots C + D — milestone v1.0, 🟡 ~8 d + ~2 d, vault 2026-10-10; added 2026-10-31)
+
+Hard rules: no third-party plugin system (internal registries only); AI OFF by default; never build AI-text detection, proctoring, decisional automatic grading or dropout prediction. E1-dependent items are marked.
+
+- [ ] **AIGOV-01**: Three internal extension types exist — `ai_provider`, `ai_capability`, `ai_placement` — registered in core code (no third-party loading)
+- [ ] **AIGOV-02**: A router in core resolves provider, capability and limits for a placement; it is not pluginizable
+- [ ] **AIGOV-03**: Config hierarchy institution → department → course → user with monotone restriction (a lower level can only restrict), and every decision carries an explainable resolution trace (tested)
+- [ ] **AIGOV-04**: Each provider declares a compliance manifest: jurisdiction, trainsOnInput, retention, subprocessors, dpaUrl, transfer mechanism, costModel, maxDataClass
+- [ ] **AIGOV-05**: Data classes `public < pedagogical < student_work < assessment < sensitive`; the router refuses a request whose class exceeds the provider's maxDataClass (functional test, not a checkbox)
+- [ ] **AIGOV-06**: Money budget with reservation before the call (atomic conditional update `spent + estimate <= limit`), plus `max_output_tokens` and a context cap imposed per capability — **E1-dependent** (`UPDATE … RETURNING` is not available on MySQL/MariaDB)
+- [ ] **AIGOV-07**: `ai_usage` append-only ledger (`cost_micros` integers, cached and reasoning token columns, `billed_to` stored, never prompt content) and a separate `ai_audit_log` — **E1-dependent** (partitions, JSONB/GIN)
+- [ ] **AIGOV-08**: AI is OFF by default, including after upgrades and migrations (tested)
+- [ ] **AIGOV-09**: One "OpenAI-compatible" provider configured by baseURL; Ollama runs the AI tests in CI (lot D)
+- [ ] **AIGOV-10**: Capability "MCQ generation": output is always `status = draft`; human validation is mandatory before any learner can see it
+- [ ] **AIGOV-11**: Capability "accessibility assistance" (alt-text, summaries) with WCAG in the system prompt
+- [ ] **AIGOV-12**: Implementation on the Vercel AI SDK (Apache-2.0), no external gateway; the never-build list is enforced by the absence of such capability types (tested)
+
+### AI Act Compliance (lot E — milestone v1.0, 🟡 ~2 d; added 2026-10-31)
+
+- [ ] **AIACT-01**: A "you are interacting with an AI" notice is shown at every AI placement and cannot be masked by any theme or customization (art. 50; tested against a theme override)
+- [ ] **AIACT-02**: Emotion recognition, attention tracking and proctoring are structurally absent — no capability type, no code path, documented (art. 5; test asserts absence)
+- [ ] **AIACT-03**: Opt-out and human-review request form, persisted, audited and visible to the person who filed it
+
+### Accommodation Profile (lot F — milestone v1.0, 🟡 ~2 d; added 2026-10-31)
+
+- [ ] **ACCOM-01**: An accommodation profile is attached to the person (extra time / time multiplier, format overrides); it is personal data (encrypted where applicable, scoped access)
+- [ ] **ACCOM-02**: Time and format overrides are resolved from the profile at attempt or deadline time, never typed per attempt (tested)
+- [ ] **ACCOM-03**: The profile is included in the GDPR export and in account anonymization
+
+### Installability (lot H — milestone v1.0, 🟡 ~3 d; added 2026-10-31)
+
+Without H the paid "installation" offer and the subscriptions do not exist.
+
+- [ ] **INSTALL-01**: A fresh install completes in under 30 minutes from the documented steps (a timed run is recorded)
+- [ ] **INSTALL-02**: Backup and restore of the database and the content storage, with a verified restore test — **E1-dependent** (one procedure per engine while E1 is open)
+- [ ] **INSTALL-03**: Admin documentation: install, upgrade, backup/restore, environment reference
 
 ## v2 Requirements
 
@@ -153,6 +204,25 @@ Deferred to future release. Tracked but not in current roadmap.
 - **COLLAB-V2-01**: Co-teacher editing permissions
 - **COLLAB-V2-02**: Real-time collaboration indicators
 - **COLLAB-V2-03**: Content locking during edit
+
+### v1.1 — autumn 2027 (company roadmap; requirements only, no phase yet; added 2026-10-31)
+
+- **EDITOR-V11-01**: Tiptap editor with typed JSON blocks and revisions (🟡 10-20 d, vault); the MVP editor choice is pending (see `RECONCILIATION-2026-10-31.md` C1)
+- **ASSESS-V11-01**: Safe Exam Browser support
+- **ASSESS-V11-02**: Track-1 / track-2 assessment labelling
+- **AI-V11-01**: Course index + `retrieve` capability for grounded MCQ generation and teacher Q&A — E1-dependent (pgvector)
+- **THEME-V11-01**: Theme tokens by prompt
+- **ACCOM-V11-01**: Accommodation profile by prompt
+- *Placed in V1.1 by the vault while keeping their IDs:* **BUILD-V2-07** (course template × cohorts) and **BUILD-V2-08** (upstream links for shared blocks/questions/rubrics). *"Date shift" appears in the vault's V1.1 list; BUILD-13 (bulk date shift) is already in Phase 5 — flagged as C6, not decided.*
+
+### v2 — undated, not committed (additions 2026-10-31)
+
+- **PAPER-V2-01**: Full paper assessment workflow
+- **PAPER-V2-02**: OMR (optical mark recognition)
+- **LTI-V2-01**: LTI 1.3 platform role (the only public boundary)
+- **QTI-V2-01**: Partial QTI 3 import/export
+- **QA-V2-01**: Student course Q&A
+- *Also v2:* **BUILD-V2-06** matrix deployment; **IMPORT-01..11** Moodle import (moved from v1, Phase 11)
 
 ### Analytics
 
@@ -232,17 +302,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ASSIGN-01 | Phase 9 | Pending |
 | ASSIGN-02 | Phase 9 | Pending |
 | ASSIGN-03 | Phase 9 | Pending |
-| IMPORT-01 | Phase 11 | Pending |
-| IMPORT-02 | Phase 11 | Pending |
-| IMPORT-03 | Phase 11 | Pending |
-| IMPORT-04 | Phase 11 | Pending |
-| IMPORT-05 | Phase 11 | Pending |
-| IMPORT-06 | Phase 11 | Pending |
-| IMPORT-07 | Phase 11 | Pending |
-| IMPORT-08 | Phase 11 | Pending |
-| IMPORT-09 | Phase 11 | Pending |
-| IMPORT-10 | Phase 11 | Pending |
-| IMPORT-11 | Phase 11 | Pending |
+| IMPORT-01 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-02 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-03 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-04 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-05 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-06 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-07 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-08 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-09 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-10 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
+| IMPORT-11 | Phase 11 (v2, moved 2026-10-31 — company roadmap) | Deferred |
 | TRACK-01 | Phase 10 | Pending |
 | TRACK-02 | Phase 10 | Pending |
 | TRACK-03 | Phase 10 | Pending |
@@ -250,6 +320,34 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERM-01 | Phase 12 | Pending |
 | PERM-02 | Phase 12 | Pending |
 | PERM-03 | Phase 12 | Pending |
+| RUBRIC-01 | Phase 13 | Pending |
+| RUBRIC-02 | Phase 13 | Pending |
+| RUBRIC-03 | Phase 13 | Pending |
+| RUBRIC-04 | Phase 13 | Pending |
+| RUBRIC-05 | Phase 13 | Pending |
+| RUBRIC-06 | Phase 13 | Pending |
+| RUBRIC-07 | Phase 13 | Pending |
+| AIGOV-01 | Phase 14 | Pending |
+| AIGOV-02 | Phase 14 | Pending |
+| AIGOV-03 | Phase 14 | Pending |
+| AIGOV-04 | Phase 14 | Pending |
+| AIGOV-05 | Phase 14 | Pending |
+| AIGOV-06 | Phase 14 | Pending (E1-dependent) |
+| AIGOV-07 | Phase 14 | Pending (E1-dependent) |
+| AIGOV-08 | Phase 14 | Pending |
+| AIGOV-09 | Phase 14 | Pending |
+| AIGOV-10 | Phase 14 | Pending |
+| AIGOV-11 | Phase 14 | Pending |
+| AIGOV-12 | Phase 14 | Pending |
+| AIACT-01 | Phase 15 | Pending |
+| AIACT-02 | Phase 15 | Pending |
+| AIACT-03 | Phase 15 | Pending |
+| ACCOM-01 | Phase 16 | Pending |
+| ACCOM-02 | Phase 16 | Pending |
+| ACCOM-03 | Phase 16 | Pending |
+| INSTALL-01 | Phase 17 | Pending |
+| INSTALL-02 | Phase 17 | Pending (E1-dependent) |
+| INSTALL-03 | Phase 17 | Pending |
 
 **Coverage:**
 

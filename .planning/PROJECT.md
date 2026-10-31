@@ -6,7 +6,20 @@ A course content management system for Edonis LMS that enables teachers and admi
 
 ## Core Value
 
-Easy course creation with seamless Moodle migration — teachers can import their existing Moodle courses and immediately start teaching.
+Easy course creation with demonstrable AI governance — teachers build and run courses fast, and the institution can prove that every AI use is off by default, policy-routed, budgeted and traceable.
+
+*Changed 2026-10-31 (was "Easy course creation with seamless Moodle migration"): the company roadmap moves Moodle `.mbz` import to v2 and makes AI governance the commercial differentiator. See `.planning/RECONCILIATION-2026-10-31.md`.*
+
+## Milestones (aligned with the company roadmap, 2026-10-31)
+
+| Milestone | Date | Repo phases | Status |
+|---|---|---|---|
+| Course editor | 2026-11-30 | Phase 5 | planned (10 plans) |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | Phases 1-6 (3 after 5-6, first to drop) | 1, 2, 4 done; 3, 5 planned; 6 editor choice pending |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | Phases 7, 8, 10, 12, 9 (if cheap) + 13 Rubric, 14 AI governance, 15 AI Act, 16 Accommodation, 17 Installability | capacity ~7 d vs ~30 🟡 d (RECONCILIATION §3) |
+| Soft launch (50 early adopters) | 2027-05-31 | — | — |
+| v1.1 | autumn 2027 | requirements only (EDITOR/ASSESS/AI/THEME/ACCOM-V11, BUILD-V2-07/08) | — |
+| v2 | undated | Phase 11 Moodle import, PAPER/LTI/QTI/QA-V2, BUILD-V2-06 | not committed |
 
 ## Requirements
 
@@ -44,7 +57,7 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 - [ ] URL content type with link and optional embed preview
 - [ ] Assignment content type integrated in builder flow
 
-**Moodle Import:**
+**Moodle Import** *(moved to v2 on 2026-10-31 with Phase 11 and IMPORT-01..11 — company roadmap; kept here until the v2 milestone is planned)*:
 - [ ] Parse Moodle .mbz backup file structure
 - [ ] Extract and map sections to CourseModules
 - [ ] Import Page activities as Page content
@@ -121,4 +134,4 @@ Easy course creation with seamless Moodle migration — teachers can import thei
 | Teachers may still publish courses directly; "Sauvegarder"/"Publier" buttons plus a platform setting for course creation requests deferred | User wants a configurable request flow (roles or users, per category) rather than forcing drafts | — Deferred (todo 2026-10-20) |
 
 ---
-*Last updated: 2026-10-28 after Phase 2 (Security and Correctness Hardening)*
+*Last updated: 2026-10-31 — milestones aligned with the company roadmap (v0.1 / v1.0 / v1.1 / v2), core value renamed*
