@@ -8,7 +8,8 @@ provides: [InlineTitle, DetailsPanel, ItemActionsMenu]
 affects: [05-06, 05-08]
 tech-stack:
   added: []
-  patterns: [controlled presentational components, entity-derived ids, onCloseAutoFocus focus targets]
+  patterns:
+    [controlled presentational components, entity-derived ids, onCloseAutoFocus focus targets]
 key-files:
   created:
     - inertia/components/builder/inline-title.tsx
@@ -16,9 +17,9 @@ key-files:
     - inertia/components/builder/item-actions-menu.tsx
   modified: []
 decisions:
-  - "DetailsPanel date fields commit on blur only (not on every change), to avoid sending partial years typed segment by segment"
-  - "DetailsPanel sends both dates together in one patch, so a date held back by the order check goes out once fixed"
-  - "ItemActionsMenu falls back to its own trigger for focus when onCloseFocusTarget returns null"
+  - 'DetailsPanel date fields commit on blur only (not on every change), to avoid sending partial years typed segment by segment'
+  - 'DetailsPanel sends both dates together in one patch, so a date held back by the order check goes out once fixed'
+  - 'ItemActionsMenu falls back to its own trigger for focus when onCloseFocusTarget returns null'
 metrics:
   duration: ~20min
   completed: 2026-10-31
@@ -30,15 +31,19 @@ Three controlled, accessible per-item components for the builder: an inline titl
 
 ## Tasks
 
-| Task | Name | Commit |
-| ---- | ---- | ------ |
-| 1 | InlineTitle and DetailsPanel | bcd8587 |
-| 2 | ItemActionsMenu | 8554682 |
+| Task | Name                                   | Commit  |
+| ---- | -------------------------------------- | ------- |
+| 1    | InlineTitle and DetailsPanel           | bcd8587 |
+| 2    | ItemActionsMenu                        | 8554682 |
+| fix  | Title refocus after keyboard exit only | 43d9bb8 |
 
 ## Contract notes for 05-06
 
 The prop names match the `<contract>` exactly. Behaviour details the page must know:
 
+- **InlineTitle focus**: focus returns to `${idBase}-title` only after Enter or Escape, including when the page sets `editing=false` later, after an async save. After a blur exit (Tab or a click elsewhere), focus stays where the teacher put it. Browser tests must not expect the title button to be refocused after a blur.
+- **DetailsPanel field ids**: `${idBase}-description`, `${idBase}-published`, `${idBase}-available-from`, `${idBase}-available-until`.
+- **Browser check for 05-06**: after the move dialog or the delete dialog closes, `body` must not keep `pointer-events: none`. Opening a Dialog from a modal DropdownMenu is a known Radix risk, and it was not verified here.
 - **InlineTitle**: on blur, the value is compared with `title` (not with the draft). A kept conflict draft that differs from the saved title is therefore submitted again on blur. After Enter or Escape, blur is ignored until the teacher types again, so the page can keep `editing` true after a conflict and the next blur still works.
 - **DetailsPanel**: `kind` is accepted but not used, since all fields are the same for sections and contents. Dates send `{ availableFrom, availableUntil }` together, both as `yyyy-MM-dd | null`. Description sends `null` when the trimmed text is empty. The id of the `errorMessage` element is `${idBase}-panel-error`, and the id of the date-order error is `${idBase}-dates-error`.
 - **ItemActionsMenu**: the trigger has `id={`${idBase}-actions`}` and size `icon-sm` (32 px). If `onCloseFocusTarget` returns null, focus goes back to the trigger when it is still connected. If the page removes the row as soon as `onDelete` runs, the AlertDialog unmounts together with the row. Radix still calls `onCloseAutoFocus` on unmount, but 05-06 should check in the browser that focus lands on the neighbour. An empty `moveTargets` list shows "Aucune destination disponible.".
@@ -46,6 +51,7 @@ The prop names match the `<contract>` exactly. Behaviour details the page must k
 ## Deviations from Plan
 
 - **[Rule 2 - a11y] Focus fallback to the trigger.** Without `onCloseFocusTarget`, closing a dialog opened from the menu would put focus on `<body>`, because the menu item that had focus is gone. File: item-actions-menu.tsx. Commit: 8554682.
+- **[Rule 1 - Bug] Title refocus limited to keyboard exits.** Restoring focus on every exit pulled focus back from wherever the teacher had tabbed or clicked. This narrows the contract's "focus returns to the title button" to the case where focus would otherwise be lost. Commit: 43d9bb8.
 - **Dates save on blur only.** The contract says "change or blur". Saving on every change would send intermediate years (e.g. 0002-…) while the teacher types.
 - **Base fast-forward.** The worktree started at d8bb4fb. It was fast-forwarded (`git merge --ff-only`) to the wave base ae66b1f rather than reset, because the target was a descendant and the tree was clean.
 
