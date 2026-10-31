@@ -93,7 +93,7 @@ The tension is explicit and accepted in the vault; it is not hidden here: **v1.0
 
 ## 4. Collision C4 — Arbitrage E1 (PostgreSQL-only vs postgres + mysql + sqlite in CI)
 
-The vault documents say PostgreSQL-only; the repo runs the three engines in CI (`.github/workflows/ci.yml`) and production is MariaDB (Infomaniak). E1 is **not resolved here**. Items whose design depends on it:
+The vault documents say PostgreSQL-only; the repo runs the three engines in CI (`.github/workflows/ci.yml`) and production is MariaDB (Infomaniak). **E1 was resolved by the owner on 2026-10-31: the three engines are mandatory** (§8). The table below lists the items whose design this constrains, with the cross-engine consequence now binding:
 
 | Item | Dependency on E1 |
 |---|---|
@@ -140,6 +140,23 @@ The vault documents say PostgreSQL-only; the repo runs the three engines in CI (
 6. **MVP capacity:** quantify "Nov-Dec evenings"; at ~1 d/week the MVP needs 2-4× the available time.
 7. **Date shift (C6):** is the vault's V1.1 "date shift" the same as BUILD-13 (already in Phase 5) or the instantiation offset of BUILD-V2-07?
 8. **Phase 5 open questions OQ-1..3** (`05-09-PLAN.md`): `assignments.due_date` in bulk date shift; copies as drafts; bulk delete of fully selected non-empty sections.
+
+---
+
+## 8. Owner decisions taken on 2026-10-31 (answers to §7)
+
+| # | Question | Decision | Recorded in |
+|---|---|---|---|
+| 1 | Phase 6 editor | A WYSIWYG editor "better than TinyMCE" (Tiptap class) with a source mode to edit HTML and code blocks inside a sanitized field (allow-list on save and render, no script execution). Typed JSON blocks and revisions stay in v1.1 | ROADMAP Phase 6 (criterion 6), REQUIREMENTS PAGE-08, EDITOR-V11-01 narrowed |
+| 2 | E1 | **Three engines mandatory** (PostgreSQL, MySQL/MariaDB, SQLite). AIGOV-06: `SELECT … FOR UPDATE` + conditional update, no `UPDATE … RETURNING`; AIGOV-07: `jsonColumn`, no partitions; INSTALL-02: one procedure per engine; AI-V11-01: pgvector excluded | ROADMAP Phases 14 and 17, REQUIREMENTS, §4 above |
+| 3 | Phase 3 placement | Confirmed: v0.1 after Phases 5-6, first to drop to v1.0 | ROADMAP Phase 3 |
+| 4 | Phase 9 placement | v1.0, confirmed (no longer "if cheap") | ROADMAP checklist and milestone table |
+| 5 | v1.0 sequencing | **Option (a)** — governance first: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9. The 2027 budget raise (~+10 d for lots C+D) is still open | ROADMAP execution order and milestone table |
+| 6 | MVP capacity | **~10 days** available for Nov-Dec | this section, ROADMAP milestone table |
+| 7 | Date shift (C6) | Acknowledged, kept as is: BUILD-13 stays in Phase 5; the vault's V1.1 "date shift" is treated as the instantiation offset of BUILD-V2-07 until the vault says otherwise | — |
+| 8 | Phase 5 OQ-1..3 | Defaults accepted: bulk date shift leaves the `assignments` table alone; copies start as drafts; a bulk delete may include a non-empty section only when its whole sub-tree is selected | `05-09-PLAN.md`, `05-CONTEXT.md` D-13 |
+
+**Consequence to confront next (not decided here).** With decisions 1 and 6 the MVP needs **26-39 🟡 days** (Phase 5 13-15 + Phase 6 10-20 + Phase 3 3-4) against **~10 available**: 2026-12-20 does not hold as scoped. The three honest moves are (i) keep the date and cut: execute Phase 5 waves 1-4 and 05-08 first (drag-and-drop without the bulk plans 05-09/05-10, ~8-10 d), postpone the bulk plans, Phase 3 and most of Phase 6 past the date; (ii) move the MVP date to match 26-39 days at the real pace; (iii) raise the Nov-Dec capacity. Each one is the owner's call; the roadmap records the gap, not a choice.
 
 ---
 

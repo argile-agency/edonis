@@ -76,6 +76,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PAGE-05**: WYSIWYG supports tables
 - [ ] **PAGE-06**: Page content is sanitized before save and render (XSS prevention)
 - [ ] **PAGE-07**: Student can view rendered Page content
+- [ ] **PAGE-08**: Teacher can edit raw HTML and code blocks in a source mode of the editor; the content passes an allow-list sanitizer on save and on render, and no script, event handler or `javascript:` URL ever executes (owner decision 2026-10-31: Tiptap-class editor "better than TinyMCE")
 
 ### File Content Type
 
@@ -142,15 +143,15 @@ Needs the existing assignments / submissions / grades model; needs NO quiz build
 
 ### AI Governance (lots C + D — milestone v1.0, 🟡 ~8 d + ~2 d, vault 2026-10-10; added 2026-10-31)
 
-Hard rules: no third-party plugin system (internal registries only); AI OFF by default; never build AI-text detection, proctoring, decisional automatic grading or dropout prediction. E1-dependent items are marked.
+Hard rules: no third-party plugin system (internal registries only); AI OFF by default; never build AI-text detection, proctoring, decisional automatic grading or dropout prediction. E1 was resolved by the owner on 2026-10-31: the three engines (PostgreSQL, MySQL/MariaDB, SQLite) are mandatory, so every item below must be designed and tested cross-engine.
 
 - [ ] **AIGOV-01**: Three internal extension types exist — `ai_provider`, `ai_capability`, `ai_placement` — registered in core code (no third-party loading)
 - [ ] **AIGOV-02**: A router in core resolves provider, capability and limits for a placement; it is not pluginizable
 - [ ] **AIGOV-03**: Config hierarchy institution → department → course → user with monotone restriction (a lower level can only restrict), and every decision carries an explainable resolution trace (tested)
 - [ ] **AIGOV-04**: Each provider declares a compliance manifest: jurisdiction, trainsOnInput, retention, subprocessors, dpaUrl, transfer mechanism, costModel, maxDataClass
 - [ ] **AIGOV-05**: Data classes `public < pedagogical < student_work < assessment < sensitive`; the router refuses a request whose class exceeds the provider's maxDataClass (functional test, not a checkbox)
-- [ ] **AIGOV-06**: Money budget with reservation before the call (atomic conditional update `spent + estimate <= limit`), plus `max_output_tokens` and a context cap imposed per capability — **E1-dependent** (`UPDATE … RETURNING` is not available on MySQL/MariaDB)
-- [ ] **AIGOV-07**: `ai_usage` append-only ledger (`cost_micros` integers, cached and reasoning token columns, `billed_to` stored, never prompt content) and a separate `ai_audit_log` — **E1-dependent** (partitions, JSONB/GIN)
+- [ ] **AIGOV-06**: Money budget with reservation before the call (atomic conditional update `spent + estimate <= limit`), plus `max_output_tokens` and a context cap imposed per capability — cross-engine (E1 resolved 2026-10-31): `SELECT … FOR UPDATE` plus a conditional update inside a transaction, no `UPDATE … RETURNING` (absent on MySQL/MariaDB)
+- [ ] **AIGOV-07**: `ai_usage` append-only ledger (`cost_micros` integers, cached and reasoning token columns, `billed_to` stored, never prompt content) and a separate `ai_audit_log` — cross-engine (E1 resolved 2026-10-31): `jsonColumn` helper, no partitions, tested on the three engines
 - [ ] **AIGOV-08**: AI is OFF by default, including after upgrades and migrations (tested)
 - [ ] **AIGOV-09**: One "OpenAI-compatible" provider configured by baseURL; Ollama runs the AI tests in CI (lot D)
 - [ ] **AIGOV-10**: Capability "MCQ generation": output is always `status = draft`; human validation is mandatory before any learner can see it
@@ -174,7 +175,7 @@ Hard rules: no third-party plugin system (internal registries only); AI OFF by d
 Without H the paid "installation" offer and the subscriptions do not exist.
 
 - [ ] **INSTALL-01**: A fresh install completes in under 30 minutes from the documented steps (a timed run is recorded)
-- [ ] **INSTALL-02**: Backup and restore of the database and the content storage, with a verified restore test — **E1-dependent** (one procedure per engine while E1 is open)
+- [ ] **INSTALL-02**: Backup and restore of the database and the content storage, with a verified restore test — cross-engine (E1 resolved 2026-10-31): one documented procedure per engine (pg_dump, mysqldump, SQLite file copy)
 - [ ] **INSTALL-03**: Admin documentation: install, upgrade, backup/restore, environment reference
 
 ## v2 Requirements
@@ -207,10 +208,10 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### v1.1 — autumn 2027 (company roadmap; requirements only, no phase yet; added 2026-10-31)
 
-- **EDITOR-V11-01**: Tiptap editor with typed JSON blocks and revisions (🟡 10-20 d, vault); the MVP editor choice is pending (see `RECONCILIATION-2026-10-31.md` C1)
+- **EDITOR-V11-01**: Typed JSON blocks and revisions on top of the Phase 6 editor (the Tiptap-class editor itself moved to Phase 6 / v0.1 by owner decision on 2026-10-31, see PAGE-08 and `RECONCILIATION-2026-10-31.md` §8)
 - **ASSESS-V11-01**: Safe Exam Browser support
 - **ASSESS-V11-02**: Track-1 / track-2 assessment labelling
-- **AI-V11-01**: Course index + `retrieve` capability for grounded MCQ generation and teacher Q&A — E1-dependent (pgvector)
+- **AI-V11-01**: Course index + `retrieve` capability for grounded MCQ generation and teacher Q&A — E1 resolved 2026-10-31 (three engines mandatory): pgvector is excluded; an engine-neutral vector store is a design question for v1.1
 - **THEME-V11-01**: Theme tokens by prompt
 - **ACCOM-V11-01**: Accommodation profile by prompt
 - *Placed in V1.1 by the vault while keeping their IDs:* **BUILD-V2-07** (course template × cohorts) and **BUILD-V2-08** (upstream links for shared blocks/questions/rubrics). *"Date shift" appears in the vault's V1.1 list; BUILD-13 (bulk date shift) is already in Phase 5 — flagged as C6, not decided.*
@@ -289,6 +290,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PAGE-05 | Phase 6 | Pending |
 | PAGE-06 | Phase 6 | Pending |
 | PAGE-07 | Phase 6 | Pending |
+| PAGE-08 | Phase 6 | Pending |
 | FILE-01 | Phase 7 | Pending |
 | FILE-02 | Phase 7 | Pending |
 | FILE-03 | Phase 7 | Pending |
@@ -332,8 +334,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AIGOV-03 | Phase 14 | Pending |
 | AIGOV-04 | Phase 14 | Pending |
 | AIGOV-05 | Phase 14 | Pending |
-| AIGOV-06 | Phase 14 | Pending (E1-dependent) |
-| AIGOV-07 | Phase 14 | Pending (E1-dependent) |
+| AIGOV-06 | Phase 14 | Pending (cross-engine) |
+| AIGOV-07 | Phase 14 | Pending (cross-engine) |
 | AIGOV-08 | Phase 14 | Pending |
 | AIGOV-09 | Phase 14 | Pending |
 | AIGOV-10 | Phase 14 | Pending |
@@ -346,7 +348,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCOM-02 | Phase 16 | Pending |
 | ACCOM-03 | Phase 16 | Pending |
 | INSTALL-01 | Phase 17 | Pending |
-| INSTALL-02 | Phase 17 | Pending (E1-dependent) |
+| INSTALL-02 | Phase 17 | Pending (cross-engine) |
 | INSTALL-03 | Phase 17 | Pending |
 
 **Coverage:**

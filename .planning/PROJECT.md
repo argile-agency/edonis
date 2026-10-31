@@ -15,8 +15,8 @@ Easy course creation with demonstrable AI governance — teachers build and run 
 | Milestone | Date | Repo phases | Status |
 |---|---|---|---|
 | Course editor | 2026-11-30 | Phase 5 | planned (10 plans) |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | Phases 1-6 (3 after 5-6, first to drop) | 1, 2, 4 done; 3, 5 planned; 6 editor choice pending |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | Phases 7, 8, 10, 12, 9 (if cheap) + 13 Rubric, 14 AI governance, 15 AI Act, 16 Accommodation, 17 Installability | capacity ~7 d vs ~30 🟡 d (RECONCILIATION §3) |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | Phases 1-6 (3 after 5-6, first to drop) | 1, 2, 4 done; 3, 5 planned; 6 editor decided (Tiptap-class + sanitized HTML/code mode); 26-39 🟡 d needed vs ~10 available (RECONCILIATION §8) |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | capacity ~7 d vs ~30 🟡 d (RECONCILIATION §3) |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — |
 | v1.1 | autumn 2027 | requirements only (EDITOR/ASSESS/AI/THEME/ACCOM-V11, BUILD-V2-07/08) | — |
 | v2 | undated | Phase 11 Moodle import, PAPER/LTI/QTI/QA-V2, BUILD-V2-06 | not committed |
@@ -132,6 +132,10 @@ Easy course creation with demonstrable AI governance — teachers build and run 
 | Course outline and progress limited to enrolled students, editors and admins (AS3); module tree sent only to editors; public draft/archived courses visible only to owner, collaborators, enrolled and admins | Closes outline/content exposure to any logged-in user | ✓ Approved 2026-10-13 (AS3) / 2026-10-28 (visibility) |
 | Self and key enrolment refused when `canEnroll()` is false (AS4); leaving a course removes the user from its groups (AS5) | The server enforces what the UI only hid; group lists no longer show people who left | ✓ Approved 2026-10-13 / 2026-10-20 |
 | Teachers may still publish courses directly; "Sauvegarder"/"Publier" buttons plus a platform setting for course creation requests deferred | User wants a configurable request flow (roles or users, per category) rather than forcing drafts | — Deferred (todo 2026-10-20) |
+| Page editor: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08), not Markdown-only for the MVP | Owner wants an editor "better than TinyMCE" with safe raw-HTML editing; blocks + revisions stay v1.1 | ✓ Decided 2026-10-31 |
+| Three database engines mandatory (PostgreSQL, MySQL/MariaDB, SQLite) — arbitrage E1 | Production is MariaDB, CI runs the matrix; governance tables designed for PostgreSQL must be made cross-engine | ✓ Decided 2026-10-31 |
+| v1.0 sequencing option (a): governance lots first (17 → 15 → 16 → 13 → 14), content after | Lot H conditions both revenue engines; E + F + H fit the ~7 available days | ✓ Decided 2026-10-31 |
+| MVP capacity ~10 days for Nov-Dec 2026 | Owner figure; the MVP as scoped needs 26-39 🟡 days | ✓ Recorded 2026-10-31 — scope vs date still to confront |
 
 ---
 *Last updated: 2026-10-31 — milestones aligned with the company roadmap (v0.1 / v1.0 / v1.1 / v2), core value renamed*

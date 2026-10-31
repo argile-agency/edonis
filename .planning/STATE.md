@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with demonstrable AI governance (renamed 2026-10-31; Moodle import moved to v2)
-**Current focus:** Milestone v0.1 MVP (2026-12-20) — Phase 5 Builder UI first (vault "Course editor", 2026-11-30), then Phase 6 Page Content (editor choice pending), then Phase 3 if time remains
+**Current focus:** Milestone v0.1 MVP (2026-12-20) — Phase 5 Builder UI first (vault "Course editor", 2026-11-30), then Phase 6 Page Content (Tiptap-class editor with a sanitized HTML/code mode, decided 2026-10-31), then Phase 3 if time remains — ~10 days available vs 26-39 🟡 needed: scope vs date to confront
 
 ## Milestones (realigned 2026-10-31, see `RECONCILIATION-2026-10-31.md`)
 
 | Milestone | Date | Phases | State |
 |---|---|---|---|
-| v0.1 MVP | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 (10 plans), 6, then 3 (6 plans) | 3/6 phases done; 16-29 🟡 days left vs unquantified evenings |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | 7, 8, 10, 12, 9 + 13, 14, 15, 16, 17 (governance lots B, C+D, E, F, H) | ~30 🟡 days vs ~7 available; sequencing option (a)/(b) pending |
+| v0.1 MVP | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 (10 plans), 6, then 3 (6 plans) | 3/6 phases done; 26-39 🟡 days left vs ~10 available (owner, 2026-10-31) — does not fit as scoped |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | ~30 🟡 days vs ~7 available; 2027 budget raise still open |
 | v1.1 | autumn 2027 | requirements only | — |
 | v2 | undated | 11 Moodle import (parked), v2 requirements | not committed |
 
@@ -39,7 +39,7 @@ Plan: Not started
 Status: Ready to execute
 Last activity: 2026-10-31 -- Phase 5 planning complete
 
-Next recommended run: `/gsd-execute-phase 5` (MVP critical path; planned, 10 plans, 6 waves). Before its wave 2, answer OQ-1..3 in `05-09-PLAN.md` (date shift on `assignments`, copies as drafts, bulk delete of fully selected non-empty sections). Phase 3 (`/gsd-execute-phase 3`, 6 plans) runs after Phases 5-6 or drops to v1.0. Owner decisions listed in `RECONCILIATION-2026-10-31.md` §7 (Phase 6 editor, E1, Phase 3 and 9 placement, v1.0 sequencing, MVP capacity).
+Next recommended run: `/gsd-execute-phase 5` (MVP critical path; planned, 10 plans, 6 waves). OQ-1..3 of `05-09-PLAN.md` are resolved (defaults accepted 2026-10-31). Phase 3 (`/gsd-execute-phase 3`, 6 plans) runs after Phases 5-6 or drops to v1.0. Owner decisions of 2026-10-31 are recorded in `RECONCILIATION-2026-10-31.md` §8; the one open question is MVP scope vs the 2026-12-20 date (26-39 🟡 days needed, ~10 available).
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser

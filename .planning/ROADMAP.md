@@ -21,10 +21,10 @@ Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10
 | Milestone | Date | Repo phases | 🟡 days | Capacity (vault) |
 |---|---|---|---|---|
 | Course editor | 2026-11-30 | 5 | 13-15 | part of the Nov-Dec evenings |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 16-19 (Markdown editor) · 23-29 (Tiptap) · +3-4 with Phase 3 | "Nov-Dec evenings", not quantified |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | 7, 8, 10, 12, 9 (if cheap) · 13 Rubric, 14 AI governance, 15 AI Act, 16 Accommodation, 17 Installability | ~8 content + 22 governance ≈ 30 | ~7 days unless the 2027 budget (≥ 20 d/year, to fix) is raised |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 13-15 (Ph. 5) + 10-20 (Ph. 6, Tiptap-class editor, decided) + 3-4 (Ph. 3) = **26-39** | **~10 days (owner, 2026-10-31) — does not fit the date as scoped**; see RECONCILIATION §8 |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ 30 | ~7 days unless the 2027 budget (≥ 20 d/year, to fix) is raised |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
-| v1.1 | autumn 2027 | requirements only: EDITOR-V11-01, ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | 10-20 for the editor alone | — |
+| v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — |
 | v2 | undated, not committed | 11 Moodle import (parked); PAPER-V2-01/02, LTI-V2-01, QTI-V2-01, QA-V2-01, BUILD-V2-06 | — | — |
 
 ## Phases
@@ -45,16 +45,16 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
 - [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans)
-- [ ] **Phase 6: Page Content** - Page content type — *editor choice pending: Markdown (vault, MVP) vs WYSIWYG/Tiptap (PAGE-01..05)*
+- [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 d*
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip*
 
-**Milestone v1.0 — Governance baseline + first pilots (2027-03-31):** files, links, progress tracking, plus the five governance lots (B, C+D, E, F, H). Capacity: ~7 available days vs ~30 🟡 days (RECONCILIATION §3); sequencing option (a) or (b) to be chosen by the owner.
+**Milestone v1.0 — Governance baseline + first pilots (2027-03-31):** files, links, progress tracking, plus the five governance lots (B, C+D, E, F, H). Capacity: ~7 available days vs ~30 🟡 days (RECONCILIATION §3). **Sequencing option (a) chosen by the owner on 2026-10-31:** governance first — 17 → 15 → 16 → 13 → 14 — then content 7 → 8 → 10 → 12 → 9; the 2027 budget raise (~+10 d for lots C+D) is still to be decided.
 
 - [ ] **Phase 7: File Content** - File upload, storage, and download
 - [ ] **Phase 8: URL Content** - External link management
 - [ ] **Phase 10: Engagement Tracking** - Teacher-facing completion views
 - [ ] **Phase 12: Permissions and Polish** - Access control and final refinements (12-01 already done by Phase 2)
-- [ ] **Phase 9: Assignment Integration** - Link assignments to course sections — *"if cheap" (owner decision)*
+- [ ] **Phase 9: Assignment Integration** - Link assignments to course sections (confirmed in v1.0 by the owner, 2026-10-31)
 - [ ] **Phase 13: Unified rubric and per-question marking** - Lot B 🟡 ~5 d
 - [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 d (E1-dependent items)
 - [ ] **Phase 15: AI Act article 5 and 50 compliance** - Lot E 🟡 ~2 d
@@ -187,7 +187,7 @@ Plans:
 
 ### Phase 3: Complete Stubbed Features
 
-**Milestone**: v0.1 MVP (2026-12-20) — placed after Phases 5 and 6 on 2026-10-31: not on the MVP critical path (evaluations list and contact form), first to drop to v1.0 if 5-6 slip. Owner decision pending (RECONCILIATION §7.3).
+**Milestone**: v0.1 MVP (2026-12-20) — placed after Phases 5 and 6 on 2026-10-31: not on the MVP critical path (evaluations list and contact form), first to drop to v1.0 if 5-6 slip. Confirmed by the owner on 2026-10-31.
 **Goal**: Nothing in the UI promises a capability the backend does not deliver
 **Depends on**: Phase 2
 **Requirements**: EVAL-01, EVAL-02, EVAL-03, CONTACT-01, CONTACT-02, CONTACT-03
@@ -316,10 +316,10 @@ Plans:
 
 ### Phase 6: Page Content
 
-**Milestone**: v0.1 MVP (2026-12-20). **Editor choice pending (2026-10-31, RECONCILIATION C1):** the vault says a Markdown editor is enough for the MVP and puts Tiptap + typed JSON blocks + revisions in V1.1 (🟡 10-20 d, EDITOR-V11-01); this block and PAGE-01..05 still say WYSIWYG/TipTap. Not decided here; the success criteria and plan 06-01 must be re-read once the owner decides.
+**Milestone**: v0.1 MVP (2026-12-20). **Editor decided by the owner on 2026-10-31 (RECONCILIATION C1):** a WYSIWYG editor of the Tiptap class ("better than TinyMCE"), with a source mode to edit raw HTML and code blocks inside a sanitized field — allow-list sanitizer on save and on render, no script, event handler or `javascript:` URL ever executes (PAGE-06, PAGE-08). Typed JSON blocks and revisions stay in v1.1 (EDITOR-V11-01). 🟡 ~10-20 d (the vault's figure for Tiptap + blocks; the editor alone sits at the low end). Plan 06-01 "TipTap editor integration" stands.
 **Goal**: Teachers can create rich text pages with embedded media
 **Depends on**: Phase 5
-**Requirements**: PAGE-01, PAGE-02, PAGE-03, PAGE-04, PAGE-05, PAGE-06, PAGE-07
+**Requirements**: PAGE-01, PAGE-02, PAGE-03, PAGE-04, PAGE-05, PAGE-06, PAGE-07, PAGE-08
 **Success Criteria** (what must be TRUE):
 
   1. Teacher can create Page content with WYSIWYG editor in builder
@@ -327,6 +327,7 @@ Plans:
   3. Teacher can embed images (upload or URL) and videos (YouTube/Vimeo)
   4. Content is sanitized on save and render (no XSS)
   5. Student can view rendered Page content in course view
+  6. Teacher can switch to a source view to edit HTML and code blocks; a payload containing `<script>`, an `onerror=` handler and a `javascript:` URL is stripped on save and never executes on render (functional test on the saved content, browser test on the render)
 
 **Plans**: TBD
 
@@ -467,7 +468,7 @@ Plans:
 ## Progress
 
 **Execution Order (realigned 2026-10-31):**
-v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0: content 7 -> 8 -> 10 -> 12 -> 9 and governance 17 -> 15 -> 16 -> 13 -> 14, interleaving per the sequencing option the owner chooses (RECONCILIATION §3) · v2: 11
+v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -507,7 +508,7 @@ Plans:
 
 ### Phase 14: AI governance core and OpenAI-compatible provider
 
-**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lots C (🟡 ~8 d) + D (🟡 ~2 d). Added 2026-10-31. **E1-dependent:** AIGOV-06 (`UPDATE … RETURNING` is not available on MySQL/MariaDB) and AIGOV-07 (partitions, JSONB/GIN) were designed for PostgreSQL; the arbitrage is open (RECONCILIATION §4).
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lots C (🟡 ~8 d) + D (🟡 ~2 d). Added 2026-10-31. **E1 resolved by the owner on 2026-10-31: the three engines (PostgreSQL, MySQL/MariaDB, SQLite) are mandatory.** AIGOV-06 reserves budget with `SELECT … FOR UPDATE` plus a conditional update inside a transaction (no `UPDATE … RETURNING`); AIGOV-07 uses the `jsonColumn` helper and no partitions; both are tested on the three CI engines (RECONCILIATION §4).
 **Goal**: AI is off by default and every call is policy-routed, data-classed, budgeted and ledgered, with one real provider and CI coverage — never AI-text detection, proctoring, decisional grading or dropout prediction
 **Depends on**: Phase 2 (policies, audit logging, PII handling)
 **Requirements**: AIGOV-01, AIGOV-02, AIGOV-03, AIGOV-04, AIGOV-05, AIGOV-06, AIGOV-07, AIGOV-08, AIGOV-09, AIGOV-10, AIGOV-11, AIGOV-12
@@ -566,7 +567,7 @@ Plans:
 
 ### Phase 17: Installability backup and admin docs
 
-**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot H, 🟡 ~3 d. Added 2026-10-31. **Without it the paid "installation" offer and the subscriptions do not exist.** INSTALL-02 is E1-dependent (one backup procedure per engine while the arbitrage is open).
+**Milestone**: v1.0 Governance baseline + first pilots (2027-03-31) — company roadmap lot H, 🟡 ~3 d. Added 2026-10-31. **Without it the paid "installation" offer and the subscriptions do not exist.** E1 resolved on 2026-10-31 (three engines mandatory): INSTALL-02 needs one documented backup/restore procedure per engine (pg_dump, mysqldump, SQLite file copy); the 🟡 3 d figure is the vault's and predates this decision — revisit it at planning.
 **Goal**: An institution installs Edonis in under 30 minutes and can back up and restore it, from the admin documentation alone
 **Depends on**: Phase 4 (`CONTENT_STORAGE_PATH`), Phase 2
 **Requirements**: INSTALL-01, INSTALL-02, INSTALL-03
