@@ -22,7 +22,6 @@ key-files:
 decisions:
   - "A7: the pure core stays at inertia/lib/save_queue.ts; the backend Japa runner resolves '../../inertia/lib/save_queue.js' and root tsc compiles it (no fallback to app/helpers needed)"
   - "A4: Inertia 2.3.29 router.on('before', cb) cancels the visit when cb returns false (onGlobalEvent calls event.preventDefault() on a cancelable inertia:before event)"
-  - "While a retry list exists, status stays 'error' even if later ops save; it clears only on retry() or dismiss()"
   - "A non-SaveError rejection becomes { kind: 'error', message: 'Erreur inattendue.' } (fixed text, no thrown message leaks to the UI)"
 metrics:
   duration: "~20 min"
@@ -41,6 +40,7 @@ Serial optimistic save queue (pure, unit-tested) with reverse-order rollback and
 | ---- | ---- | ------ | ----- |
 | 1 | Pure serial save queue core with unit tests | 5be54c3 | inertia/lib/save_queue.ts, tests/unit/save_queue.spec.ts |
 | 2 | sendJson, useSaveQueue, SaveStatus | aed575d | inertia/lib/builder_save_queue.ts, inertia/components/builder/save-status.tsx |
+| fix | Skip leave prompt on prefetch; test enqueue during error | 61eacc8 | inertia/lib/builder_save_queue.ts, tests/unit/save_queue.spec.ts |
 
 ## A7 result (module path)
 
@@ -58,11 +58,15 @@ RED ran (6/6 failing against the stub) before GREEN (6/6 passing). The plan aske
 
 **1. [Test fix] Relaxed the interleaving assertion in the serial test.** `enqueue` starts the first op's `run` synchronously, so the log reads `apply A, run A, apply B`. The test now checks that both applies happen at once (set membership) and that B runs only after A resolves. This matches the contract, which never required both applies to come before any run.
 
+**2. [Contract interpretation] `error` takes precedence over `saving`.** The contract says status is `saving` while `pending > 0`. Here, as long as a retry list exists, status stays `error`, even while later ops save, so "Réessayer" stays visible. It clears only on `retry()` or `dismiss()`. For 05-06, this means `SaveStatus` does not show "Enregistrement…" in that case. A unit test covers it.
+
+**3. [Rule 1 - Bug] Prefetch triggered the leave prompt.** `router.prefetch()` (Link hover) also fires `inertia:before`. The guard now returns early when `visit.prefetch` is set (61eacc8). No `prefetch` link exists in `inertia/` today, but 05-06 may add some.
+
 Otherwise the plan was executed as written.
 
 ## Verification
 
-- `node ace test unit`: 34 passed
+- `node ace test unit`: 34 passed (before the fix). After the fix: save_queue.spec.ts 7/7, eslint and filtered tsc clean
 - `bun run typecheck`: exit 0
 - `bun run lint`: exit 0
 - Task 2 filtered client tsc: 0 errors in this plan's files (182 pre-existing errors elsewhere)
@@ -74,4 +78,4 @@ None. Wiring into the builder page is 05-06.
 
 ## Self-Check: PASSED
 
-- All four created files exist; commits 5be54c3 and aed575d are on the branch.
+- `ls`: all four created files found. `git log`: 5be54c3, aed575d, 61eacc8 found.
