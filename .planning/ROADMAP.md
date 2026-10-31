@@ -16,16 +16,16 @@ builder work lands on a trustworthy foundation instead of widening the gap.
 
 ## Milestones (date-aligned with the company roadmap, 2026-10-31)
 
-Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10-10); mapping, collisions and capacity in `RECONCILIATION-2026-10-31.md`. 🟡 = day estimates (vault for the governance lots, repo estimate from plan counts for content phases).
+Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10-10); mapping, collisions and capacity in `RECONCILIATION-2026-10-31.md`. 🟡 estimates carry **two units** (RECONCILIATION §9): **H** = human-developer days (vault figures for the lots, ~1 d/plan for content phases), **A** = attended AI-assisted days, calibrated on this repo's history (phases 1-2: ≈ 0.4 h per backend plan; frontend and greenfield lots weighted ×2-3, low confidence).
 
-| Milestone | Date | Repo phases | 🟡 days | Capacity (vault) |
-|---|---|---|---|---|
-| Course editor | 2026-11-30 | 5 | 13-15 | part of the Nov-Dec evenings |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 13-15 (Ph. 5) + 10-20 (Ph. 6, Tiptap-class editor, decided) + 3-4 (Ph. 3) = **26-39** | ~10 days at first; **owner chose option (iii) on 2026-10-31: capacity raised to cover 26-39 🟡 days (≈ 3.7-5.6 d/week to 2026-12-20)**, date and scope kept; fallback option (i) if the pace is not reached (RECONCILIATION §8) |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ 30 | ~7 days unless the 2027 budget (≥ 20 d/year, to fix) is raised |
+| Milestone | Date | Repo phases | 🟡 H days | 🟡 A days | Capacity |
+|---|---|---|---|---|---|
+| Course editor | 2026-11-30 | 5 | 13-15 | 2-3 | part of the Nov-Dec days |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5, 6, then 3 | 13-15 + 10-20 + 3-4 = **26-39** | 2-3 + 1.5-2.5 + 0.6-0.8, plus 0.5-1 human-only = **≈ 5-6.5** | ~10 days announced; option (iii) chosen on the H figure, **to be reconsidered against the A figure** (RECONCILIATION §8-9); fallback option (i) |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ **30** | 2.5-3.5 content + 6.75-9 governance + 0.75-1 human-only = **≈ 10-13.5** | ~7 days: still short by 3-6.5 A (not 23); budget raise to size on the A figure |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
-| v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — |
-| v2 | undated, not committed | 11 Moodle import (parked); PAPER-V2-01/02, LTI-V2-01, QTI-V2-01, QA-V2-01, BUILD-V2-06 | — | — |
+| v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — | — |
+| v2 | undated, not committed | 11 Moodle import (parked); PAPER-V2-01/02, LTI-V2-01, QTI-V2-01, QA-V2-01, BUILD-V2-06 | — | — | — |
 
 ## Phases
 
@@ -44,22 +44,22 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite (completed 2026-10-13)
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
-- [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans)
-- [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 d*
-- [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip*
+- [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A)
+- [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 H / 1.5-2.5 A*
+- [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip; 🟡 3-4 H / 0.6-0.8 A*
 
-**Milestone v1.0 — Governance baseline + first pilots (2027-03-31):** files, links, progress tracking, plus the five governance lots (B, C+D, E, F, H). Capacity: ~7 available days vs ~30 🟡 days (RECONCILIATION §3). **Sequencing option (a) chosen by the owner on 2026-10-31:** governance first — 17 → 15 → 16 → 13 → 14 — then content 7 → 8 → 10 → 12 → 9; the 2027 budget raise (~+10 d for lots C+D) is still to be decided.
+**Milestone v1.0 — Governance baseline + first pilots (2027-03-31):** files, links, progress tracking, plus the five governance lots (B, C+D, E, F, H). Capacity: ~7 available days vs ~30 🟡 H days / ≈ 10-13.5 🟡 A days (RECONCILIATION §3 and §9). **Sequencing option (a) chosen by the owner on 2026-10-31:** governance first — 17 → 15 → 16 → 13 → 14 — then content 7 → 8 → 10 → 12 → 9; the 2027 budget raise (~+10 d for lots C+D) is still to be decided.
 
 - [ ] **Phase 7: File Content** - File upload, storage, and download
 - [ ] **Phase 8: URL Content** - External link management
 - [ ] **Phase 10: Engagement Tracking** - Teacher-facing completion views
 - [ ] **Phase 12: Permissions and Polish** - Access control and final refinements (12-01 already done by Phase 2)
 - [ ] **Phase 9: Assignment Integration** - Link assignments to course sections (confirmed in v1.0 by the owner, 2026-10-31)
-- [ ] **Phase 13: Unified rubric and per-question marking** - Lot B 🟡 ~5 d
-- [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 d (cross-engine by decision of 2026-10-31)
-- [ ] **Phase 15: AI Act article 5 and 50 compliance** - Lot E 🟡 ~2 d
-- [ ] **Phase 16: Accommodation profile** - Lot F 🟡 ~2 d
-- [ ] **Phase 17: Installability backup and admin docs** - Lot H 🟡 ~3 d — prerequisite of the paid installation offer and subscriptions
+- [ ] **Phase 13: Unified rubric and per-question marking** - Lot B 🟡 ~5 H / 1.5-2 A
+- [ ] **Phase 14: AI governance core and OpenAI-compatible provider** - Lots C + D 🟡 ~10 H / 3.25-4 A (cross-engine by decision of 2026-10-31)
+- [ ] **Phase 15: AI Act article 5 and 50 compliance** - Lot E 🟡 ~2 H / 0.5-0.75 A
+- [ ] **Phase 16: Accommodation profile** - Lot F 🟡 ~2 H / 0.5-0.75 A
+- [ ] **Phase 17: Installability backup and admin docs** - Lot H 🟡 ~3 H / 1-1.5 A — prerequisite of the paid installation offer and subscriptions
 
 **Milestone v1.1 (autumn 2027):** requirements only, no phase yet — EDITOR-V11-01, ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 placed here by the vault (IDs kept).
 

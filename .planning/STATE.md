@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with demonstrable AI governance (renamed 2026-10-31; Moodle import moved to v2)
-**Current focus:** Milestone v0.1 MVP (2026-12-20) — Phase 5 Builder UI first (vault "Course editor", 2026-11-30), then Phase 6 Page Content (Tiptap-class editor with a sanitized HTML/code mode, decided 2026-10-31), then Phase 3 — owner chose option (iii) on 2026-10-31: Nov-Dec capacity raised to cover the 26-39 🟡 days (≈ 3.7-5.6 d/week), date and scope kept
+**Current focus:** Milestone v0.1 MVP (2026-12-20) — Phase 5 Builder UI first (vault "Course editor", 2026-11-30), then Phase 6 Page Content (Tiptap-class editor with a sanitized HTML/code mode, decided 2026-10-31), then Phase 3 — owner chose option (iii) on 2026-10-31 on the human-day figure (26-39 🟡 H); the same evening the plan was re-measured in attended AI-assisted days: ≈ 5-6.5 🟡 A for the MVP, which fits the ~10 days first announced (RECONCILIATION §9) — option (iii) to be reconsidered by the owner
 
 ## Milestones (realigned 2026-10-31, see `RECONCILIATION-2026-10-31.md`)
 
 | Milestone | Date | Phases | State |
 |---|---|---|---|
-| v0.1 MVP | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 (10 plans), 6, then 3 (6 plans) | 3/6 phases done; 26-39 🟡 days left, capacity raised to match (option iii, 2026-10-31); fallback: Phase 3 then bulk plans drop first |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | ~30 🟡 days vs ~7 available; 2027 budget raise still open |
+| v0.1 MVP | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 (10 plans), 6, then 3 (6 plans) | 3/6 phases done; 26-39 🟡 H days / ≈ 5-6.5 🟡 A days left (RECONCILIATION §9); option (iii) chosen on the H figure, to be reconsidered against A; fallback: Phase 3 then bulk plans drop first |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | ~30 🟡 H / ≈ 10-13.5 🟡 A days vs ~7 available; budget raise to size on A (+3.5-6.5 A) |
 | v1.1 | autumn 2027 | requirements only | — |
 | v2 | undated | 11 Moodle import (parked), v2 requirements | not committed |
 

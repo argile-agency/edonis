@@ -15,8 +15,8 @@ Easy course creation with demonstrable AI governance — teachers build and run 
 | Milestone | Date | Repo phases | Status |
 |---|---|---|---|
 | Course editor | 2026-11-30 | Phase 5 | planned (10 plans) |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | Phases 1-6 (3 after 5-6, first to drop) | 1, 2, 4 done; 3, 5 planned; 6 editor decided (Tiptap-class + sanitized HTML/code mode); 26-39 🟡 d needed, capacity raised to match (option iii, RECONCILIATION §8) |
-| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | capacity ~7 d vs ~30 🟡 d (RECONCILIATION §3) |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | Phases 1-6 (3 after 5-6, first to drop) | 1, 2, 4 done; 3, 5 planned; 6 editor decided (Tiptap-class + sanitized HTML/code mode); 26-39 🟡 H / ≈ 5-6.5 🟡 A days needed vs ~10 announced (RECONCILIATION §8-9) |
+| v1.0 Governance baseline + first pilots | 2027-03-31 | option (a): 17, 15, 16, 13, 14, then 7, 8, 10, 12, 9 | capacity ~7 d vs ~30 🟡 H / ≈ 10-13.5 🟡 A (RECONCILIATION §3, §9) |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — |
 | v1.1 | autumn 2027 | requirements only (EDITOR/ASSESS/AI/THEME/ACCOM-V11, BUILD-V2-07/08) | — |
 | v2 | undated | Phase 11 Moodle import, PAPER/LTI/QTI/QA-V2, BUILD-V2-06 | not committed |
@@ -135,7 +135,8 @@ Easy course creation with demonstrable AI governance — teachers build and run 
 | Page editor: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08), not Markdown-only for the MVP | Owner wants an editor "better than TinyMCE" with safe raw-HTML editing; blocks + revisions stay v1.1 | ✓ Decided 2026-10-31 |
 | Three database engines mandatory (PostgreSQL, MySQL/MariaDB, SQLite) — arbitrage E1 | Production is MariaDB, CI runs the matrix; governance tables designed for PostgreSQL must be made cross-engine | ✓ Decided 2026-10-31 |
 | v1.0 sequencing option (a): governance lots first (17 → 15 → 16 → 13 → 14), content after | Lot H conditions both revenue engines; E + F + H fit the ~7 available days | ✓ Decided 2026-10-31 |
-| MVP date and scope kept; Nov-Dec 2026 capacity raised from ~10 to 26-39 🟡 days (option iii) | The MVP as scoped (Tiptap-class editor, bulk actions, Phase 3) needs 26-39 days; the owner prefers raising capacity to cutting scope or moving the date | ✓ Decided 2026-10-31 — fallback option (i) if the pace is not reached |
+| MVP date and scope kept; Nov-Dec 2026 capacity raised from ~10 to 26-39 🟡 days (option iii) | The MVP as scoped (Tiptap-class editor, bulk actions, Phase 3) needs 26-39 human-developer days; the owner prefers raising capacity to cutting scope or moving the date | ✓ Decided 2026-10-31 — **re-measured the same evening: ≈ 5-6.5 attended AI-assisted days (RECONCILIATION §9), so the ~10 days announced would fit; decision to reconsider** |
+| Estimates carry two units from 2026-10-31: H (human-developer days) and A (attended AI-assisted days, calibrated on phases 1-2: ≈ 0.4 h per backend plan; frontend and greenfield lots ×2-3, low confidence) | Human-only costs (decisions, UAT, CI watching, production checks, timed installs) do not shrink with AI and are listed apart | ✓ Method adopted 2026-10-31 |
 
 ---
 *Last updated: 2026-10-31 — milestones aligned with the company roadmap (v0.1 / v1.0 / v1.1 / v2), core value renamed*

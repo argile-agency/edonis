@@ -41,6 +41,8 @@ What B does **not** need: question banks, quiz items, item authoring, auto-scori
 
 ## 3. Capacity view
 
+> **Unit warning (added 2026-10-31, evening).** Every 🟡 figure in this section is in **H = human-developer days** (1 d per plan for the content phases; the vault's figures for the lots, basis unknown). They were never calibrated on the AI-assisted throughput this repo has actually shown. **§9 re-measures the whole plan in two units** — H and **A = attended AI-assisted days** (8 h of the owner's attention with Claude Code executing) — from the git history. Read §9 before acting on §3 or §8.
+
 Legend: 🟡 = day estimate carried from the vault (lots) or estimated here from plan counts (content phases, ~1 d per plan; marked "repo est."). The vault does not quantify "Nov-Dec evenings"; the owner must fix that figure.
 
 ### v0.1 MVP (2026-12-20, 7 weeks from today)
@@ -159,6 +161,60 @@ The vault documents say PostgreSQL-only; the repo runs the three engines in CI (
 **Consequence confronted.** With decisions 1 and 6 the MVP needs **26-39 🟡 days** (Phase 5 13-15 + Phase 6 10-20 + Phase 3 3-4) against the ~10 days first announced: 2026-12-20 did not hold as scoped. Three honest moves were put to the owner: (i) keep the date and cut (Phase 5 waves 1-4 and 05-08 first, bulk plans, Phase 3 and most of Phase 6 postponed); (ii) move the MVP date; (iii) raise the Nov-Dec capacity.
 
 **Decided 2026-10-31: option (iii).** Date (2026-12-20) and scope are kept; the Nov-Dec capacity is raised to cover 26-39 🟡 days, which means **about 3.7-5.6 days per week over the 7 remaining weeks**, close to full time. Phase order stays 5 → 6 → 3; if the pace is not reached, option (i) is the fallback (Phase 3 drops first, then the bulk plans 05-09/05-10).
+
+> **Re-measured the same evening (§9):** the 26-39 figure was in human-developer days. In attended AI-assisted days the MVP needs **5-6.5 A-days** (incl. the human-only backlog), which fits the ~10 days first announced. Option (iii) is therefore **to be reconsidered by the owner**; the roadmap keeps both units and does not reverse the decision on its own.
+
+---
+
+## 9. Re-measure in two units (2026-10-31, evening)
+
+**Units.** **H** = human-developer day: a developer writing the code by hand (the unit of §3 and, as far as we know, of the vault's lot figures). **A** = attended AI-assisted day: 8 hours of the owner's attention while Claude Code (GSD executors, planners, checkers) does the work — includes answering checkpoints, running the post-merge gates, merging worktrees, reading reviews, fixing the environment. Neither unit includes the **human-only** items (production checks, CI watching, timed installs, screen-reader tests, deploys), listed separately.
+
+### 9.1 Calibration evidence (git history and this session's agent timings)
+
+| Observation | Measured | Derived rate |
+|---|---|---|
+| Phase 1 execution: 5 plans, 13 tasks | 2026-10-13 10:53 → 12:49 (≈ 2 h of session) | ≈ 0.4 h attended per backend plan |
+| Phase 2 waves 1-3: 13 plans, ≈ 33 tasks, 5 checkpoints answered | 2026-10-13 15:30 → 20:00 (≈ 4.5 h) | ≈ 0.35 h per plan incl. decisions |
+| Phase 2 executor agent time (16 plans) | ≈ 7.3 h total; median 15-20 min per plan; outliers 60 min (02-08) and 115 min (02-02, Node 24 environment issue) | agent time is not the bottleneck |
+| Phase 2 tail: 02-14 checkpoint, origin/main merge, gap plans 02-15/16, re-verification | parts of 2026-10-20 (12:25 → 19:34) and 2026-10-28 (09:43 → 10:28) | ≈ 0.5 A-day of hardening tail |
+| Phase 4: 1 plan, 3 tasks (file storage + authorized download) | plan executed 11:43 → 11:53 (10 min); phase closed 18:20 after 6 review fixes, CI teardown fixes and UAT | **≈ 0.8 A-day of hardening for a 10-minute plan** on a security surface |
+| Planning a phase (research → plans → checker → validation) | Phase 2: 12:49 → 15:30 (≈ 2.7 h, 14 plans); Phase 3: ≈ 3.5 h; Phase 5: ≈ 5-6 h over three sessions (3 checker iterations + the bulk extension) | 0.35-0.7 A-day per phase |
+| Human decisions | 8 checkpoints in Phase 2, ≈ 10-15 min each incl. reading | ≈ 0.25 A-day per phase with 3-5 checkpoints |
+| Verification debt left behind | 17 UAT items pending across phases 1, 2, 4 (CI on PG/MySQL, DEBT-08 production checks, browser suite, manual page checks, storage persistence at deploy) | ≈ 3.5 h human-only, not yet spent |
+
+**Rates used below.** Backend plan: 0.4-0.5 h A. Frontend / browser-tested / new-dependency plan: 1-1.5 h A (**assumption**, ×2-3 — no such plan has run in this repo yet; the phase 4 tail is the closest evidence). Per-phase planning overhead: 0.35-0.7 A-day. Hardening tail (review fixes, re-verification): 0.25 A-day, 0.5-0.8 on a security or data surface. Greenfield governance lots: AI speeds up code far more than design, compliance text and real-environment checks, so they are converted at **≈ ÷2.5-3**, not ÷6-8 — **low confidence**, no observation.
+
+### 9.2 Per-phase, both units
+
+| Phase | Plans | H 🟡 (human-dev days) | A 🟡 (attended AI-assisted days) | Basis / confidence |
+|---|---|---|---|---|
+| 3 Complete Stubbed Features | 6 (12 tasks, 1 checkpoint, nodemailer) | 3-4 | **0.6-0.8** | observed rates; medium-high |
+| 5 Builder UI | 10 (28 tasks, 5 frontend-heavy, dnd-kit, browser tests, 2 checkpoints) | 13-15 | **2-3** | backend half observed; frontend ×2-3 assumed; dnd-kit/SSR risk buffer 2-4 h included; medium |
+| 6 Page Content | 3-4 (Tiptap-class editor, sanitized source mode, media, student view) | 10-20 (vault, Tiptap + blocks) | **1.5-2.5** | assumed; sanitizer and editor SSR are the risk; medium-low |
+| **v0.1 MVP execution** | 19-20 | **26-39** | **4-6** | |
+| + human-only for v0.1 (17 UAT items ≈ 3.5 h, decisions, env) | | | **+0.5-1** | observed backlog |
+| **v0.1 MVP total** | | **26-39 H** | **≈ 5-6.5 A** | vs ~10 days announced |
+| 7 File Content | 3 (react-dropzone, storage exists) | 2.5 | 0.75-1 | medium |
+| 8 URL Content | 1 | 1 | 0.4-0.5 | medium-high |
+| 9 Assignment Integration | 2 | 1.5 | 0.5-0.75 | medium |
+| 10 Engagement Tracking | 2 (dashboards) | 2 | 0.6-0.8 | medium |
+| 12 Permissions and Polish | 1 left | 1 | 0.3-0.5 | medium |
+| **v1.0 content subtotal** | 9 | **8** | **≈ 2.5-3.5** | |
+| 13 Rubric (lot B) | ≈ 5 (new tables, versioning, recompute job, legacy migration, marking UI) | 5 (vault) | 1.5-2 | low |
+| 14 AI governance core + provider (lots C + D) | ≈ 8-9 (registries, router, hierarchy, manifests, budget, ledger, 2 capabilities, Ollama in CI) | 10 (vault) | 3.25-4 | low; cross-engine budget tests and CI runner setup are trial-and-error |
+| 15 AI Act (lot E) | ≈ 2 | 2 (vault) | 0.5-0.75 | low |
+| 16 Accommodation (lot F) | ≈ 2 | 2 (vault) | 0.5-0.75 | low |
+| 17 Installability (lot H) | ≈ 3 (3 engines × backup/restore, docs) | 3 (vault) | 1-1.5 | low; timed install runs are human-only |
+| **v1.0 governance subtotal** | | **22** | **≈ 6.75-9** | |
+| + human-only for v1.0 (timed installs ×2, real SMTP, screen reader, CI on 3 engines, first deploys) | | | **+0.75-1** | |
+| **v1.0 total** | | **≈ 30 H** | **≈ 10-13.5 A** | vs ~7 available |
+
+### 9.3 What changes
+
+- **v0.1 MVP:** 5-6.5 A-days against the ~10 days first announced → **fits, with margin**, at the pace this repo has already shown. Option (iii) (near full time until 2026-12-20) is no longer required by the numbers; option (i) (cut) is not needed either. The owner may keep (iii) as a buffer or revert to the ~10-day plan. The real constraints become the two risk items with no observation yet (dnd-kit nested drag, editor sanitization) and the **human-only backlog** (17 UAT items), which does not shrink with AI.
+- **v1.0:** 10-13.5 A-days against ~7 → still over, by **3-6.5 A-days instead of 23**. With option (a), the first 7 A-days cover lots H, E, F and B (≈ 4-5 A) and about half of C+D; the content phases (2.5-3.5 A) and the rest of C+D need the budget raise, now sized at **≈ +3.5-6.5 A-days** rather than +23.
+- **Where AI helps least:** decisions, compliance wording, real-environment verification, CI watching. Those are the items to schedule as human time, and the UAT backlog should be cleared before v0.1 ships (one CI push on postgres/mysql settles several of them at once).
 
 ---
 
