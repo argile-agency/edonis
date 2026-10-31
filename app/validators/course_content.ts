@@ -26,7 +26,18 @@ export const updateModuleValidator = vine.compile(
     availableUntil: vine.date().optional(),
     requirePreviousCompletion: vine.boolean().optional(),
     estimatedTime: vine.number().optional(),
-    parentId: vine.number().optional(),
+  })
+)
+
+/**
+ * Move a section. `parentId` null means the course root; `position` is the
+ * 0-based index among the destination siblings, with the moved section excluded.
+ */
+export const moveModuleValidator = vine.compile(
+  vine.object({
+    parentId: vine.number().positive().nullable(),
+    position: vine.number().withoutDecimals().min(0),
+    updatedAt: vine.string().nullable(),
   })
 )
 
@@ -105,6 +116,18 @@ export const reorderContentsValidator = vine.compile(
         order: vine.number(),
       })
     ),
+  })
+)
+
+/**
+ * Move a content item. `position` is the 0-based index among the destination
+ * section's contents, with the moved item excluded; `updatedAt` is the conflict token.
+ */
+export const moveContentValidator = vine.compile(
+  vine.object({
+    moduleId: vine.number().positive(),
+    position: vine.number().withoutDecimals().min(0),
+    updatedAt: vine.string().nullable(),
   })
 )
 

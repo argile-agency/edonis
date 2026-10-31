@@ -1,5 +1,10 @@
 import { test } from '@japa/runner'
-import { recomputeSubtree, wouldCreateCycle } from '../../app/helpers/category_tree.js'
+import {
+  depthOf,
+  recomputeSubtree,
+  subtreeHeight,
+  wouldCreateCycle,
+} from '../../app/helpers/category_tree.js'
 
 /**
  * Pure tree helpers: no database, no framework. Every case must terminate,
@@ -76,5 +81,47 @@ test.group('Category tree helpers', () => {
     const ids = fromCycle.map((d) => d.id)
     assert.equal(new Set(ids).size, ids.length)
     assert.notInclude(ids, 2)
+  })
+
+  test('depthOf(root) = 0', ({ assert }) => {
+    assert.equal(depthOf(tree, 1), 0)
+    assert.equal(depthOf(tree, 4), 0)
+  })
+
+  test('depthOf counts levels below the root, legacy third level included', ({ assert }) => {
+    assert.equal(depthOf(tree, 2), 1)
+    assert.equal(depthOf(tree, 3), 2)
+  })
+
+  test('depthOf treats an unknown id as a root', ({ assert }) => {
+    assert.equal(depthOf(tree, 99), 0)
+  })
+
+  test('depthOf terminates on a corrupt cycle', ({ assert }) => {
+    const corrupt = new Map<number, number | null>([
+      [5, 6],
+      [6, 5],
+    ])
+    const depth = depthOf(corrupt, 5)
+    assert.isTrue(Number.isFinite(depth) && depth >= 0)
+  })
+
+  test('subtreeHeight(leaf section) = 0', ({ assert }) => {
+    assert.equal(subtreeHeight(tree, 4), 0)
+    assert.equal(subtreeHeight(tree, 3), 0)
+  })
+
+  test('subtreeHeight counts the levels under a section', ({ assert }) => {
+    assert.equal(subtreeHeight(tree, 2), 1)
+    assert.equal(subtreeHeight(tree, 1), 2)
+  })
+
+  test('subtreeHeight terminates on a corrupt cycle', ({ assert }) => {
+    const corrupt = new Map<number, number | null>([
+      [5, 6],
+      [6, 5],
+    ])
+    const height = subtreeHeight(corrupt, 5)
+    assert.isTrue(Number.isFinite(height) && height >= 0)
   })
 })

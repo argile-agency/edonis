@@ -159,7 +159,7 @@ test.group('Course contents - authorization and scoping', (group) => {
     response.assertInertiaComponent('errors/not_found')
   })
 
-  test('A8: updateModule refuses a parent from another course, itself, or a descendant', async ({
+  test('A8: moveModule refuses a parent from another course, itself, or a descendant', async ({
     client,
     route,
     assert,
@@ -172,28 +172,33 @@ test.group('Course contents - authorization and scoping', (group) => {
     const childOfA = await createModule(courseA, { parentId: moduleA.id })
     const moduleB = await createModule(courseB)
 
-    const url = route('modules.update', { moduleId: moduleA.id })
+    const url = route('modules.move', { moduleId: moduleA.id })
 
     for (const parentId of [moduleB.id, moduleA.id, childOfA.id]) {
-      const req = client.put(url).withCsrfToken()
-      const response = await req.json({ parentId }).loginAs(ownerA).redirects(0)
+      const req = client.post(url).withCsrfToken()
+      const response = await req
+        .header('accept', 'application/json')
+        .json({ parentId, position: 0, updatedAt: moduleA.updatedAt?.toISO() ?? null })
+        .loginAs(ownerA)
 
-      response.assertStatus(302)
-      assertNotCsrfRejected(assert, response)
-      assert.equal(response.flashMessage('error'), PARENT_ERROR)
+      response.assertStatus(422)
+      assert.equal(response.body().message, PARENT_ERROR)
       const after = await CourseModule.findOrFail(moduleA.id)
       assert.isNull(after.parentId)
     }
 
-    // Positive control: a sibling module of the same course is accepted.
+    // Positive control: a leaf section (no sub-section) goes under a sibling.
+    // moduleA itself would be a depth refusal (it has childOfA, D-02: 2 levels).
     const sibling = await createModule(courseA)
-    const okReq = client.put(url).withCsrfToken()
-    const ok = await okReq.json({ parentId: sibling.id }).loginAs(ownerA).redirects(0)
+    const leaf = await createModule(courseA)
+    const okReq = client.post(route('modules.move', { moduleId: leaf.id })).withCsrfToken()
+    const ok = await okReq
+      .header('accept', 'application/json')
+      .json({ parentId: sibling.id, position: 0, updatedAt: leaf.updatedAt?.toISO() ?? null })
+      .loginAs(ownerA)
 
-    ok.assertStatus(302)
-    assertNotCsrfRejected(assert, ok)
-    assert.isUndefined(ok.flashMessage('error'))
-    const moved = await CourseModule.findOrFail(moduleA.id)
+    ok.assertStatus(200)
+    const moved = await CourseModule.findOrFail(leaf.id)
     assert.equal(moved.parentId, sibling.id)
   })
 
