@@ -29,7 +29,7 @@ export const plugins: Config['plugins'] = [
   browserClient({
     runInSuites: ['browser'],
     contextOptions: {
-      baseURL: 'http://localhost:3333',
+      baseURL: `http://localhost:${process.env.PORT ?? 3333}`,
     },
   }),
 ]
