@@ -38,6 +38,66 @@ export function wouldCreateCycle(
   return false
 }
 
+/**
+ * Depth of `nodeId`, 0-based: a root is 0, its child 1. An unknown id counts
+ * as a root. On cyclic data, returns the count reached when a revisit (or more
+ * steps than nodes) is detected.
+ */
+export function depthOf(parentById: ReadonlyMap<number, number | null>, nodeId: number): number {
+  const seen = new Set<number>([nodeId])
+  const maxSteps = parentById.size + 1
+  let current = parentById.get(nodeId) ?? null
+  let depth = 0
+
+  while (current !== null && depth < maxSteps) {
+    depth += 1
+    if (seen.has(current)) break
+    seen.add(current)
+    current = parentById.get(current) ?? null
+  }
+
+  return depth
+}
+
+/**
+ * Height of the sub-tree under `nodeId`: a node without children gives 0, a
+ * node with only leaf children gives 1. Breadth-first by levels with a visited
+ * set, so cyclic data terminates.
+ */
+export function subtreeHeight(
+  parentById: ReadonlyMap<number, number | null>,
+  nodeId: number
+): number {
+  const childrenByParent = new Map<number, number[]>()
+  for (const [id, parentId] of parentById) {
+    if (parentId === null) continue
+    const siblings = childrenByParent.get(parentId)
+    if (siblings) {
+      siblings.push(id)
+    } else {
+      childrenByParent.set(parentId, [id])
+    }
+  }
+
+  const visited = new Set<number>([nodeId])
+  let level = [nodeId]
+  let height = 0
+
+  for (;;) {
+    const next: number[] = []
+    for (const id of level) {
+      for (const child of childrenByParent.get(id) ?? []) {
+        if (visited.has(child)) continue
+        visited.add(child)
+        next.push(child)
+      }
+    }
+    if (next.length === 0) return height
+    height += 1
+    level = next
+  }
+}
+
 export interface TreeNode {
   id: number
   parentId: number | null
