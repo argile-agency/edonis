@@ -222,7 +222,7 @@ Plans:
 
 **Goal**: Upgrade the existing dialog-based builder to true drag-and-drop
 **Depends on**: Phase 4
-**Requirements**: BUILD-01, BUILD-02, BUILD-03, BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10
+**Requirements**: BUILD-01, BUILD-02, BUILD-03, BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10, BUILD-11, BUILD-12, BUILD-13, BUILD-14, BUILD-15, BUILD-16
 
 > **Scope note (2026-10-09):** this is a *replacement*, not a greenfield build.
 > `course_contents_controller.ts` already implements module CRUD, content CRUD,
@@ -239,8 +239,16 @@ Plans:
   4. Existing add / rename / delete section flows still work after the rewrite
   5. Changes are autosaved with visible save indicator
   6. Drag interactions have keyboard-accessible equivalents (a11y baseline is already enforced by axe-core tests)
+  7. Teacher can select N items/sections and publish, unpublish, shift dates, move, duplicate or delete them in ≤ 3 interactions, with one audit entry per bulk action
+  8. Bulk actions and selection are keyboard-operable (manual check + axe-core)
 
-**Plans**: 8 plans in 5 waves
+> **Scope addition (2026-10-31, vault design notes 08/09, arbitrage E5):** bulk selection and bulk actions
+> (BUILD-11..16) are part of the builder from day one — about 2-3 days if designed into the list rendering
+> now, 5+ days if retrofitted after dnd-kit and inline editing ship (precedents: Moodle 4.2 bulk editing,
+> Blackboard Ultra Batch Edit, Brightspace Manage Dates). Reuse itself is deferred to v2 (BUILD-V2-05..08);
+> the only hook taken now is `copied_from_id` on duplicated modules/contents (no UI, no sync).
+
+**Plans**: 10 plans in 6 waves
 
 > **Re-planned 2026-10-29 from research.** The roadmap's three placeholder plans assumed the existing
 > reorder endpoints were enough. They are not: cross-section moves and re-parenting need two new locked
@@ -248,6 +256,8 @@ Plans:
 > 2 levels. Plans are split by file ownership so same-wave plans never touch the same file; same-wave plans run in
 > parallel git worktrees (default `workflow.use_worktrees`), with file-scoped per-task gates and full suites at the plan and post-merge gates.
 > Autonomy: 05-01..05-06 autonomous; 05-07 not autonomous (pauses for a French library decision only if classic dnd-kit misbehaves); 05-08 not autonomous (French walkthrough checkpoint).
+>
+> **Extended 2026-10-31 for the scope addition (D-11 / D-12, BUILD-11..16):** two plans added, 05-09 (bulk endpoints + `copied_from_id`, wave 2) and 05-10 (selection + bulk action bar, wave 5); 05-08 moves to wave 6 so its axe states and walkthrough cover bulk actions. Coexistence changes in the verified plans: 05-01 moves its move core into `app/services/course_structure_service.ts` (reused by the bulk move); 05-06 reserves the row's selection slot and reuses 05-09's props loader; 05-07 keeps drag listeners on the handle only. 05-09 and 05-10 are autonomous; two provisional defaults in 05-09 (OQ-1 assignments not shifted, OQ-2 copies start as drafts) need the user's answer before 05-09 executes.
 
 Plans:
 
@@ -261,6 +271,7 @@ Plans:
 
 - [ ] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create under the course lock, audit rows on deletes, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
 - [ ] 05-05-PLAN.md — Inline title, details panel, actions menu (Monter / Descendre / Déplacer vers… / Supprimer with confirmation) [BUILD-05, BUILD-06, BUILD-08, BUILD-09]
+- [ ] 05-09-PLAN.md — Bulk endpoints (publish/unpublish, availability, date shift, move via the shared move service, duplicate with attachments, delete) in one transaction each with one ids-only audit row; reversible `copied_from_id` migration; date-shift helper [BUILD-12, BUILD-13, BUILD-14, BUILD-15]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -272,7 +283,11 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 05-08-PLAN.md — axe coverage of the builder, full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows (checkpoint, not autonomous) [BUILD-01..BUILD-10]
+- [ ] 05-10-PLAN.md — Selection (checkboxes, all/none, quick selections, live count) and bulk action bar with dialogs, through the save queue; browser tests incl. keyboard, checkbox vs handle and axe [BUILD-11, BUILD-12, BUILD-13, BUILD-14, BUILD-16]
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 05-08-PLAN.md — axe coverage of the builder (incl. selection state), full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows and bulk actions (checkpoint, not autonomous) [BUILD-01..BUILD-16]
 
 ### Phase 6: Page Content
 

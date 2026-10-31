@@ -60,6 +60,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **BUILD-08**: Teacher can edit content inline (modal or expandable form in builder)
 - [ ] **BUILD-09**: Teacher can delete content item from section
 - [ ] **BUILD-10**: Changes are autosaved (with save indicator)
+- [ ] **BUILD-11**: Teacher can select multiple content items and sections (checkboxes, select all/none, quick selections: published, unpublished, by content type); the selection count is announced via aria-live
+- [ ] **BUILD-12**: Bulk publish / unpublish selected items
+- [ ] **BUILD-13**: Bulk set availability window (available_from / available_until) and bulk date shift, either by N days or by "old start date → new start date" (the shift preserves relative spacing). Applies to module and content dates (available_from / available_until, due_date)
+- [ ] **BUILD-14**: Bulk move to another section, bulk duplicate, bulk delete (confirmation required). Duplicated modules and contents store `copied_from_id` (nullable FK, ON DELETE SET NULL)
+- [ ] **BUILD-15**: Every bulk action runs in a single DB transaction, validates its payload with VineJS, and writes one audit_log entry listing the affected ids and the action
+- [ ] **BUILD-16**: Selection and the bulk action bar are fully keyboard-operable and pass the existing axe-core tests; drag handles and checkboxes do not conflict (activation constraint or dedicated handle)
 
 ### Page Content Type
 
@@ -130,6 +136,10 @@ Deferred to future release. Tracked but not in current roadmap.
 - **BUILD-V2-02**: Keyboard shortcuts for common actions
 - **BUILD-V2-03**: Course preview mode (see as student)
 - **BUILD-V2-04**: Course cloning/templates
+- **BUILD-V2-05**: Bulk group restriction (apply a group/grouping restriction to selected items)
+- **BUILD-V2-06**: Deploy one item to N courses (linked copies, idempotent job with report, same pattern as `bulk_enrollment_logs`)
+- **BUILD-V2-07**: Course template × cohorts instantiation ("rentrée en un clic")
+- **BUILD-V2-08**: Upstream links for shared blocks/questions/rubrics: `sync_policy` latest | pinned, "update available" review, local overrides limited to title/dates/availability/group/points, never the body; an in-progress attempt never changes version. Groundwork taken in v1: `copied_from_id` on duplicated modules and contents (BUILD-14), no UI, no sync
 
 ### Content Types
 
@@ -157,7 +167,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Feature | Reason |
 |---------|--------|
 | Plugin architecture for content types | Build core types first; extract abstraction in v2 |
-| Quiz builder | Complex (question banks, scoring); defer to v2 |
+| Quiz builder | Complex (question banks, scoring); defer to v2. When built, a quiz slot source must support `latest_version` \| `fixed_version` \| `random_from_bank` |
 | LTI integration | External tool configuration complexity; v2 |
 | Real-time collaboration | WebSocket complexity; single editor sufficient |
 | Time-on-content tracking | Completion tracking sufficient for v1 |
@@ -196,6 +206,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-08 | Phase 5 | Pending |
 | BUILD-09 | Phase 5 | Pending |
 | BUILD-10 | Phase 5 | Pending |
+| BUILD-11 | Phase 5 | Pending |
+| BUILD-12 | Phase 5 | Pending |
+| BUILD-13 | Phase 5 | Pending |
+| BUILD-14 | Phase 5 | Pending |
+| BUILD-15 | Phase 5 | Pending |
+| BUILD-16 | Phase 5 | Pending |
 | PAGE-01 | Phase 6 | Pending |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |

@@ -69,6 +69,19 @@ Each row is covered by at least one task's automated verify (`<automated>` in th
 | SSR | no dnd-kit hydration mismatch on the builder page (console listener) | browser | 05-07 T1 | builder.spec.ts | ❌ W0 | ⬜ |
 | a11y | builder page: no critical or serious axe violations (at rest, panel open, menu open, move dialog open) | browser | 05-08 T1 | `tests/browser/accessibility.spec.ts` | ⚠ extend | ⬜ |
 | Build | production build compiles SSR + client with dnd-kit | build | 05-08 T2 | `bun run build` | ✅ | ⬜ |
+| BUILD-14 (D-12) | `copied_from_id` migration: FK `ON DELETE SET NULL` present after up, gone after `rollback --step=1`, back after up; seeded row counts identical at the three points (SQLite rebuild runs outside a transaction) | migration | 05-09 T1 | migrate → seed → rollback --step=1 → migrate on `./tmp/test-05-09-mig.sqlite3` with count and `pragma foreign_key_list` checks; PostgreSQL / MySQL via the CI matrix | ❌ W0 (05-09 T1) | ⬜ |
+| BUILD-13 | date shift: N days or old start → new start (calendar days, DST-safe), null kept, spacing kept, invalid mode → null | unit | 05-09 T1 | `node ace test unit --files tests/unit/date_shift.spec.ts` | ❌ W0 (05-09 T1) | ⬜ |
+| BUILD-12, BUILD-15 | bulk publish / unpublish: no cascade, `affected` tokens fresh, one `course.bulk.publish` or `course.bulk.unpublish` audit row with ids only; stale token → 409, nothing written | functional | 05-09 T2 | `--files tests/functional/builder_bulk.spec.ts` | ❌ W0 (05-09 T2) | ⬜ |
+| BUILD-13, BUILD-15 | bulk availability window (set, clear, inverted → 422) and date shift (days, anchor, 0 or both modes → 422, nulls kept, `assignments` rows untouched per OQ-1); one audit row each | functional | 05-09 T2 | builder_bulk.spec.ts | ❌ W0 | ⬜ |
+| BUILD-14, BUILD-15 | bulk move through the 05-01 service (tree order, normalisation, depth / cycle / content-to-root refusals roll back the whole batch) | functional | 05-09 T3 | builder_bulk.spec.ts (+ builder_moves.spec.ts still green) | ❌ W0 | ⬜ |
+| BUILD-14 (D-12) | bulk duplicate: copy after the original, ` (copie)`, drafts per OQ-2, sub-tree copied, `content_content_files` rows copied, no new `content_files`; `copied_from_id` set on every copy and nulled when the original is deleted; legacy depth refused | functional | 05-09 T3 | builder_bulk.spec.ts | ❌ W0 | ⬜ |
+| BUILD-14 | bulk delete: section only with its whole sub-tree selected, else 409 `E_NOT_EMPTY` and nothing deleted; `content_files` kept | functional | 05-09 T3 | builder_bulk.spec.ts | ❌ W0 | ⬜ |
+| BUILD-15, All | every bulk route: outsider teacher 403, admin 200, foreign id → 422 `E_INVALID_ITEMS` and nothing written, no audit row on any refusal | functional | 05-09 T2 | builder_bulk.spec.ts (table-driven) | ❌ W0 | ⬜ |
+| BUILD-11..14 | quick selections, tree order, normalisation, bulk move targets and optimistic mirror (same result as the server), delete blockers, response merge keeping local titles | unit | 05-10 T1 | `node ace test unit --files tests/unit/builder_tree.spec.ts` | ⚠ extend | ⬜ |
+| BUILD-11 | checkboxes, "Tout sélectionner", "Sélection rapide" (publiés, non publiés, par type), count in the `aria-live` paragraph | browser | 05-10 T4 | `tests/browser/builder_bulk.spec.ts` | ❌ W0 (05-10 T4) | ⬜ |
+| BUILD-12..14 | publish in ≤ 3 interactions (roadmap criterion 7), availability, date shift, move, duplicate, blocked then confirmed delete; no false conflict after a bulk action | browser | 05-10 T4 | builder_bulk.spec.ts | ❌ W0 | ⬜ |
+| BUILD-16 | keyboard-only selection and bar; Space on a checkbox toggles without a drag, Space on a handle drags without changing the selection | browser | 05-10 T4 | builder_bulk.spec.ts | ❌ W0 | ⬜ |
+| BUILD-16 | axe: bar visible, date-shift dialog open, bulk move dialog open (05-10 T4); page-level selection state (05-08 T1) | browser | 05-10 T4, 05-08 T1 | builder_bulk.spec.ts, accessibility.spec.ts | ❌ W0 | ⬜ |
 
 Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok` (probe in 05-02 T1); otherwise CI `e2e.yml` is authoritative, plus the 05-08 human checkpoint. A browser row is marked ✅ only after it really ran green (locally, or in a CI run whose link is recorded); otherwise it stays `⬜ not run: <reason>` and `nyquist_compliant` stays false (05-08 T2). Frontend files are type-checked with a filtered `tsc -p inertia/tsconfig.json` gate, because `bun run typecheck` excludes `inertia/**` and the client config has unrelated pre-existing errors.
 
@@ -83,6 +96,7 @@ Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok
 - [ ] `tests/browser/builder.spec.ts` and one case in `tests/browser/accessibility.spec.ts`
 - [ ] D-10: one-line change in `tests/bootstrap.ts` so the base URL follows `PORT` (default 3333 unchanged)
 - [ ] `bun add @dnd-kit/core@6.3.1 @dnd-kit/sortable@10.0.0 @dnd-kit/utilities@3.2.2` plus an SSR smoke check of `/courses/:id/builder` for hydration warnings
+- [ ] `tests/unit/date_shift.spec.ts` and `tests/functional/builder_bulk.spec.ts` (05-09), `tests/browser/builder_bulk.spec.ts` (05-10)
 
 ---
 
@@ -93,6 +107,7 @@ Browser rows run locally only when `05-02-SUMMARY.md` records `BROWSER_LOCAL: ok
 | Pointer and touch drag feel (handle activation, no page-scroll conflict) | BUILD-01..03, D-08 | Pointer and touch drags are flaky in CI | In the browser and on a tablet, drag a content between sections, drag a section into another, scroll the page with a finger outside the handle |
 | Screen-reader announcements in French | D-07 | Needs a real screen reader | With VoiceOver, pick up an item with Space, move with arrows and check the announcements |
 | Two teachers editing the same course | D-09 | Needs two sessions | Edit the same title in two browsers; the second save shows the conflict message and keeps the typed text |
+| Bulk actions in ≤ 3 interactions, keyboard-operable | BUILD-11..16, roadmap criteria 7 and 8 | Criterion 8 asks for a manual check besides axe | 05-08 walkthrough steps 10-13 |
 
 ---
 
