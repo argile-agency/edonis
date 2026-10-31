@@ -15,6 +15,9 @@ export default class CourseModule extends BaseModel {
   declare parentId: number | null
 
   @column()
+  declare copiedFromId: number | null
+
+  @column()
   declare title: string
 
   @column()

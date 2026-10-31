@@ -17,6 +17,9 @@ export default class CourseContent extends BaseModel {
   declare moduleId: number
 
   @column()
+  declare copiedFromId: number | null
+
+  @column()
   declare contentType: ContentType
 
   @column()
