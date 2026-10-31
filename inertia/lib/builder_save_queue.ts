@@ -119,8 +119,9 @@ export function useSaveQueue(): SaveQueueState & {
 
     // Inertia 2.3.29: returning false from a 'before' listener calls preventDefault() and cancels the visit.
     const removeBefore = router.on('before', (event) => {
-      const { method, url } = event.detail.visit
-      if (method !== 'get') return
+      const { method, url, prefetch } = event.detail.visit
+      // router.prefetch() (Link hover) also fires 'before': never prompt for it.
+      if (method !== 'get' || prefetch) return
       if (url.pathname + url.search === window.location.pathname + window.location.search) return
       if (!window.confirm(LEAVE_PROMPT)) return false
     })

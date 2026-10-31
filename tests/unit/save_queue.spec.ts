@@ -123,6 +123,26 @@ test.group('Save queue', () => {
     assert.notInclude(h.log.slice(2), 'apply A')
   })
 
+  test('an op enqueued while in error runs and keeps the retry list', async ({ assert }) => {
+    const h = harness()
+    h.queue.enqueue(h.op('A'))
+    await flush()
+    h.pending.A.reject({ kind: 'conflict', status: 409, message: 'x', body: {} })
+    await flush()
+
+    h.queue.enqueue(h.op('D'))
+    await flush()
+    assert.includeMembers(h.log, ['apply D', 'run D'])
+    h.pending.D.resolve()
+    await flush()
+    assert.deepInclude(h.queue.getState(), { status: 'error', failedCount: 1, pending: 0 })
+
+    h.log.length = 0
+    h.queue.retry()
+    await flush()
+    assert.deepEqual(h.log, ['apply A', 'run A'])
+  })
+
   test('a non-SaveError rejection is normalised to kind error', async ({ assert }) => {
     const h = harness()
     h.queue.enqueue(h.op('A'))
