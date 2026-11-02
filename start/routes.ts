@@ -26,6 +26,7 @@ const EnrollmentsController = () => import('#controllers/enrollments_controller'
 const CategoriesController = () => import('#controllers/categories_controller')
 const EvaluationsController = () => import('#controllers/evaluations_controller')
 const CourseContentsController = () => import('#controllers/course_contents_controller')
+const CourseBulkActionsController = () => import('#controllers/course_bulk_actions_controller')
 const PagesController = () => import('#controllers/pages_controller')
 const GradesController = () => import('#controllers/grades_controller')
 const ProfileController = () => import('#controllers/profile_controller')
@@ -383,6 +384,17 @@ router
     router
       .post('/modules/:moduleId/contents/reorder', [CourseContentsController, 'reorderContents'])
       .as('modules.contents.reorder')
+
+    // Bulk actions (JSON, all-or-nothing)
+    router
+      .post('/courses/:id/builder/bulk/publish', [CourseBulkActionsController, 'publish'])
+      .as('courses.bulk.publish')
+    router
+      .post('/courses/:id/builder/bulk/availability', [CourseBulkActionsController, 'availability'])
+      .as('courses.bulk.availability')
+    router
+      .post('/courses/:id/builder/bulk/shift', [CourseBulkActionsController, 'shiftDates'])
+      .as('courses.bulk.shift')
   })
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
