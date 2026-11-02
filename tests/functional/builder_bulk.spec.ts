@@ -4,11 +4,13 @@ import type { ApiClient } from '@japa/api-client'
 import { DateTime } from 'luxon'
 import type Course from '#models/course'
 import type User from '#models/user'
+import { createHash } from 'node:crypto'
 import AuditLog from '#models/audit_log'
 import Assignment from '#models/assignment'
+import ContentFile from '#models/content_file'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
-import { createCourse, createUser } from '#tests/functional/helpers/factories'
+import { createCourse, createUser, uniqueSuffix } from '#tests/functional/helpers/factories'
 
 /**
  * Builder bulk actions (phase 05, plan 09): one course, a batch of sections and
@@ -87,6 +89,9 @@ const ROUTES: { name: string; body: (f: Fixture) => Record<string, unknown> }[] 
     body: () => ({ availableFrom: '2026-11-02', availableUntil: '2026-11-30' }),
   },
   { name: 'courses.bulk.shift', body: () => ({ days: 7 }) },
+  { name: 'courses.bulk.move', body: (f) => ({ parentId: f.s2.id }) },
+  { name: 'courses.bulk.duplicate', body: () => ({}) },
+  { name: 'courses.bulk.delete', body: () => ({}) },
 ]
 
 test.group('Builder - bulk policy and scope', (group) => {
@@ -380,5 +385,318 @@ test.group('Builder - bulk publish, availability, shift', (group) => {
     const c1 = await fresh(f.c1)
     assert.equal(c1.availableFrom?.toISODate(), '2026-09-01')
     assert.lengthOf(await bulkAudits(f.course.id), 0)
+  })
+})
+
+/** `[id, order]` pairs of a section's contents, in display order. */
+async function contentOrders(moduleId: number): Promise<[number, number][]> {
+  const rows = await CourseContent.query()
+    .where('module_id', moduleId)
+    .orderBy('order', 'asc')
+    .orderBy('id', 'asc')
+  return rows.map((r) => [r.id, r.order])
+}
+
+async function attachFile(content: CourseContent): Promise<ContentFile> {
+  const file = await ContentFile.create({
+    storagePath: `ab/${uniqueSuffix()}.txt`,
+    size: 4,
+    checksum: createHash('sha256').update(uniqueSuffix()).digest('hex'),
+  })
+  await content.related('files').attach({
+    [file.id]: { filename: 'Notes.txt', mime_type: 'text/plain' },
+  })
+  return file
+}
+
+async function contentFileCount(): Promise<number> {
+  const rows = await ContentFile.query().count('* as total')
+  return Number(rows[0].$extras.total)
+}
+
+test.group('Builder - bulk move, duplicate, delete', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('move contents runs in tree order and appends to the destination (BUILD-14)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const url = route('courses.bulk.move', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, {
+      items: [con(f.c3), con(f.c1)],
+      parentId: f.s2.id,
+    })
+
+    response.assertStatus(200)
+    assert.deepEqual(await contentOrders(f.s2.id), [
+      [f.c1.id, 1],
+      [f.c3.id, 2],
+    ])
+    assert.deepEqual(await contentOrders(f.s1.id), [[f.c2.id, 1]])
+    // Moved rows plus the renumbered lists of S1 and S2
+    assert.deepEqual(response.body().affected, {
+      sectionIds: [],
+      contentIds: [f.c1.id, f.c2.id, f.c3.id].sort((a, b) => a - b),
+    })
+
+    const audits = await bulkAudits(f.course.id)
+    assert.lengthOf(audits, 1)
+    assert.equal(audits[0].action, 'course.bulk.move')
+    assert.deepEqual(audits[0].metadata, {
+      sectionIds: [],
+      contentIds: [f.c1.id, f.c3.id].sort((a, b) => a - b),
+      parentId: f.s2.id,
+    })
+  })
+
+  test('a section moves with its own selected content left inside it', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const c11 = await createContent(f.s11, { title: 'c11' })
+    const url = route('courses.bulk.move', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, {
+      items: [sec(f.s11), con(c11)],
+      parentId: f.s2.id,
+    })
+
+    response.assertStatus(200)
+    const s11 = await freshModule(f.s11)
+    const c11Fresh = await fresh(c11)
+    assert.equal(s11.parentId, f.s2.id)
+    assert.equal(c11Fresh.moduleId, f.s11.id)
+  })
+
+  test('a refused depth rolls the whole batch back', async ({ client, route, assert }) => {
+    const f = await fixture()
+    const url = route('courses.bulk.move', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, {
+      items: [sec(f.s1), con(f.c2)],
+      parentId: f.s2.id,
+    })
+
+    response.assertStatus(422)
+    assert.equal(response.body().code, 'E_DEPTH')
+    assert.deepEqual(response.body().ids, [{ kind: 'section', id: f.s1.id }])
+    const s1 = await freshModule(f.s1)
+    const c2 = await fresh(f.c2)
+    assert.isNull(s1.parentId)
+    assert.equal(c2.moduleId, f.s1.id)
+    assert.equal(c2.order, 2)
+    assert.lengthOf(await bulkAudits(f.course.id), 0)
+  })
+
+  test('a cycle or a content to the root is an invalid destination', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const url = route('courses.bulk.move', { id: f.course.id })
+
+    const cycle = await postBulk(client, url, f.owner, {
+      items: [sec(f.s1)],
+      parentId: f.s11.id,
+    })
+    cycle.assertStatus(422)
+    assert.equal(cycle.body().code, 'E_INVALID_DESTINATION')
+
+    const toRoot = await postBulk(client, url, f.owner, { items: [con(f.c1)], parentId: null })
+    toRoot.assertStatus(422)
+    assert.equal(toRoot.body().code, 'E_INVALID_DESTINATION')
+    assert.deepEqual(toRoot.body().ids, [{ kind: 'content', id: f.c1.id }])
+
+    const s1 = await freshModule(f.s1)
+    assert.isNull(s1.parentId)
+    assert.lengthOf(await bulkAudits(f.course.id), 0)
+  })
+
+  test('duplicating a content copies its attachments and records copied_from_id (D-12)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const file = await attachFile(f.c1)
+    const filesBefore = await contentFileCount()
+
+    const url = route('courses.bulk.duplicate', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, { items: [con(f.c1)] })
+
+    response.assertStatus(200)
+    const copy = await CourseContent.query().where('copied_from_id', f.c1.id).firstOrFail()
+    assert.equal(copy.title, 'c1 (copie)')
+    assert.equal(copy.moduleId, f.s1.id)
+    assert.equal(copy.contentType, 'page')
+    // OQ-2 (05-09): copies start as drafts
+    assert.isFalse(Boolean(copy.isPublished))
+    assert.deepEqual(await contentOrders(f.s1.id), [
+      [f.c1.id, 1],
+      [copy.id, 2],
+      [f.c2.id, 3],
+    ])
+
+    const pivots = await CourseContent.query().where('id', copy.id).preload('files').firstOrFail()
+    assert.lengthOf(pivots.files, 1)
+    assert.equal(pivots.files[0].id, file.id)
+    assert.equal(pivots.files[0].$extras.pivot_filename, 'Notes.txt')
+    assert.equal(pivots.files[0].$extras.pivot_mime_type, 'text/plain')
+    assert.equal(await contentFileCount(), filesBefore)
+
+    assert.include(response.body().affected.contentIds, copy.id)
+    const audits = await bulkAudits(f.course.id)
+    assert.lengthOf(audits, 1)
+    assert.equal(audits[0].action, 'course.bulk.duplicate')
+    assert.deepEqual(audits[0].metadata, {
+      sectionIds: [],
+      contentIds: [f.c1.id],
+      createdSectionIds: [],
+      createdContentIds: [copy.id],
+    })
+
+    // ON DELETE SET NULL on the test engine
+    const original = await fresh(f.c1)
+    await original.delete()
+    const orphan = await fresh(copy)
+    assert.isNull(orphan.copiedFromId)
+  })
+
+  test('duplicating a section copies its contents and sub-sections', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const c11 = await createContent(f.s11, { title: 'c11' })
+    const url = route('courses.bulk.duplicate', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, { items: [sec(f.s1)] })
+
+    response.assertStatus(200)
+    const s1Copy = await CourseModule.query().where('copied_from_id', f.s1.id).firstOrFail()
+    assert.equal(s1Copy.title, 'S1 (copie)')
+    assert.isNull(s1Copy.parentId)
+    const roots = await CourseModule.query()
+      .where('course_id', f.course.id)
+      .whereNull('parent_id')
+      .orderBy('order', 'asc')
+      .orderBy('id', 'asc')
+    assert.deepEqual(
+      roots.map((r) => [r.id, r.order]),
+      [
+        [f.s1.id, 1],
+        [s1Copy.id, 2],
+        [f.s2.id, 3],
+      ]
+    )
+
+    const s11Copy = await CourseModule.query().where('copied_from_id', f.s11.id).firstOrFail()
+    assert.equal(s11Copy.parentId, s1Copy.id)
+    assert.equal(s11Copy.title, 'S11')
+    const copies = await CourseContent.query()
+      .whereNotNull('copied_from_id')
+      .whereIn('module_id', [s1Copy.id, s11Copy.id])
+      .orderBy('id', 'asc')
+    assert.deepEqual(
+      copies.map((c) => [c.copiedFromId, c.title, c.moduleId]),
+      [
+        [f.c1.id, 'c1', s1Copy.id],
+        [f.c2.id, 'c2', s1Copy.id],
+        [c11.id, 'c11', s11Copy.id],
+      ]
+    )
+    // No grandchild: nothing deeper than 2 levels
+    assert.lengthOf(await CourseModule.query().where('parent_id', s11Copy.id), 0)
+    assert.isFalse(Boolean(s1Copy.isPublished))
+
+    const audits = await bulkAudits(f.course.id)
+    assert.lengthOf(audits, 1)
+    const metadata = audits[0].metadata!
+    assert.deepEqual(
+      metadata.createdSectionIds,
+      [s1Copy.id, s11Copy.id].sort((a, b) => a - b)
+    )
+    assert.lengthOf(metadata.createdContentIds, 3)
+  })
+
+  test('duplicating legacy third-level data is refused', async ({ client, route, assert }) => {
+    const f = await fixture()
+    const g = await createModule(f.course, { parentId: f.s11.id, title: 'G' })
+    const url = route('courses.bulk.duplicate', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, { items: [sec(g)] })
+
+    response.assertStatus(422)
+    assert.equal(response.body().code, 'E_DEPTH')
+    assert.lengthOf(await CourseModule.query().whereNotNull('copied_from_id'), 0)
+    assert.lengthOf(await bulkAudits(f.course.id), 0)
+  })
+
+  test('delete removes contents and fully selected sections', async ({ client, route, assert }) => {
+    const f = await fixture()
+    const url = route('courses.bulk.delete', { id: f.course.id })
+
+    const one = await postBulk(client, url, f.owner, { items: [con(f.c2)] })
+    one.assertStatus(200)
+    assert.isNull(await CourseContent.find(f.c2.id))
+    assert.deepEqual(one.body().deleted, { sectionIds: [], contentIds: [f.c2.id] })
+
+    const both = await postBulk(client, url, f.owner, { items: [sec(f.s2), con(f.c3)] })
+    both.assertStatus(200)
+    assert.isNull(await CourseModule.find(f.s2.id))
+    assert.isNull(await CourseContent.find(f.c3.id))
+    assert.deepEqual(both.body().deleted, { sectionIds: [f.s2.id], contentIds: [f.c3.id] })
+
+    const audits = await AuditLog.query()
+      .where('action', 'course.bulk.delete')
+      .where('resource_id', String(f.course.id))
+      .orderBy('id', 'asc')
+    assert.lengthOf(audits, 2)
+    assert.deepEqual(audits[1].metadata, { sectionIds: [f.s2.id], contentIds: [f.c3.id] })
+  })
+
+  test('a section with unselected content inside refuses the whole batch with 409', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const url = route('courses.bulk.delete', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, { items: [sec(f.s1), con(f.c1)] })
+
+    response.assertStatus(409)
+    assert.equal(response.body().code, 'E_NOT_EMPTY')
+    assert.include(response.body().ids, f.s1.id)
+    assert.isNotNull(await CourseModule.find(f.s1.id))
+    assert.isNotNull(await CourseModule.find(f.s11.id))
+    assert.isNotNull(await CourseContent.find(f.c1.id))
+    assert.isNotNull(await CourseContent.find(f.c2.id))
+    assert.lengthOf(await bulkAudits(f.course.id), 0)
+  })
+
+  test('a fully selected sub-tree is deleted and attachment files are kept', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const c11 = await createContent(f.s11, { title: 'c11' })
+    const file = await attachFile(f.c1)
+    const url = route('courses.bulk.delete', { id: f.course.id })
+    const response = await postBulk(client, url, f.owner, {
+      items: [sec(f.s1), con(f.c1), con(f.c2), sec(f.s11), con(c11)],
+    })
+
+    response.assertStatus(200)
+    for (const id of [f.c1.id, f.c2.id, c11.id]) assert.isNull(await CourseContent.find(id))
+    for (const id of [f.s1.id, f.s11.id]) assert.isNull(await CourseModule.find(id))
+    assert.deepEqual(response.body().deleted, {
+      sectionIds: [f.s1.id, f.s11.id].sort((a, b) => a - b),
+      contentIds: [f.c1.id, f.c2.id, c11.id].sort((a, b) => a - b),
+    })
+    assert.isNotNull(await ContentFile.find(file.id))
+    assert.isNotNull(await CourseModule.find(f.s2.id))
   })
 })

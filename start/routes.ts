@@ -395,6 +395,15 @@ router
     router
       .post('/courses/:id/builder/bulk/shift', [CourseBulkActionsController, 'shiftDates'])
       .as('courses.bulk.shift')
+    router
+      .post('/courses/:id/builder/bulk/move', [CourseBulkActionsController, 'move'])
+      .as('courses.bulk.move')
+    router
+      .post('/courses/:id/builder/bulk/duplicate', [CourseBulkActionsController, 'duplicate'])
+      .as('courses.bulk.duplicate')
+    router
+      .post('/courses/:id/builder/bulk/delete', [CourseBulkActionsController, 'destroy'])
+      .as('courses.bulk.delete')
   })
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
