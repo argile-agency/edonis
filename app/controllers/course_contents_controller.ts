@@ -20,10 +20,14 @@ import {
 import AuditService from '#services/audit_service'
 import CourseStructureService, {
   CONFLICT_ERROR,
+  DEPTH_ERROR,
+  MAX_SECTION_DEPTH,
   PARENT_ERROR,
   sameSecond,
 } from '#services/course_structure_service'
+import { depthOf } from '../helpers/category_tree.js'
 
+const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
 const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
 const DATE_ORDER_BODY = { errors: [{ field: 'availableUntil', message: DATE_ORDER_ERROR }] }
 
@@ -241,36 +245,49 @@ export default class CourseContentsController {
     const course = await Course.findOrFail(payload.courseId)
     await bouncer.with('CoursePolicy').authorize('edit', course)
 
-    // The parent must be a module of the same course
-    if (payload.parentId) {
-      const parent = await CourseModule.query()
-        .where('id', payload.parentId)
-        .where('course_id', course.id)
-        .first()
-      if (!parent) {
-        session.flash('error', PARENT_ERROR)
-        return response.redirect().back()
+    // Same lock as moves and deletes: the parent cannot vanish or go deeper meanwhile
+    const error = await db.transaction(async (trx) => {
+      await Course.query({ client: trx }).where('id', course.id).forUpdate().first()
+
+      const siblings = CourseModule.query({ client: trx }).where('course_id', course.id)
+      if (payload.parentId) {
+        // The parent must be a module of the same course
+        const parent = await CourseModule.query({ client: trx })
+          .where('id', payload.parentId)
+          .where('course_id', course.id)
+          .first()
+        if (!parent) return PARENT_ERROR
+        // A parent that is itself a sub-section would put this one past 2 levels (D-02)
+        if (parent.parentId !== null) return DEPTH_ERROR
+        siblings.where('parent_id', parent.id)
+      } else {
+        siblings.whereNull('parent_id')
       }
-    }
 
-    // Get max order for this level
-    let query = CourseModule.query().where('course_id', payload.courseId)
-    if (payload.parentId) {
-      query = query.where('parent_id', payload.parentId)
-    } else {
-      query = query.whereNull('parent_id')
-    }
-    const maxOrderResult = await query.pojo<{ maxOrder: number | null }>().max('order as maxOrder')
-    const maxOrder = maxOrderResult[0]?.maxOrder ?? null
-    const order = payload.order ?? (maxOrder || 0) + 1
+      const maxOrderResult = await siblings
+        .pojo<{ maxOrder: number | null }>()
+        .max('order as maxOrder')
+      const maxOrder = maxOrderResult[0]?.maxOrder ?? null
+      const order = payload.order ?? (maxOrder || 0) + 1
 
-    await CourseModule.create({
-      ...payload,
-      availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
-      availableUntil: payload.availableUntil ? DateTime.fromJSDate(payload.availableUntil) : null,
-      order,
+      await CourseModule.create(
+        {
+          ...payload,
+          availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
+          availableUntil: payload.availableUntil
+            ? DateTime.fromJSDate(payload.availableUntil)
+            : null,
+          order,
+        },
+        { client: trx }
+      )
+      return null
     })
 
+    if (error) {
+      session.flash('error', error)
+      return response.redirect().back()
+    }
     session.flash('success', 'Module créé avec succès')
     return response.redirect().back()
   }
@@ -372,7 +389,8 @@ export default class CourseContentsController {
   /**
    * Delete a module
    */
-  async deleteModule({ params, response, session, bouncer }: HttpContext) {
+  async deleteModule(ctx: HttpContext) {
+    const { params, request, response, session, bouncer } = ctx
     const module = await CourseModule.query()
       .where('id', params.moduleId)
       .preload('course')
@@ -380,8 +398,38 @@ export default class CourseContentsController {
 
     await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
-    await module.delete()
+    // Both FKs cascade, so emptiness is checked under the course lock (D-05)
+    const deleted = await db.transaction(async (trx) => {
+      await Course.query({ client: trx }).where('id', module.courseId).forUpdate().first()
+      const [children] = await CourseModule.query({ client: trx })
+        .where('parent_id', module.id)
+        .pojo<{ total: number | string }>()
+        .count('* as total')
+      const [contents] = await CourseContent.query({ client: trx })
+        .where('module_id', module.id)
+        .pojo<{ total: number | string }>()
+        .count('* as total')
+      if (Number(children.total) > 0 || Number(contents.total) > 0) return false
+      module.useTransaction(trx)
+      await module.delete()
+      return true
+    })
 
+    const json = wantsJson(request)
+    if (!deleted) {
+      if (json) return response.status(409).json({ code: 'E_NOT_EMPTY', message: NOT_EMPTY_ERROR })
+      session.flash('error', NOT_EMPTY_ERROR)
+      return response.redirect().back()
+    }
+
+    await AuditService.logFromContext(ctx, {
+      action: 'course.module.delete',
+      resourceType: 'CourseModule',
+      resourceId: module.id,
+      metadata: { courseId: module.courseId, parentId: module.parentId },
+    })
+
+    if (json) return response.json({ item: { id: module.id } })
     session.flash('success', 'Module supprimé avec succès')
     return response.redirect().back()
   }
@@ -424,23 +472,51 @@ export default class CourseContentsController {
       .firstOrFail()
 
     await bouncer.with('CoursePolicy').authorize('edit', module.course)
+    const courseId = module.course.id
 
-    // Get max order
-    const maxOrderResult = await CourseContent.query()
-      .where('module_id', payload.moduleId)
-      .pojo<{ maxOrder: number | null }>()
-      .max('order as maxOrder')
-    const maxOrder = maxOrderResult[0]?.maxOrder ?? null
-    const order = payload.order ?? (maxOrder || 0) + 1
+    // Same lock as moves and deletes: the section cannot vanish or go deeper meanwhile
+    const error = await db.transaction(async (trx) => {
+      await Course.query({ client: trx }).where('id', courseId).forUpdate().first()
 
-    await CourseContent.create({
-      ...payload,
-      availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
-      availableUntil: payload.availableUntil ? DateTime.fromJSDate(payload.availableUntil) : null,
-      dueDate: payload.dueDate ? DateTime.fromJSDate(payload.dueDate) : null,
-      order,
+      const section = await CourseModule.query({ client: trx })
+        .where('id', module.id)
+        .where('course_id', courseId)
+        .first()
+      if (!section) return PARENT_ERROR
+
+      // A legacy third-level section is invisible to learners (D-02)
+      const rows = await CourseModule.query({ client: trx })
+        .where('course_id', courseId)
+        .select('id', 'parent_id')
+      const parentById = new Map(rows.map((row) => [row.id, row.parentId]))
+      if (depthOf(parentById, section.id) > MAX_SECTION_DEPTH) return DEPTH_ERROR
+
+      const maxOrderResult = await CourseContent.query({ client: trx })
+        .where('module_id', section.id)
+        .pojo<{ maxOrder: number | null }>()
+        .max('order as maxOrder')
+      const maxOrder = maxOrderResult[0]?.maxOrder ?? null
+      const order = payload.order ?? (maxOrder || 0) + 1
+
+      await CourseContent.create(
+        {
+          ...payload,
+          availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
+          availableUntil: payload.availableUntil
+            ? DateTime.fromJSDate(payload.availableUntil)
+            : null,
+          dueDate: payload.dueDate ? DateTime.fromJSDate(payload.dueDate) : null,
+          order,
+        },
+        { client: trx }
+      )
+      return null
     })
 
+    if (error) {
+      session.flash('error', error)
+      return response.redirect().back()
+    }
     session.flash('success', 'Contenu créé avec succès')
     return response.redirect().back()
   }
@@ -489,7 +565,8 @@ export default class CourseContentsController {
   /**
    * Delete a content item
    */
-  async deleteContent({ params, response, session, bouncer }: HttpContext) {
+  async deleteContent(ctx: HttpContext) {
+    const { params, request, response, session, bouncer } = ctx
     const content = await CourseContent.query()
       .where('id', params.contentId)
       .preload('module', (query) => query.preload('course'))
@@ -497,8 +574,17 @@ export default class CourseContentsController {
 
     await bouncer.with('CoursePolicy').authorize('edit', content.module.course)
 
+    // Pivot and progress rows cascade; content_files rows and blobs may be shared, so they stay
     await content.delete()
 
+    await AuditService.logFromContext(ctx, {
+      action: 'course.content.delete',
+      resourceType: 'CourseContent',
+      resourceId: content.id,
+      metadata: { courseId: content.module.course.id, moduleId: content.moduleId },
+    })
+
+    if (wantsJson(request)) return response.json({ item: { id: content.id } })
     session.flash('success', 'Contenu supprimé avec succès')
     return response.redirect().back()
   }

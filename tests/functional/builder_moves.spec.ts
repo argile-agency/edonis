@@ -7,11 +7,14 @@ import type User from '#models/user'
 import AuditLog from '#models/audit_log'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
+import ContentFile from '#models/content_file'
+import db from '@adonisjs/lucid/services/db'
 import {
   assertNotCsrfRejected,
   createCourse,
   createUser,
   grantPermission,
+  uniqueSuffix,
 } from '#tests/functional/helpers/factories'
 
 /**
@@ -734,6 +737,18 @@ async function contentTitle(id: number) {
   return row.title
 }
 
+const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
+
+async function deleteJson(client: ApiClient, url: string, user: User) {
+  const req = client.delete(url).withCsrfToken()
+  return req.header('accept', 'application/json').loginAs(user)
+}
+
+async function postForm(client: ApiClient, url: string, user: User, body: Record<string, unknown>) {
+  const req = client.post(url).withCsrfToken()
+  return req.json(body).loginAs(user).redirects(0)
+}
+
 function day(iso: string): DateTime {
   return DateTime.fromISO(iso)
 }
@@ -969,5 +984,248 @@ test.group('Builder - edits and deletes', (group) => {
 
     assert.equal(await moduleTitle(s.id), 'Avant')
     assert.equal(await contentTitle(c.id), 'Avant')
+  })
+  test('an empty section is deleted through JSON with one ids-only audit row (BUILD-06)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+
+    const response = await deleteJson(client, route('modules.delete', { moduleId: s.id }), owner)
+
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), { item: { id: s.id } })
+    assert.isNull(await CourseModule.find(s.id))
+    const audits = await auditRows('course.module.delete', s.id)
+    assert.lengthOf(audits, 1)
+    assert.deepEqual(audits[0].metadata, { courseId: course.id, parentId: null })
+  })
+
+  test('a section with contents or sub-sections is refused with 409 and kept', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const withContent = await createModule(course, { order: 1 })
+    const c = await createContent(withContent)
+    const withChild = await createModule(course, { order: 2 })
+    const child = await createModule(course, { parentId: withChild.id })
+
+    for (const s of [withContent, withChild]) {
+      const response = await deleteJson(client, route('modules.delete', { moduleId: s.id }), owner)
+      response.assertStatus(409)
+      assert.deepEqual(response.body(), { code: 'E_NOT_EMPTY', message: NOT_EMPTY_ERROR })
+      assert.lengthOf(await auditRows('course.module.delete', s.id), 0)
+    }
+
+    assert.isNotNull(await CourseModule.find(withContent.id))
+    assert.isNotNull(await CourseContent.find(c.id))
+    assert.isNotNull(await CourseModule.find(withChild.id))
+    assert.isNotNull(await CourseModule.find(child.id))
+  })
+
+  test('HTML callers: a non-empty section gets the flash error, an empty one is deleted', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const full = await createModule(course, { order: 1 })
+    await createContent(full)
+    const empty = await createModule(course, { order: 2 })
+
+    const refusedReq = client.delete(route('modules.delete', { moduleId: full.id })).withCsrfToken()
+    const refused = await refusedReq.loginAs(owner).redirects(0)
+    refused.assertStatus(302)
+    assertNotCsrfRejected(assert, refused)
+    assert.equal(refused.flashMessage('error'), NOT_EMPTY_ERROR)
+    assert.isNotNull(await CourseModule.find(full.id))
+    assert.lengthOf(await auditRows('course.module.delete', full.id), 0)
+
+    const okReq = client.delete(route('modules.delete', { moduleId: empty.id })).withCsrfToken()
+    const ok = await okReq.loginAs(owner).redirects(0)
+    ok.assertStatus(302)
+    assert.isDefined(ok.flashMessage('success'))
+    assert.isNull(await CourseModule.find(empty.id))
+    assert.lengthOf(await auditRows('course.module.delete', empty.id), 1)
+  })
+
+  test('a content item is deleted through JSON; its file row is kept (BUILD-09)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const plain = await createContent(s, { order: 1 })
+    const withFile = await createContent(s, { order: 2 })
+    const file = await ContentFile.create({
+      storagePath: `ab/${uniqueSuffix()}.txt`,
+      size: 4,
+      checksum: uniqueSuffix(),
+    })
+    await withFile.related('files').attach({
+      [file.id]: { filename: 'notes.txt', mime_type: 'text/plain' },
+    })
+
+    const first = await deleteJson(client, route('contents.delete', { contentId: plain.id }), owner)
+    first.assertStatus(200)
+    assert.deepEqual(first.body(), { item: { id: plain.id } })
+    assert.isNull(await CourseContent.find(plain.id))
+    const audits = await auditRows('course.content.delete', plain.id)
+    assert.lengthOf(audits, 1)
+    assert.deepEqual(audits[0].metadata, { courseId: course.id, moduleId: s.id })
+
+    const url = route('contents.delete', { contentId: withFile.id })
+    const second = await deleteJson(client, url, owner)
+    second.assertStatus(200)
+    assert.isNull(await CourseContent.find(withFile.id))
+    const pivot = await db.from('content_content_files').where('course_content_id', withFile.id)
+    assert.lengthOf(pivot, 0)
+    // The content_files row (and its blob) may be shared, so it stays
+    assert.isNotNull(await ContentFile.find(file.id))
+  })
+
+  test('HTML content delete keeps the redirect and writes one audit row', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s)
+
+    const req = client.delete(route('contents.delete', { contentId: c.id })).withCsrfToken()
+    const response = await req.loginAs(owner).redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.isDefined(response.flashMessage('success'))
+    assert.lengthOf(await auditRows('course.content.delete', c.id), 1)
+  })
+
+  test('authorization: an outsider gets 403 JSON on both delete routes', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const outsider = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course, { order: 1 })
+    const other = await createModule(course, { order: 2 })
+    const c = await createContent(other)
+
+    const m = await deleteJson(client, route('modules.delete', { moduleId: s.id }), outsider)
+    m.assertStatus(403)
+    const ct = await deleteJson(client, route('contents.delete', { contentId: c.id }), outsider)
+    ct.assertStatus(403)
+
+    assert.isNotNull(await CourseModule.find(s.id))
+    assert.isNotNull(await CourseContent.find(c.id))
+    assert.lengthOf(await auditRows('course.module.delete', s.id), 0)
+    assert.lengthOf(await auditRows('course.content.delete', c.id), 0)
+  })
+
+  test('a section cannot be created under a sub-section (BUILD-04)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const root = await createModule(course)
+    const sub = await createModule(course, { parentId: root.id })
+    const url = route('courses.modules.create', { id: course.id })
+
+    const tooDeep = await postForm(client, url, owner, {
+      courseId: course.id,
+      parentId: sub.id,
+      title: 'Trop profond',
+    })
+    tooDeep.assertStatus(302)
+    assertNotCsrfRejected(assert, tooDeep)
+    assert.equal(tooDeep.flashMessage('error'), DEPTH_ERROR)
+    assert.lengthOf(await CourseModule.query().where('title', 'Trop profond'), 0)
+
+    const underRoot = await postForm(client, url, owner, {
+      courseId: course.id,
+      parentId: root.id,
+      title: 'Sous-section',
+    })
+    underRoot.assertStatus(302)
+    assert.isDefined(underRoot.flashMessage('success'))
+    const created = await CourseModule.query().where('title', 'Sous-section').firstOrFail()
+    assert.equal(created.parentId, root.id)
+    assert.equal(created.order, 2)
+
+    const atRoot = await postForm(client, url, owner, { courseId: course.id, title: 'Racine' })
+    atRoot.assertStatus(302)
+    const rootRow = await CourseModule.query().where('title', 'Racine').firstOrFail()
+    assert.isNull(rootRow.parentId)
+    assert.equal(rootRow.order, 2)
+  })
+
+  test('a section under a parent of another course is refused', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const foreign = await createModule(await createCourse(owner))
+
+    const url = route('courses.modules.create', { id: course.id })
+    const response = await postForm(client, url, owner, {
+      courseId: course.id,
+      parentId: foreign.id,
+      title: 'Étrangère',
+    })
+    response.assertStatus(302)
+    assert.equal(response.flashMessage('error'), PARENT_ERROR)
+    assert.lengthOf(await CourseModule.query().where('title', 'Étrangère'), 0)
+  })
+
+  test('a content item cannot be created in a legacy third-level section (BUILD-07)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const root = await createModule(course)
+    const sub = await createModule(course, { parentId: root.id })
+    const legacy = await createModule(course, { parentId: sub.id })
+
+    const legacyUrl = route('modules.contents.create', { moduleId: legacy.id })
+    const refused = await postForm(client, legacyUrl, owner, {
+      moduleId: legacy.id,
+      contentType: 'page',
+      title: 'Invisible',
+    })
+    refused.assertStatus(302)
+    assertNotCsrfRejected(assert, refused)
+    assert.equal(refused.flashMessage('error'), DEPTH_ERROR)
+    assert.lengthOf(await CourseContent.query().where('module_id', legacy.id), 0)
+
+    const subUrl = route('modules.contents.create', { moduleId: sub.id })
+    const created = await postForm(client, subUrl, owner, {
+      moduleId: sub.id,
+      contentType: 'video',
+      title: 'Vidéo',
+    })
+    created.assertStatus(302)
+    assert.isDefined(created.flashMessage('success'))
+    const row = await CourseContent.query().where('module_id', sub.id).firstOrFail()
+    assert.equal(row.contentType, 'video')
+    assert.equal(row.order, 1)
   })
 })
