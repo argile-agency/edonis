@@ -1,9 +1,10 @@
 import { Head, Link, router, useForm } from '@inertiajs/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ComponentProps } from 'react'
+import { Eye, FileText, Plus } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Card, CardContent } from '~/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '~/components/ui/dialog'
 import {
   Select,
@@ -22,60 +22,285 @@ import {
 } from '~/components/ui/select'
 import { Label } from '~/components/ui/label'
 import { Switch } from '~/components/ui/switch'
-import {
-  Plus,
-  FileText,
-  Film,
-  Link as LinkIcon,
-  FileUp,
-  Edit,
-  Trash2,
-  GripVertical,
-  Eye,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react'
 import AppHeader from '~/components/layout/app-header'
+import { BuilderRow, type BuilderRowProps } from '~/components/builder/builder-row'
+import type { DetailsValues } from '~/components/builder/details-panel'
+import { SaveStatus } from '~/components/builder/save-status'
+import { sendJson, useSaveQueue } from '~/lib/builder_save_queue'
+import type { SaveError } from '~/lib/save_queue'
+import {
+  applyContentMove,
+  applySectionMove,
+  buildRows,
+  canDeleteSection,
+  moveTargets,
+  siblingPlacement,
+  type BuilderContent,
+  type BuilderRow as Row,
+  type BuilderSection,
+  type ContentType,
+  type ItemRef,
+  type Placement,
+} from '~/lib/builder_tree'
 
-interface Course {
-  id: number
-  title: string
-  code: string
-}
-
-interface CourseContent {
-  id: number
-  title: string
-  contentType: 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz'
-  order: number
-  isPublished: boolean
-}
-
-interface CourseModule {
-  id: number
-  title: string
-  description: string | null
-  order: number
-  isPublished: boolean
-  children: CourseModule[]
-  contents: CourseContent[]
-}
+type HeaderProps = ComponentProps<typeof AppHeader>
 
 interface Props {
-  course: Course
-  modules: CourseModule[]
-  auth: {
-    user: any
-  }
-  appSettings: any
-  menus: any
+  course: { id: number; title: string; code: string }
+  sections: BuilderSection[]
+  contents: BuilderContent[]
+  auth: { user: HeaderProps['user'] }
+  appSettings: HeaderProps['appSettings']
+  menus: HeaderProps['menus']
 }
 
-export default function CourseBuilder({ course, modules, auth, appSettings, menus }: Props) {
+type ItemPatch = Partial<
+  Pick<
+    BuilderSection,
+    'title' | 'description' | 'isPublished' | 'availableFrom' | 'availableUntil' | 'updatedAt'
+  >
+>
+type Saved = { item: { id: number; updatedAt?: string | null } }
+type Snapshot = { sections: BuilderSection[]; contents: BuilderContent[] }
+
+const urlOf = (ref: ItemRef) =>
+  ref.kind === 'section' ? `/modules/${ref.id}` : `/contents/${ref.id}`
+const refOf = (row: Row): ItemRef => ({ kind: row.kind, id: row.id })
+
+/** Snapshot rows with the current `updatedAt` of every item still present. */
+function withCurrentTokens<T extends { id: number; updatedAt: string | null }>(
+  snapshot: T[],
+  current: T[]
+): T[] {
+  const tokens = new Map(current.map((item) => [item.id, item.updatedAt]))
+  return snapshot.map((item) =>
+    tokens.has(item.id) ? { ...item, updatedAt: tokens.get(item.id) ?? null } : item
+  )
+}
+
+export default function CourseBuilder(props: Props) {
+  const { course, auth, appSettings, menus } = props
+
+  // Local optimistic state. The refs are written only by commitSections / commitContents,
+  // synchronously, because the queue starts the next op's run() before React re-renders.
+  const [sections, setSections] = useState(props.sections)
+  const [contents, setContents] = useState(props.contents)
+  const sectionsRef = useRef(props.sections)
+  const contentsRef = useRef(props.contents)
+  const commitSections = (next: BuilderSection[]) => {
+    sectionsRef.current = next
+    setSections(next)
+  }
+  const commitContents = (next: BuilderContent[]) => {
+    contentsRef.current = next
+    setContents(next)
+  }
+
+  const [expanded, setExpanded] = useState(() => new Set(props.sections.map((s) => s.id)))
+  const knownSectionIdsRef = useRef(new Set(props.sections.map((s) => s.id)))
+  const latestPropsRef = useRef<Snapshot>({ sections: props.sections, contents: props.contents })
+  const appliedPropsRef = useRef(latestPropsRef.current)
+
+  const [editing, setEditing] = useState<{ key: string; draft?: string; error?: string } | null>(
+    null
+  )
+  const [openPanels, setOpenPanels] = useState<Set<string>>(() => new Set())
+  const [panelErrors, setPanelErrors] = useState<Record<string, string>>({})
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null)
+  const pendingFocusRef = useRef<string | null>(null)
+
+  const queue = useSaveQueue()
+
+  // Props re-sync: new server props (creation, "Recharger") are applied once no save is in flight.
+  useEffect(() => {
+    const latest = latestPropsRef.current
+    if (latest.sections !== props.sections || latest.contents !== props.contents) {
+      latestPropsRef.current = { sections: props.sections, contents: props.contents }
+    }
+    if (queue.pending > 0 || latestPropsRef.current === appliedPropsRef.current) return
+    const next = latestPropsRef.current
+    appliedPropsRef.current = next
+    commitSections(next.sections)
+    commitContents(next.contents)
+    const fresh = next.sections.filter((s) => !knownSectionIdsRef.current.has(s.id))
+    if (fresh.length > 0) {
+      for (const s of fresh) knownSectionIdsRef.current.add(s.id)
+      setExpanded((prev) => new Set([...prev, ...fresh.map((s) => s.id)]))
+    }
+  }, [props.sections, props.contents, queue.pending])
+
+  // The ref is kept: Radix asks onCloseFocusTarget later (setTimeout on unmount), which consumes it.
+  useEffect(() => {
+    if (!pendingFocusId) return
+    document.getElementById(pendingFocusId)?.focus()
+    setPendingFocusId(null)
+  }, [pendingFocusId])
+
+  const takeFocusTarget = () => {
+    const id = pendingFocusRef.current
+    pendingFocusRef.current = null
+    return id ? document.getElementById(id) : null
+  }
+
+  const focusLater = (id: string | null) => {
+    pendingFocusRef.current = id
+    setPendingFocusId(id)
+  }
+
+  const expand = (id: number) => setExpanded((prev) => new Set(prev).add(id))
+
+  const reload = () =>
+    router.reload({ only: ['sections', 'contents'], onFinish: () => queue.dismiss() })
+
+  // --- state helpers (whole arrays and id lists, so bulk actions can reuse them) ---
+
+  const tokenOf = (ref: ItemRef) =>
+    (ref.kind === 'section'
+      ? sectionsRef.current.find((s) => s.id === ref.id)?.updatedAt
+      : contentsRef.current.find((c) => c.id === ref.id)?.updatedAt) ?? null
+
+  const patchItem = (ref: ItemRef, patch: ItemPatch) => {
+    if (ref.kind === 'section') {
+      commitSections(sectionsRef.current.map((s) => (s.id === ref.id ? { ...s, ...patch } : s)))
+    } else {
+      commitContents(contentsRef.current.map((c) => (c.id === ref.id ? { ...c, ...patch } : c)))
+    }
+  }
+
+  const removeItems = (sectionIds: number[], contentIds: number[]) => {
+    if (sectionIds.length > 0) {
+      commitSections(sectionsRef.current.filter((s) => !sectionIds.includes(s.id)))
+    }
+    if (contentIds.length > 0) {
+      commitContents(contentsRef.current.filter((c) => !contentIds.includes(c.id)))
+    }
+  }
+
+  /** One optimistic op: snapshot + mutate on apply, token read at run time, snapshot restored on failure. */
+  const save = (
+    label: string,
+    ref: ItemRef,
+    mutate: () => void,
+    send: (token: string | null) => Promise<Saved>,
+    onError?: (error: SaveError) => void
+  ) => {
+    let snapshot: Snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+    queue.enqueue({
+      label,
+      apply() {
+        snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+        mutate()
+      },
+      async run() {
+        const res = await send(tokenOf(ref))
+        if (res.item.updatedAt !== undefined) patchItem(ref, { updatedAt: res.item.updatedAt })
+      },
+      rollback(error) {
+        // Tokens are server truth: an earlier op may have saved since the snapshot.
+        commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
+        commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
+        onError?.(error)
+      },
+    })
+  }
+
+  // --- actions ---
+
+  const rename = (row: Row, value: string) => {
+    const ref = refOf(row)
+    setEditing(null)
+    const current = row.kind === 'section' ? row.section.title : row.content.title
+    if (value === current) return
+    save(
+      'Renommer',
+      ref,
+      () => patchItem(ref, { title: value }),
+      (token) => sendJson('PUT', urlOf(ref), { title: value, updatedAt: token }),
+      (error) => {
+        if (error.kind !== 'conflict') return
+        // D-09: take the fresh title and token, keep what the teacher typed.
+        const fresh = (error.body as { item?: { title?: string; updatedAt?: string | null } })?.item
+        if (fresh) patchItem(ref, { title: fresh.title, updatedAt: fresh.updatedAt ?? null })
+        setEditing({ key: row.key, draft: value, error: error.message })
+      }
+    )
+  }
+
+  const saveDetails = (row: Row, patch: Partial<DetailsValues>) => {
+    const ref = refOf(row)
+    setPanelErrors((prev) => {
+      const next = { ...prev }
+      delete next[row.key]
+      return next
+    })
+    save(
+      'Détails',
+      ref,
+      () => patchItem(ref, patch),
+      (token) => sendJson('PUT', urlOf(ref), { ...patch, updatedAt: token }),
+      (error) => {
+        if (error.kind === 'conflict') {
+          const fresh = (error.body as { item?: { updatedAt?: string | null } })?.item
+          if (fresh) patchItem(ref, { updatedAt: fresh.updatedAt ?? null })
+        }
+        setPanelErrors((prev) => ({ ...prev, [row.key]: error.message }))
+      }
+    )
+  }
+
+  const move = (row: Row, placement: Placement) => {
+    const ref = refOf(row)
+    save(
+      'Déplacer',
+      ref,
+      () => {
+        if (ref.kind === 'content') {
+          commitContents(applyContentMove(contentsRef.current, ref.id, placement))
+        } else {
+          commitSections(applySectionMove(sectionsRef.current, ref.id, placement))
+        }
+      },
+      (token) =>
+        sendJson(
+          'POST',
+          `${urlOf(ref)}/move`,
+          ref.kind === 'content'
+            ? { moduleId: placement.parentId, position: placement.position, updatedAt: token }
+            : { parentId: placement.parentId, position: placement.position, updatedAt: token }
+        )
+    )
+    // The destination must be open, or the moved row (and its focus target) disappears.
+    if (placement.parentId !== null) expand(placement.parentId)
+    focusLater(`${row.key}-actions`)
+  }
+
+  /** "Déplacer vers…": the item goes to the end of the destination. */
+  const moveTo = (row: Row, parentId: number | null) => {
+    const position =
+      row.kind === 'content'
+        ? contentsRef.current.filter((c) => c.moduleId === parentId && c.id !== row.id).length
+        : sectionsRef.current.filter((s) => s.parentId === parentId && s.id !== row.id).length
+    move(row, { parentId, position })
+  }
+
+  const remove = (row: Row, rows: Row[]) => {
+    const ref = refOf(row)
+    const index = rows.findIndex((r) => r.key === row.key)
+    const neighbour = rows[index + 1] ?? rows[index - 1]
+    save(
+      'Supprimer',
+      ref,
+      () => (ref.kind === 'section' ? removeItems([ref.id], []) : removeItems([], [ref.id])),
+      () => sendJson('DELETE', urlOf(ref))
+    )
+    focusLater(neighbour ? `${neighbour.key}-title` : null)
+  }
+
+  // --- creation (Inertia forms, unchanged endpoints) ---
+
   const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false)
   const [isContentDialogOpen, setIsContentDialogOpen] = useState(false)
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null)
-  const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
 
   const moduleForm = useForm({
     courseId: course.id,
@@ -87,7 +312,7 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
 
   const contentForm = useForm({
     moduleId: 0,
-    contentType: 'page' as 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz',
+    contentType: 'page' as ContentType,
     title: '',
     description: '',
     content: '',
@@ -102,13 +327,17 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
 
   const handleCreateContent = (moduleId: number) => {
     setSelectedModuleId(moduleId)
+    expand(moduleId)
     contentForm.setData({ ...contentForm.data, moduleId })
     setIsContentDialogOpen(true)
   }
 
+  // preserveState keeps this component mounted, so expansion and the save queue survive.
   const submitModule = (e: React.FormEvent) => {
     e.preventDefault()
     moduleForm.post(`/courses/${course.id}/modules`, {
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         setIsModuleDialogOpen(false)
         moduleForm.reset()
@@ -119,6 +348,8 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
   const submitContent = (e: React.FormEvent) => {
     e.preventDefault()
     contentForm.post(`/modules/${selectedModuleId}/contents`, {
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         setIsContentDialogOpen(false)
         contentForm.reset()
@@ -126,119 +357,53 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
     })
   }
 
-  const toggleModule = (moduleId: number) => {
-    const newExpanded = new Set(expandedModules)
-    if (newExpanded.has(moduleId)) {
-      newExpanded.delete(moduleId)
-    } else {
-      newExpanded.add(moduleId)
+  // --- rows ---
+
+  const rows = buildRows(sections, contents, expanded)
+
+  function rowProps(row: Row): BuilderRowProps {
+    const ref = refOf(row)
+    const up = siblingPlacement(sections, contents, ref, 'up')
+    const down = siblingPlacement(sections, contents, ref, 'down')
+    const isEditing = editing?.key === row.key
+    return {
+      row,
+      expanded: row.kind === 'section' ? expanded.has(row.id) : undefined,
+      onToggleExpanded: () =>
+        setExpanded((prev) => {
+          const next = new Set(prev)
+          if (next.has(row.id)) next.delete(row.id)
+          else next.add(row.id)
+          return next
+        }),
+      editing: isEditing,
+      initialDraft: isEditing ? editing?.draft : undefined,
+      titleError: isEditing ? (editing?.error ?? null) : null,
+      onStartEdit: () => setEditing({ key: row.key }),
+      onCancelEdit: () => setEditing(null),
+      onSubmitTitle: (value) => rename(row, value),
+      panelOpen: openPanels.has(row.key),
+      onTogglePanel: () =>
+        setOpenPanels((prev) => {
+          const next = new Set(prev)
+          if (next.has(row.key)) next.delete(row.key)
+          else next.add(row.key)
+          return next
+        }),
+      panelError: panelErrors[row.key] ?? null,
+      onSavePanel: (patch) => saveDetails(row, patch),
+      canMoveUp: up !== null,
+      canMoveDown: down !== null,
+      onMoveUp: () => up && move(row, up),
+      onMoveDown: () => down && move(row, down),
+      moveTargets: moveTargets(sections, contents, ref),
+      onMoveTo: (parentId) => moveTo(row, parentId),
+      canDelete: row.kind === 'content' || canDeleteSection(sections, contents, row.id),
+      onDelete: () => remove(row, rows),
+      onCloseFocusTarget: () => takeFocusTarget(),
+      onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
+      onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
     }
-    setExpandedModules(newExpanded)
-  }
-
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case 'page':
-        return <FileText className="h-4 w-4" />
-      case 'video':
-        return <Film className="h-4 w-4" />
-      case 'link':
-        return <LinkIcon className="h-4 w-4" />
-      case 'file':
-        return <FileUp className="h-4 w-4" />
-      default:
-        return <FileText className="h-4 w-4" />
-    }
-  }
-
-  const renderModule = (module: CourseModule, depth: number = 0) => {
-    const isExpanded = expandedModules.has(module.id)
-    const hasChildren = (module.children?.length || 0) > 0 || (module.contents?.length || 0) > 0
-
-    return (
-      <div key={module.id} style={{ marginLeft: `${depth * 24}px` }}>
-        <Card className="mb-2">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
-
-              {hasChildren && (
-                <button onClick={() => toggleModule(module.id)} className="p-1">
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-              )}
-
-              <div className="flex-1">
-                <h4 className="font-semibold">{module.title}</h4>
-                {module.description && (
-                  <p className="text-sm text-muted-foreground">{module.description}</p>
-                )}
-              </div>
-
-              {!module.isPublished && (
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                  Brouillon
-                </span>
-              )}
-
-              <Button variant="ghost" size="sm" onClick={() => handleCreateContent(module.id)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Contenu
-              </Button>
-
-              <Button variant="ghost" size="sm" onClick={() => handleCreateModule(module.id)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Sous-section
-              </Button>
-
-              <Button variant="ghost" size="icon">
-                <Edit className="h-4 w-4" />
-              </Button>
-
-              <Button variant="ghost" size="icon">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {isExpanded && (
-          <>
-            {module.contents?.map((content) => (
-              <div key={content.id} style={{ marginLeft: '48px' }} className="mb-2">
-                <Card>
-                  <CardContent className="p-3 flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                    {getContentIcon(content.contentType)}
-                    <span className="flex-1">{content.title}</span>
-
-                    {!content.isPublished && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                        Brouillon
-                      </span>
-                    )}
-
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-
-            {module.children?.map((child) => renderModule(child, depth + 1))}
-          </>
-        )}
-      </div>
-    )
   }
 
   return (
@@ -261,7 +426,10 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
             <p className="text-muted-foreground mt-2">Éditeur de contenu</p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <div id="save-status">
+              <SaveStatus state={queue} onRetry={queue.retry} onReload={reload} />
+            </div>
             <Link href={`/courses/${course.id}/learn`}>
               <Button variant="outline">
                 <Eye className="mr-2 h-4 w-4" />
@@ -275,7 +443,7 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
           </div>
         </div>
 
-        {modules.length === 0 ? (
+        {sections.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -290,7 +458,11 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">{modules.map((module) => renderModule(module))}</div>
+          <ul aria-label="Plan du cours">
+            {rows.map((row) => (
+              <BuilderRow key={row.key} {...rowProps(row)} />
+            ))}
+          </ul>
         )}
       </div>
 
@@ -365,9 +537,9 @@ export default function CourseBuilder({ course, modules, auth, appSettings, menu
                 <Label htmlFor="contentType">Type de contenu *</Label>
                 <Select
                   value={contentForm.data.contentType}
-                  onValueChange={(value: any) => contentForm.setData('contentType', value)}
+                  onValueChange={(value: ContentType) => contentForm.setData('contentType', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="contentType">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

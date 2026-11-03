@@ -1229,3 +1229,32 @@ test.group('Builder - edits and deletes', (group) => {
     assert.equal(row.order, 1)
   })
 })
+
+test.group('Builder - page props', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('builder renders flat sections and contents', async ({ client, route, assert }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const root = await createModule(course)
+    const child = await createModule(course, { parentId: root.id })
+    const legacy = await createModule(course, { parentId: child.id })
+    await createContent(legacy)
+    await createContent(root)
+
+    const response = await client
+      .get(route('courses.builder', { id: course.id }))
+      .withInertia()
+      .loginAs(owner)
+    response.assertStatus(200)
+    const props = response.inertiaProps
+
+    assert.sameMembers(
+      props.sections.map((s: { id: number }) => s.id),
+      [root.id, child.id, legacy.id]
+    )
+    assert.lengthOf(props.contents, 2)
+    assert.isTrue(props.contents.every((c: object) => !('content' in c)))
+    assert.deepEqual(Object.keys(props.course).sort(), ['code', 'id', 'title'])
+  })
+})
