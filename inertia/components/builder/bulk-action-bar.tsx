@@ -246,12 +246,8 @@ export function BulkActionBar({
             </span>
           </div>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-destructive"
-            onClick={() => show('delete')}
-          >
+          // No red text here: the destructive colour fails AA contrast at this size; the dialog warns.
+          <Button size="sm" variant="outline" onClick={() => show('delete')}>
             Supprimer…
           </Button>
         )}
