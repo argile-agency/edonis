@@ -684,30 +684,46 @@ function mergeRows<T extends { id: number; title: string; description: string | 
   server: ReadonlyArray<T>,
   affected: number[],
   deleted: number[],
-  known: ReadonlyArray<T> | undefined
+  known: ReadonlyArray<T> | undefined,
+  applied: ReadonlyArray<T> | undefined
 ): T[] {
   const gone = new Set(deleted)
   const hit = new Set(affected)
   const serverById = new Map(server.map((r) => [r.id, r]))
+  const appliedById = new Map((applied ?? []).map((r) => [r.id, r]))
   const localIds = new Set(local.map((r) => r.id))
   const knownIds = new Set((known ?? []).map((r) => r.id))
   const merged = local
     .filter((r) => !gone.has(r.id))
     .map((r) => {
       const fresh = hit.has(r.id) ? serverById.get(r.id) : undefined
-      // A rename queued after the bulk op may already be applied locally.
-      return fresh ? { ...fresh, title: r.title, description: r.description } : r
+      if (!fresh) return r
+      const base = appliedById.get(r.id)
+      // Without a post-apply state: a rename queued after the bulk op may already be applied locally.
+      if (!base) return { ...fresh, title: r.title, description: r.description }
+      // A field that changed locally since this op applied belongs to a later queued op
+      // (move, publish, dates, rename): keep it. The rest, and the token, is server truth.
+      const row = { ...fresh }
+      for (const key of Object.keys(fresh) as (keyof T)[]) {
+        if (key !== 'updatedAt' && r[key] !== base[key]) row[key] = r[key]
+      }
+      return row
     })
   // New server rows (copies); a row known at enqueue time but gone locally was removed since.
   const added = server.filter((r) => hit.has(r.id) && !localIds.has(r.id) && !knownIds.has(r.id))
   return [...merged, ...added]
 }
 
-/** `known`: the structure when the op was queued, so rows removed locally since stay removed. */
+/**
+ * `known`: the structure when the op was queued, so rows removed locally since stay removed.
+ * `applied`: the structure right after the op's own optimistic step, so fields that later
+ * queued ops changed locally since are kept over the server response.
+ */
 export function mergeBulkResult(
   local: Structure,
   result: BulkResult,
-  known?: Structure
+  known?: Structure,
+  applied?: Structure
 ): Structure {
   return {
     sections: mergeRows(
@@ -715,14 +731,16 @@ export function mergeBulkResult(
       result.sections,
       result.affected.sectionIds,
       result.deleted.sectionIds,
-      known?.sections
+      known?.sections,
+      applied?.sections
     ),
     contents: mergeRows(
       local.contents,
       result.contents,
       result.affected.contentIds,
       result.deleted.contentIds,
-      known?.contents
+      known?.contents,
+      applied?.contents
     ),
   }
 }

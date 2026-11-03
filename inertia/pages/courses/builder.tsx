@@ -391,11 +391,14 @@ export default function CourseBuilder(props: Props) {
     // Duplicate and shift are not idempotent: "Réessayer" re-sends the first tokens, so a
     // replay after a lost response (server bumped them) is a 409, never a second copy or shift.
     let pinned: (ItemRef & { updatedAt: string | null })[] | null = null
+    // State right after this op's optimistic step: what differs from it later is a later op's.
+    let applied: Snapshot = snapshot
     queue.enqueue({
       label,
       apply() {
         snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
         optimistic?.(items)
+        applied = { sections: sectionsRef.current, contents: contentsRef.current }
       },
       async run() {
         const sent = pinned ?? items.map((ref) => ({ ...ref, updatedAt: token(ref) }))
@@ -409,7 +412,8 @@ export default function CourseBuilder(props: Props) {
           mergeBulkResult(
             { sections: sectionsRef.current, contents: contentsRef.current },
             result,
-            snapshot
+            snapshot,
+            applied
           )
         )
         // Duplicated sections open like freshly created ones.

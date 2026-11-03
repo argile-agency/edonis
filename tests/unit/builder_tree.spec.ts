@@ -537,6 +537,55 @@ test.group('builder_tree - selection and bulk', () => {
     assert.isTrue(removed.contents.some((x) => x.id === 299))
   })
 
+  test('mergeBulkResult keeps fields a later queued op changed since apply (WR-02)', ({
+    assert,
+  }) => {
+    // Publish C2 (optimistic), then a single move of C2 to S2 is applied before the response.
+    const applied = applyBulkPatch(bSections, bContents, [{ kind: 'content', id: C2 }], {
+      isPublished: true,
+    })
+    const local = {
+      sections: applied.sections,
+      contents: applyContentMove(applied.contents, C2, { parentId: S2, position: 0 }),
+    }
+    const publish: BulkResult = {
+      sections: bSections,
+      contents: bContents.map((x) =>
+        x.id === C2 ? { ...x, isPublished: true, updatedAt: 'fresh' } : x
+      ),
+      affected: { sectionIds: [], contentIds: [C2] },
+      deleted: { sectionIds: [], contentIds: [] },
+    }
+    const merged = mergeBulkResult(local, publish, undefined, applied)
+    const moved = merged.contents.find((x) => x.id === C2)!
+    assert.equal(moved.moduleId, S2)
+    assert.equal(moved.order, 1)
+    assert.isTrue(moved.isPublished)
+    assert.equal(moved.updatedAt, 'fresh')
+
+    // Shift has no optimistic step: a later rename is kept, the shifted dates are taken.
+    const renamed = {
+      sections: bSections,
+      contents: bContents.map((x) => (x.id === C2 ? { ...x, title: 'Renommé' } : x)),
+    }
+    const shift: BulkResult = {
+      sections: bSections,
+      contents: bContents.map((x) =>
+        x.id === C2 ? { ...x, availableFrom: '2026-09-08', updatedAt: 'fresh' } : x
+      ),
+      affected: { sectionIds: [], contentIds: [C2] },
+      deleted: { sectionIds: [], contentIds: [] },
+    }
+    const shifted = mergeBulkResult(renamed, shift, undefined, {
+      sections: bSections,
+      contents: bContents,
+    })
+    const c2 = shifted.contents.find((x) => x.id === C2)!
+    assert.equal(c2.title, 'Renommé')
+    assert.equal(c2.availableFrom, '2026-09-08')
+    assert.equal(c2.updatedAt, 'fresh')
+  })
+
   test('applyBulkPatch changes exactly the given items', ({ assert }) => {
     const result = applyBulkPatch(
       bSections,
