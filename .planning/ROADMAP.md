@@ -44,7 +44,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Code Health Baseline** - Lint, type safety, re-enabled test suite (completed 2026-10-13)
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
-- [ ] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A)
+- [x] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A) (completed 2026-11-03)
 - [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 H / 1.5-2.5 A*
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip; 🟡 3-4 H / 0.6-0.8 A*
 
@@ -312,7 +312,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 05-08-PLAN.md — axe coverage of the builder (incl. selection state), full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows and bulk actions (checkpoint, not autonomous) [BUILD-01..BUILD-16]
+- [x] 05-08-PLAN.md — axe coverage of the builder (incl. selection state), full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows and bulk actions (checkpoint, not autonomous) [BUILD-01..BUILD-16]
 
 ### Phase 6: Page Content
 
@@ -476,7 +476,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 9/10 | In Progress|  |
+| 5. Builder UI | 10/10 | Complete   | 2026-11-03 |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
