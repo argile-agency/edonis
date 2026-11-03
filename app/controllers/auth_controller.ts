@@ -5,6 +5,7 @@ import UserRole from '#models/user_role'
 import { loginValidator, registerValidator } from '#validators/auth_validator'
 import AuditService from '#services/audit_service'
 import env from '#start/env'
+import { REGISTRATION_CLOSED_MESSAGE, isRegistrationOpen } from '../helpers/registration.js'
 import {
   LEGACY_TWO_FACTOR_KEY,
   TWO_FACTOR_PENDING_KEY,
@@ -86,7 +87,11 @@ export default class AuthController {
    * Afficher le formulaire d'inscription
    * GET /register
    */
-  async showRegister({ inertia }: HttpContext) {
+  async showRegister({ inertia, session, response }: HttpContext) {
+    if (!(await isRegistrationOpen())) {
+      session.flash('error', REGISTRATION_CLOSED_MESSAGE)
+      return response.redirect().toRoute('login')
+    }
     return inertia.render('auth/register')
   }
 
@@ -96,6 +101,11 @@ export default class AuthController {
    */
   async register(ctx: HttpContext) {
     const { request, response, auth, session } = ctx
+    // Checked before validation so a closed platform never answers with field errors
+    if (!(await isRegistrationOpen())) {
+      session.flash('error', REGISTRATION_CLOSED_MESSAGE)
+      return response.redirect().toRoute('login')
+    }
     const data = await request.validateUsing(registerValidator)
 
     try {
