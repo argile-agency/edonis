@@ -28,6 +28,7 @@ import {
   Users,
   LogOut,
   UserCog,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { ThemeToggle } from '~/components/theme-toggle'
 import { TermsConsentBanner } from '~/components/terms-consent-banner'
@@ -52,6 +53,7 @@ interface AppSettings {
   appName: string
   appLogoUrl: string | null
   primaryColor: string
+  allowRegistration?: boolean
 }
 
 interface MenuItem {
@@ -231,6 +233,14 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
                         Mon compte
                       </Link>
                     </DropdownMenuItem>
+                    {user.roles.some((r) => r.slug === 'admin') && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/settings" className="cursor-pointer">
+                          <SlidersHorizontal />
+                          Réglages de la plateforme
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
                         <Globe />
@@ -264,9 +274,12 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
               <Button variant="outline" size="sm" asChild>
                 <Link href="/login">Connexion</Link>
               </Button>
-              <Button size="sm" asChild>
-                <Link href="/register">Inscription</Link>
-              </Button>
+              {/* SQLite/MySQL may send 0/1; null settings keep the link. */}
+              {(!appSettings || Boolean(appSettings.allowRegistration)) && (
+                <Button size="sm" asChild>
+                  <Link href="/register">Inscription</Link>
+                </Button>
+              )}
             </>
           )}
         </div>

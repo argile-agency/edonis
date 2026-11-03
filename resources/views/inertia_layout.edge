@@ -48,6 +48,7 @@
 
     @stack('dumper')
     @viteReactRefresh()
+    @include('partials/favicon')
     @inertiaHead()
     @vite(['inertia/app/app.tsx', `inertia/pages/${page.component}.tsx`])
   </head>
