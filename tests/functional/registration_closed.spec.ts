@@ -58,12 +58,15 @@ test.group('Registration setting', (group) => {
     assert.isNull(await User.findBy('email', email))
   })
 
-  test('open: GET /register renders the form', async ({ client }) => {
+  test('open: GET /register renders the form', async ({ client, assert }) => {
     await setRegistration(true)
 
     const response = await client.get('/register').withInertia()
 
     response.assertStatus(200)
     response.assertInertiaComponent('auth/register')
+    // The pages read this camelCase key from the shared prop to show « Créer un compte »
+    const props = response.inertiaProps as { appSettings?: { allowRegistration?: unknown } }
+    assert.isTrue(Boolean(props.appSettings?.allowRegistration))
   })
 })
