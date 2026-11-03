@@ -232,10 +232,8 @@ test.group('Accessibility', () => {
       await page.goto(`/courses/${course.id}/builder`)
       await page.waitForLoadState('networkidle')
 
-      const check = async (state: string) => {
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-          .analyze()
+      const wcag = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+      const check = (state: string, results: Awaited<ReturnType<AxeBuilder['analyze']>>) => {
         const critical = results.violations.filter(
           (v) => v.impact === 'critical' || v.impact === 'serious'
         )
@@ -252,27 +250,27 @@ test.group('Accessibility', () => {
         )
       }
 
-      await check('at rest')
+      check('at rest', await new AxeBuilder({ page }).withTags(wcag).analyze())
 
       await page
         .locator(`[data-row-key="c-${content.id}"]`)
         .getByRole('button', { name: 'Détails', exact: true })
         .click()
-      await check('details panel open')
+      check('details panel open', await new AxeBuilder({ page }).withTags(wcag).analyze())
 
       await page.getByRole('button', { name: 'Actions pour « Contenu A11y »' }).click()
       await page.getByRole('menuitem', { name: 'Déplacer vers…' }).waitFor()
-      await check('actions menu open')
+      check('actions menu open', await new AxeBuilder({ page }).withTags(wcag).analyze())
 
       await page.getByRole('menuitem', { name: 'Déplacer vers…' }).click()
       await page.getByRole('dialog').waitFor()
-      await check('move dialog open')
+      check('move dialog open', await new AxeBuilder({ page }).withTags(wcag).analyze())
 
       await page.keyboard.press('Escape')
       await page.getByRole('dialog').waitFor({ state: 'hidden' })
       await page.getByRole('checkbox', { name: 'Tout sélectionner', exact: true }).click()
       await page.getByRole('group', { name: 'Actions sur la sélection' }).waitFor()
-      await check('selection with bulk bar')
+      check('selection with bulk bar', await new AxeBuilder({ page }).withTags(wcag).analyze())
     } finally {
       await course.delete()
     }
