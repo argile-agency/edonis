@@ -304,7 +304,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 05-07-PLAN.md — dnd-kit (pinned) drag layer: content and section drag, auto-expand, keyboard with French announcements, touch via handle; SSR smoke + keyboard browser tests; *not autonomous: conditional French library decision* [BUILD-01, BUILD-02, BUILD-03, BUILD-10]
+- [x] 05-07-PLAN.md — dnd-kit (pinned) drag layer: content and section drag, auto-expand, keyboard with French announcements, touch via handle; SSR smoke + keyboard browser tests; *not autonomous: conditional French library decision* [BUILD-01, BUILD-02, BUILD-03, BUILD-10]
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -476,7 +476,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 7/10 | In Progress|  |
+| 5. Builder UI | 8/10 | In Progress|  |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
