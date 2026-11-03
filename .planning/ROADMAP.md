@@ -300,7 +300,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-06-PLAN.md — Builder page rebuilt on flat props (4 tasks: row, flat props + functional test, page, browser tests): optimistic autosave, menu moves, deletes, creation dialogs with new sections auto-expanded; browser tests incl. add flows [BUILD-01..BUILD-10]
+- [x] 05-06-PLAN.md — Builder page rebuilt on flat props (4 tasks: row, flat props + functional test, page, browser tests): optimistic autosave, menu moves, deletes, creation dialogs with new sections auto-expanded; browser tests incl. add flows [BUILD-01..BUILD-10]
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -476,7 +476,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 6/10 | In Progress|  |
+| 5. Builder UI | 7/10 | In Progress|  |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
