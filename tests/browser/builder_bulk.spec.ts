@@ -86,10 +86,11 @@ async function waitSaved(page: Page) {
 }
 
 const checkbox = (page: Page, title: string) =>
-  page.getByRole('checkbox', { name: `Sélectionner « ${title} »` })
-const selectAll = (page: Page) => page.getByRole('checkbox', { name: 'Tout sélectionner' })
+  page.getByRole('checkbox', { name: `Sélectionner « ${title} »`, exact: true })
+const selectAll = (page: Page) =>
+  page.getByRole('checkbox', { name: 'Tout sélectionner', exact: true })
 const bar = (page: Page) => page.getByRole('group', { name: 'Actions sur la sélection' })
-const barButton = (page: Page, name: string) => bar(page).getByRole('button', { name })
+const barButton = (page: Page, name: string) => bar(page).getByRole('button', { name, exact: true })
 const count = (page: Page) => page.locator('#builder-selection-count')
 
 async function tick(page: Page, ...titles: string[]) {
@@ -227,8 +228,8 @@ test.group('Course builder - bulk actions', (group) => {
     await tick(page, 'Contenu A', 'Contenu C')
     await barButton(page, 'Disponibilité…').click()
     const dialog = page.getByRole('dialog')
-    await dialog.getByLabel('Disponible à partir du').fill('2026-09-01')
-    await dialog.getByLabel("Disponible jusqu'au").fill('2026-09-30')
+    await dialog.getByLabel('Disponible à partir du', { exact: true }).fill('2026-09-01')
+    await dialog.getByLabel("Disponible jusqu'au", { exact: true }).fill('2026-09-30')
     await dialog.getByRole('button', { name: 'Appliquer' }).click()
     await waitSaved(page)
     assert.isTrue(
@@ -238,13 +239,15 @@ test.group('Course builder - bulk actions', (group) => {
 
     const requests = bulkRequests(page)
     await barButton(page, 'Disponibilité…').click()
-    await dialog.getByLabel('Disponible à partir du').fill('2026-10-10')
-    await dialog.getByLabel("Disponible jusqu'au").fill('2026-10-01')
+    await dialog.getByLabel('Disponible à partir du', { exact: true }).fill('2026-10-10')
+    await dialog.getByLabel("Disponible jusqu'au", { exact: true }).fill('2026-10-01')
     await dialog.getByRole('button', { name: 'Appliquer' }).click()
     const message = dialog.getByText('La date de fin doit être postérieure à la date de début.')
     assert.isTrue(await message.isVisible())
     assert.equal(
-      await dialog.getByLabel("Disponible jusqu'au").getAttribute('aria-describedby'),
+      await dialog
+        .getByLabel("Disponible jusqu'au", { exact: true })
+        .getAttribute('aria-describedby'),
       'bulk-availability-error'
     )
     assert.deepEqual(requests, [])
@@ -264,8 +267,8 @@ test.group('Course builder - bulk actions', (group) => {
     await tick(page, 'Contenu A', 'Contenu C')
     await barButton(page, 'Décaler les dates…').click()
     const dialog = page.getByRole('dialog')
-    await dialog.getByLabel("D'un nombre de jours").check()
-    await dialog.getByLabel('Nombre de jours (négatif pour avancer)').fill('7')
+    await dialog.getByLabel("D'un nombre de jours", { exact: true }).check()
+    await dialog.getByLabel('Nombre de jours (négatif pour avancer)', { exact: true }).fill('7')
     await dialog.getByRole('button', { name: 'Appliquer' }).click()
     await waitSaved(page)
     assert.isTrue(
@@ -276,9 +279,9 @@ test.group('Course builder - bulk actions', (group) => {
     assert.isNull(await isoDate(f.c3.id, 'availableUntil'))
 
     await barButton(page, 'Décaler les dates…').click()
-    await dialog.getByLabel("D'une ancienne date de début à une nouvelle").check()
-    await dialog.getByLabel('Ancienne date de début').fill('2026-09-08')
-    await dialog.getByLabel('Nouvelle date de début').fill('2026-09-01')
+    await dialog.getByLabel("D'une ancienne date de début à une nouvelle", { exact: true }).check()
+    await dialog.getByLabel('Ancienne date de début', { exact: true }).fill('2026-09-08')
+    await dialog.getByLabel('Nouvelle date de début', { exact: true }).fill('2026-09-01')
     await dialog.getByRole('button', { name: 'Appliquer' }).click()
     await waitSaved(page)
     assert.isTrue(
@@ -465,6 +468,7 @@ test.group('Course builder - bulk actions', (group) => {
       assert
     )
     await page.keyboard.press('Escape')
+    await page.getByRole('dialog').waitFor({ state: 'hidden' })
 
     await barButton(page, 'Déplacer vers…').click()
     await page.getByRole('dialog').waitFor()
