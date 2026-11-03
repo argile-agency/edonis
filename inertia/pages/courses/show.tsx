@@ -1,20 +1,9 @@
-import { Head, Link, router, useForm } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
 import { useState } from 'react'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import { Textarea } from '~/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Badge } from '~/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '~/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,15 +16,6 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
-import { Label } from '~/components/ui/label'
-import { Switch } from '~/components/ui/switch'
-import {
   ChevronLeft,
   Edit,
   CheckCircle,
@@ -44,13 +24,10 @@ import {
   Clock,
   BookOpen,
   Play,
-  Plus,
   FileText,
   Film,
   Link as LinkIcon,
   FileUp,
-  Trash2,
-  GripVertical,
   ChevronDown,
   ChevronRight,
   Settings,
@@ -146,28 +123,7 @@ export default function ShowCourse({
   appSettings,
   menus,
 }: Props) {
-  const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false)
-  const [isContentDialogOpen, setIsContentDialogOpen] = useState(false)
-  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null)
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
-
-  const moduleForm = useForm({
-    courseId: course.id,
-    parentId: null as number | null,
-    title: '',
-    description: '',
-    isPublished: true,
-  })
-
-  const contentForm = useForm({
-    moduleId: 0,
-    contentType: 'page' as 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz',
-    title: '',
-    description: '',
-    content: '',
-    externalUrl: '',
-    isPublished: true,
-  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -185,37 +141,6 @@ export default function ShowCourse({
   const formatDate = (date: string | null) => {
     if (!date) return 'Non défini'
     return new Date(date).toLocaleDateString('fr-FR')
-  }
-
-  const handleCreateModule = (parentId: number | null = null) => {
-    moduleForm.setData({ ...moduleForm.data, courseId: course.id, parentId })
-    setIsModuleDialogOpen(true)
-  }
-
-  const handleCreateContent = (moduleId: number) => {
-    setSelectedModuleId(moduleId)
-    contentForm.setData({ ...contentForm.data, moduleId })
-    setIsContentDialogOpen(true)
-  }
-
-  const submitModule = (e: React.FormEvent) => {
-    e.preventDefault()
-    moduleForm.post(`/courses/${course.id}/modules`, {
-      onSuccess: () => {
-        setIsModuleDialogOpen(false)
-        moduleForm.reset()
-      },
-    })
-  }
-
-  const submitContent = (e: React.FormEvent) => {
-    e.preventDefault()
-    contentForm.post(`/modules/${selectedModuleId}/contents`, {
-      onSuccess: () => {
-        setIsContentDialogOpen(false)
-        contentForm.reset()
-      },
-    })
   }
 
   const toggleModule = (moduleId: number) => {
@@ -252,10 +177,14 @@ export default function ShowCourse({
         <Card>
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-
               {hasChildren && (
-                <button onClick={() => toggleModule(module.id)} className="p-1">
+                <button
+                  type="button"
+                  onClick={() => toggleModule(module.id)}
+                  className="p-1"
+                  aria-expanded={isExpanded}
+                  aria-label={`${isExpanded ? 'Replier' : 'Déplier'} ${module.title}`}
+                >
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
@@ -273,24 +202,6 @@ export default function ShowCourse({
                   Brouillon
                 </Badge>
               )}
-
-              <Button variant="ghost" size="sm" onClick={() => handleCreateContent(module.id)}>
-                <Plus className="h-3 w-3 mr-1" />
-                Contenu
-              </Button>
-
-              <Button variant="ghost" size="sm" onClick={() => handleCreateModule(module.id)}>
-                <Plus className="h-3 w-3 mr-1" />
-                Section
-              </Button>
-
-              <Button variant="ghost" size="icon">
-                <Edit className="h-4 w-4" />
-              </Button>
-
-              <Button variant="ghost" size="icon">
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -301,7 +212,6 @@ export default function ShowCourse({
               <div key={content.id} style={{ marginLeft: '32px' }}>
                 <Card>
                   <CardContent className="p-2 flex items-center gap-2">
-                    <GripVertical className="h-3 w-3 text-muted-foreground cursor-move" />
                     {getContentIcon(content.contentType)}
                     <span className="flex-1 text-sm">{content.title}</span>
 
@@ -310,14 +220,6 @@ export default function ShowCourse({
                         Brouillon
                       </Badge>
                     )}
-
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-3 w-3" />
-                    </Button>
-
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
                   </CardContent>
                 </Card>
               </div>
@@ -543,7 +445,7 @@ export default function ShowCourse({
               <div className="mb-4 flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-semibold">Contenu du cours</h2>
-                  <p className="text-sm text-muted-foreground">Organisez vos modules et contenus</p>
+                  <p className="text-sm text-muted-foreground">Aperçu de la structure du cours</p>
                 </div>
                 <div className="flex gap-2">
                   <Link href={`/courses/${course.id}/learn`}>
@@ -552,11 +454,20 @@ export default function ShowCourse({
                       Aperçu étudiant
                     </Button>
                   </Link>
-                  <Button onClick={() => handleCreateModule()}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau module
-                  </Button>
+                  <Link href={`/courses/${course.id}/builder`}>
+                    <Button>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Ouvrir l'éditeur de cours
+                    </Button>
+                  </Link>
                 </div>
+              </div>
+
+              <div className="mb-4 flex items-start gap-2 rounded-md border p-3 text-sm text-muted-foreground">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <p>
+                  Pour ajouter, renommer, déplacer ou publier du contenu, ouvrez l'éditeur de cours.
+                </p>
               </div>
 
               {modules.length === 0 ? (
@@ -565,12 +476,14 @@ export default function ShowCourse({
                     <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Aucun contenu</h3>
                     <p className="text-muted-foreground mb-4">
-                      Commencez par créer un module pour organiser votre contenu
+                      Créez votre premier module dans l'éditeur de cours
                     </p>
-                    <Button onClick={() => handleCreateModule()}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Créer le premier module
-                    </Button>
+                    <Link href={`/courses/${course.id}/builder`}>
+                      <Button>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Ouvrir l'éditeur de cours
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ) : (
@@ -597,167 +510,6 @@ export default function ShowCourse({
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Create Module Dialog */}
-        <Dialog open={isModuleDialogOpen} onOpenChange={setIsModuleDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nouveau module</DialogTitle>
-              <DialogDescription>
-                Créez un nouveau module pour organiser votre contenu
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={submitModule}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Titre *</Label>
-                  <Input
-                    id="title"
-                    value={moduleForm.data.title}
-                    onChange={(e) => moduleForm.setData('title', e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={moduleForm.data.description}
-                    onChange={(e) => moduleForm.setData('description', e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isPublished"
-                    checked={moduleForm.data.isPublished}
-                    onCheckedChange={(checked) => moduleForm.setData('isPublished', checked)}
-                  />
-                  <Label htmlFor="isPublished">Publier immédiatement</Label>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModuleDialogOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={moduleForm.processing}>
-                  Créer
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Create Content Dialog */}
-        <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Nouveau contenu</DialogTitle>
-              <DialogDescription>Ajoutez du contenu à votre module</DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={submitContent}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contentType">Type de contenu *</Label>
-                  <Select
-                    value={contentForm.data.contentType}
-                    onValueChange={(value: any) => contentForm.setData('contentType', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="page">Page de texte</SelectItem>
-                      <SelectItem value="video">Vidéo</SelectItem>
-                      <SelectItem value="file">Fichier</SelectItem>
-                      <SelectItem value="link">Lien externe</SelectItem>
-                      <SelectItem value="assignment">Devoir</SelectItem>
-                      <SelectItem value="quiz">Quiz</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contentTitle">Titre *</Label>
-                  <Input
-                    id="contentTitle"
-                    value={contentForm.data.title}
-                    onChange={(e) => contentForm.setData('title', e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contentDescription">Description</Label>
-                  <Textarea
-                    id="contentDescription"
-                    value={contentForm.data.description}
-                    onChange={(e) => contentForm.setData('description', e.target.value)}
-                    rows={2}
-                  />
-                </div>
-
-                {contentForm.data.contentType === 'page' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="content">Contenu</Label>
-                    <Textarea
-                      id="content"
-                      value={contentForm.data.content}
-                      onChange={(e) => contentForm.setData('content', e.target.value)}
-                      rows={6}
-                      placeholder="Contenu HTML ou texte..."
-                    />
-                  </div>
-                )}
-
-                {(contentForm.data.contentType === 'video' ||
-                  contentForm.data.contentType === 'link') && (
-                  <div className="space-y-2">
-                    <Label htmlFor="externalUrl">URL *</Label>
-                    <Input
-                      id="externalUrl"
-                      type="url"
-                      value={contentForm.data.externalUrl}
-                      onChange={(e) => contentForm.setData('externalUrl', e.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="contentIsPublished"
-                    checked={contentForm.data.isPublished}
-                    onCheckedChange={(checked) => contentForm.setData('isPublished', checked)}
-                  />
-                  <Label htmlFor="contentIsPublished">Publier immédiatement</Label>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsContentDialogOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={contentForm.processing}>
-                  Créer
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
     </>
   )
