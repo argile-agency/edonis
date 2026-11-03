@@ -31,6 +31,8 @@ const CONTENT_ICONS: Record<ContentType, typeof FileText> = {
 
 export interface BuilderRowProps {
   row: Row
+  /** Section and level, for screen readers: the flat list shows them only by indentation. */
+  location: string
   expanded?: boolean
   onToggleExpanded?(): void
   editing: boolean
@@ -103,6 +105,7 @@ export function BuilderRow(props: BuilderRowProps) {
               checked={props.selected ?? false}
               onCheckedChange={() => props.onToggleSelect?.()}
               aria-label={`Sélectionner « ${title} »`}
+              aria-describedby={`${row.key}-location`}
             />
           )}
           {/* Drag listeners live on this button only: touch elsewhere scrolls, the checkbox never drags. */}
@@ -148,6 +151,9 @@ export function BuilderRow(props: BuilderRowProps) {
               onSubmit={props.onSubmitTitle}
               titleClassName={isSection ? 'font-semibold' : undefined}
             />
+            <span id={`${row.key}-location`} className="sr-only">
+              {props.location}
+            </span>
           </div>
 
           {!item.isPublished && (

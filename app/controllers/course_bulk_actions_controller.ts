@@ -25,7 +25,7 @@ import {
   deleteImpactValidator,
 } from '#validators/course_bulk'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
-import { shiftDate, shiftDays } from '../helpers/date_shift.js'
+import { inclusiveEnd, shiftDate, shiftDays } from '../helpers/date_shift.js'
 import { depthOf, subtreeHeight } from '../helpers/category_tree.js'
 import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
 
@@ -308,7 +308,9 @@ export default class CourseBulkActionsController {
   async availability(ctx: HttpContext) {
     return this.run(ctx, bulkAvailabilityValidator, async (_trx, scope, payload) => {
       const from = payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null
-      const until = payload.availableUntil ? DateTime.fromJSDate(payload.availableUntil) : null
+      const until = payload.availableUntil
+        ? inclusiveEnd(DateTime.fromJSDate(payload.availableUntil))
+        : null
       if (from && until && from > until) {
         throw new BulkRefusal(422, {
           errors: [{ field: 'availableUntil', message: AVAILABILITY_ORDER_ERROR }],
@@ -483,6 +485,14 @@ export default class CourseBulkActionsController {
           touchedParents.push(original.parentId)
         }
       }
+      // Not otherwise modified (renumbering skips updated_at): bump the tokens so
+      // a replay of this request after a lost response is a 409, not a second copy
+      for (const item of ordered) {
+        const original =
+          item.kind === 'content' ? scope.contents.get(item.id)! : scope.sections.get(item.id)!
+        original.updatedAt = DateTime.now()
+        await original.save()
+      }
       const ids = sorted(created)
       return {
         auditAction: 'course.bulk.duplicate',
@@ -610,20 +620,25 @@ export default class CourseBulkActionsController {
       outcome = await db.transaction(async (trx) => {
         await Course.query({ client: trx }).where('id', course.id).forUpdate().first()
         const scope = await loadScope(trx, course.id, items)
-        return action(trx, scope, payload)
+        const result = await action(trx, scope, payload)
+        // In the transaction: a failed audit write rolls the change back (committed ⇔ audited)
+        await AuditService.logFromContext(
+          ctx,
+          {
+            action: result.auditAction,
+            resourceType: 'Course',
+            resourceId: course.id,
+            metadata: { ...idsOf(items), ...result.extraMetadata },
+          },
+          trx
+        )
+        return result
       })
     } catch (error) {
       // Outside the callback: PostgreSQL aborts the transaction on errors
       if (error instanceof BulkRefusal) return response.status(error.status).json(error.body)
       throw error
     }
-
-    await AuditService.logFromContext(ctx, {
-      action: outcome.auditAction,
-      resourceType: 'Course',
-      resourceId: course.id,
-      metadata: { ...idsOf(items), ...outcome.extraMetadata },
-    })
 
     const structure = await loadBuilderStructure(course.id)
     return response.json({

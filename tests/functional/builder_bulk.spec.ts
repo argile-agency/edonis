@@ -296,6 +296,30 @@ test.group('Builder - bulk publish, availability, shift', (group) => {
     assert.lengthOf(await bulkAudits(f.course.id), 2)
   })
 
+  test('availability: a date-only end includes that day, so a one-day window is open (CR-02)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const today = DateTime.now().toISODate()!
+    const res = await postBulk(
+      client,
+      route('courses.bulk.availability', { id: f.course.id }),
+      f.owner,
+      {
+        items: [con(f.c1)],
+        availableFrom: today,
+        availableUntil: today,
+      }
+    )
+    res.assertStatus(200)
+    const c1 = await fresh(f.c1)
+    assert.equal(c1.availableUntil?.toFormat('yyyy-MM-dd HH:mm:ss'), `${today} 23:59:59`)
+    c1.isPublished = true
+    assert.isTrue(c1.isAvailable())
+  })
+
   test('shift by days moves every non-null date and keeps nulls (BUILD-13)', async ({
     client,
     route,
@@ -623,6 +647,35 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
       [s1Copy.id, s11Copy.id].sort((a, b) => a - b)
     )
     assert.lengthOf(metadata.createdContentIds, 3)
+  })
+
+  test('replaying a duplicate (lost response) is a 409, not a second copy (WR-03)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    // Backdate so the bumped token differs to the second (same-second tokens match)
+    const past = DateTime.now().minus({ hours: 1 }).toFormat('yyyy-MM-dd HH:mm:ss')
+    await CourseContent.query().where('id', f.c1.id).update({ updated_at: past })
+    await CourseModule.query().where('id', f.s2.id).update({ updated_at: past })
+    const body = { items: [con(await fresh(f.c1)), sec(await freshModule(f.s2))] }
+    const url = route('courses.bulk.duplicate', { id: f.course.id })
+
+    const first = await postBulk(client, url, f.owner, body)
+    first.assertStatus(200)
+    const c1Row = first.body().contents.find((c: { id: number }) => c.id === f.c1.id)
+    assert.include(first.body().affected.contentIds, f.c1.id)
+    const c1After = await fresh(f.c1)
+    assert.equal(c1Row.updatedAt, c1After.updatedAt?.toISO())
+    assert.include(first.body().affected.sectionIds, f.s2.id)
+
+    const replay = await postBulk(client, url, f.owner, body)
+    replay.assertStatus(409)
+    assert.equal(replay.body().code, 'E_CONFLICT')
+    assert.lengthOf(await CourseContent.query().where('copied_from_id', f.c1.id), 1)
+    assert.lengthOf(await CourseModule.query().where('copied_from_id', f.s2.id), 1)
+    assert.lengthOf(await bulkAudits(f.course.id), 1)
   })
 
   test('duplicating legacy third-level data is refused', async ({ client, route, assert }) => {

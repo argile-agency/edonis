@@ -27,6 +27,7 @@ import CourseStructureService, {
 } from '#services/course_structure_service'
 import { depthOf } from '../helpers/category_tree.js'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
+import { inclusiveEnd } from '../helpers/date_shift.js'
 
 const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
 const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
@@ -50,7 +51,9 @@ function availability(
 ): Partial<Dated> | null {
   const changes: Partial<Dated> = {}
   if (from !== undefined) changes.availableFrom = from ? DateTime.fromJSDate(from) : null
-  if (until !== undefined) changes.availableUntil = until ? DateTime.fromJSDate(until) : null
+  if (until !== undefined) {
+    changes.availableUntil = until ? inclusiveEnd(DateTime.fromJSDate(until)) : null
+  }
   const start = from === undefined ? stored.availableFrom : changes.availableFrom
   const end = until === undefined ? stored.availableUntil : changes.availableUntil
   return start && end && start > end ? null : changes
@@ -262,7 +265,7 @@ export default class CourseContentsController {
           ...payload,
           availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
           availableUntil: payload.availableUntil
-            ? DateTime.fromJSDate(payload.availableUntil)
+            ? inclusiveEnd(DateTime.fromJSDate(payload.availableUntil))
             : null,
           order,
         },
@@ -490,7 +493,7 @@ export default class CourseContentsController {
           ...payload,
           availableFrom: payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null,
           availableUntil: payload.availableUntil
-            ? DateTime.fromJSDate(payload.availableUntil)
+            ? inclusiveEnd(DateTime.fromJSDate(payload.availableUntil))
             : null,
           dueDate: payload.dueDate ? DateTime.fromJSDate(payload.dueDate) : null,
           order,
