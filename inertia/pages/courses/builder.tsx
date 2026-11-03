@@ -296,6 +296,9 @@ export default function CourseBuilder(props: Props) {
       rollback(error) {
         // A lost response may still have committed.
         settledRef.current++
+        // The snapshot predates server results merged since (copies, shifted dates):
+        // fetch server truth once the queue is idle; the retry list is kept.
+        resyncRef.current = true
         // Tokens are server truth: an earlier op may have saved since the snapshot.
         commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
         commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
@@ -461,6 +464,7 @@ export default function CourseBuilder(props: Props) {
       },
       rollback() {
         settledRef.current++
+        resyncRef.current = true // see save()
         // Tokens are server truth: an earlier op may have saved since the snapshot.
         commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
         commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
