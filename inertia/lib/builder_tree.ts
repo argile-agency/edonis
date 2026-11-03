@@ -272,11 +272,8 @@ export function projectSectionDrop(
   return { parentId, position, depth }
 }
 
-export function moveTargets(
-  sections: ReadonlyArray<BuilderSection>,
-  contents: ReadonlyArray<BuilderContent>,
-  item: ItemRef
-): MoveTarget[] {
+/** Every section in tree order, with its "Parent › Child" label. */
+function sectionTargets(sections: ReadonlyArray<BuilderSection>) {
   const rows = buildRows(sections, [], new Set(sections.map((s) => s.id)))
   const labels = new Map<number, string>()
   for (const row of rows) {
@@ -284,6 +281,15 @@ export function moveTargets(
     const title = row.kind === 'section' ? row.section.title : ''
     labels.set(row.id, parentLabel ? `${parentLabel} › ${title}` : title)
   }
+  return { rows, labels }
+}
+
+export function moveTargets(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  item: ItemRef
+): MoveTarget[] {
+  const { rows, labels } = sectionTargets(sections)
   const target = (row: BuilderRow, disabledReason: string | null): MoveTarget => ({
     parentId: row.id,
     label: labels.get(row.id) ?? '',
@@ -437,4 +443,267 @@ export function canDeleteSection(
   id: number
 ): boolean {
   return !sections.some((s) => s.parentId === id) && !contents.some((c) => c.moduleId === id)
+}
+
+// --- Selection and bulk actions (05-10). Same tree order and normalisation as the 05-09 server. ---
+
+export type QuickSelection =
+  'all' | 'none' | 'published' | 'unpublished' | { contentType: ContentType }
+
+type Ids = { sectionIds: number[]; contentIds: number[] }
+type Structure = { sections: BuilderSection[]; contents: BuilderContent[] }
+
+export interface BulkResult {
+  sections: BuilderSection[]
+  contents: BuilderContent[]
+  affected: Ids
+  deleted: Ids
+}
+
+export const BULK_CONTENT_ROOT_MESSAGE = 'Un contenu doit être placé dans une section.'
+/** Same text as the server's E_NOT_EMPTY message. */
+export const BULK_DELETE_BLOCKED_MESSAGE =
+  'Sélectionnez aussi tout le contenu des sections à supprimer.'
+
+const keyOf = (kind: ItemRef['kind'], id: number) => rowKey({ kind, id })
+
+/** The given sections and all their sub-sections; terminates on cyclic data. */
+function withDescendants(sections: ReadonlyArray<BuilderSection>, roots: number[]): Set<number> {
+  const result = new Set(roots)
+  const stack = [...roots]
+  while (stack.length > 0) {
+    const id = stack.pop()!
+    for (const s of sections) {
+      if (s.parentId === id && !result.has(s.id)) {
+        result.add(s.id)
+        stack.push(s.id)
+      }
+    }
+  }
+  return result
+}
+
+export function quickSelect(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  q: QuickSelection
+): Set<string> {
+  const match = (item: { isPublished: boolean }, type?: ContentType) =>
+    q === 'all' ||
+    (q === 'published' && item.isPublished) ||
+    (q === 'unpublished' && !item.isPublished) ||
+    (typeof q === 'object' && type === q.contentType)
+  return new Set([
+    ...sections.filter((s) => match(s)).map((s) => keyOf('section', s.id)),
+    ...contents.filter((c) => match(c, c.contentType)).map((c) => keyOf('content', c.id)),
+  ])
+}
+
+export function pruneSelection(
+  selected: ReadonlySet<string>,
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>
+): Set<string> {
+  const existing = quickSelect(sections, contents, 'all')
+  return new Set([...selected].filter((key) => existing.has(key)))
+}
+
+export function selectedItems(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  selected: ReadonlySet<string>
+): ItemRef[] {
+  return buildRows(sections, contents, new Set(sections.map((s) => s.id)))
+    .filter((row) => selected.has(row.key))
+    .map((row) => ({ kind: row.kind, id: row.id }))
+}
+
+/** Drops every item that has a selected ancestor section (it travels with that ancestor). */
+export function topLevelItems(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  items: ReadonlyArray<ItemRef>
+): ItemRef[] {
+  const selectedSections = new Set(items.filter((i) => i.kind === 'section').map((i) => i.id))
+  const parentById = new Map(sections.map((s) => [s.id, s.parentId]))
+  const moduleById = new Map(contents.map((c) => [c.id, c.moduleId]))
+  const underSelected = (start: number | null) => {
+    const seen = new Set<number>()
+    let current = start
+    while (current !== null && !seen.has(current)) {
+      if (selectedSections.has(current)) return true
+      seen.add(current)
+      current = parentById.get(current) ?? null
+    }
+    return false
+  }
+  return items.filter((item) =>
+    item.kind === 'content'
+      ? !underSelected(moduleById.get(item.id) ?? null)
+      : !underSelected(parentById.get(item.id) ?? null)
+  )
+}
+
+export function bulkMoveTargets(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  items: ReadonlyArray<ItemRef>
+): MoveTarget[] {
+  const top = topLevelItems(sections, contents, items)
+  const hasContent = top.some((i) => i.kind === 'content')
+  const movedSections = top.filter((i) => i.kind === 'section').map((i) => i.id)
+  const selfAndDescendants = withDescendants(sections, movedSections)
+  const height =
+    movedSections.length > 0
+      ? Math.max(...movedSections.map((id) => sectionSubtreeHeight(sections, id)))
+      : null
+  const tooDeepFor = (parentDepth: number) =>
+    height !== null && parentDepth + 1 + height > MAX_SECTION_DEPTH
+
+  const { rows, labels } = sectionTargets(sections)
+  const root: MoveTarget = {
+    parentId: null,
+    label: ROOT_LABEL,
+    depth: 0,
+    disabledReason: hasContent ? BULK_CONTENT_ROOT_MESSAGE : tooDeepFor(-1) ? DEPTH_MESSAGE : null,
+  }
+  return [
+    root,
+    ...rows.map((row) => ({
+      parentId: row.id,
+      label: labels.get(row.id) ?? '',
+      depth: row.depth,
+      disabledReason:
+        hasContent && row.kind === 'section' && row.tooDeep
+          ? DEPTH_MESSAGE
+          : selfAndDescendants.has(row.id)
+            ? SELF_MESSAGE
+            : tooDeepFor(row.depth)
+              ? DEPTH_MESSAGE
+              : null,
+    })),
+  ]
+}
+
+/** Mirror of the server: contents first, then sections, each appended in tree order. */
+export function applyBulkMove(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  items: ReadonlyArray<ItemRef>,
+  parentId: number | null
+): Structure {
+  const ordered = selectedItems(sections, contents, new Set(items.map(rowKey)))
+  const top = topLevelItems(sections, contents, ordered)
+  let nextContents = [...contents]
+  let nextSections = [...sections]
+  for (const item of top) {
+    if (item.kind !== 'content' || parentId === null) continue
+    const position = nextContents.filter((c) => c.moduleId === parentId && c.id !== item.id).length
+    nextContents = applyContentMove(nextContents, item.id, { parentId, position })
+  }
+  for (const item of top) {
+    if (item.kind !== 'section') continue
+    const position = nextSections.filter((s) => s.parentId === parentId && s.id !== item.id).length
+    nextSections = applySectionMove(nextSections, item.id, { parentId, position })
+  }
+  return { sections: nextSections, contents: nextContents }
+}
+
+export function applyBulkPatch(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  items: ReadonlyArray<ItemRef>,
+  patch: Partial<{
+    isPublished: boolean
+    availableFrom: string | null
+    availableUntil: string | null
+  }>
+): Structure {
+  const keys = new Set(items.map(rowKey))
+  return {
+    sections: sections.map((s) => (keys.has(keyOf('section', s.id)) ? { ...s, ...patch } : s)),
+    contents: contents.map((c) => (keys.has(keyOf('content', c.id)) ? { ...c, ...patch } : c)),
+  }
+}
+
+/** Selected sections whose sub-tree (sections and contents) is not fully selected, ascending. */
+export function bulkDeleteBlockers(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  selected: ReadonlySet<string>
+): number[] {
+  return sections
+    .filter((s) => selected.has(keyOf('section', s.id)))
+    .filter((s) => {
+      const subtree = withDescendants(sections, [s.id])
+      return (
+        [...subtree].some((id) => !selected.has(keyOf('section', id))) ||
+        contents.some((c) => subtree.has(c.moduleId) && !selected.has(keyOf('content', c.id)))
+      )
+    })
+    .map((s) => s.id)
+    .sort((a, b) => a - b)
+}
+
+export function bulkDeletedIds(
+  sections: ReadonlyArray<BuilderSection>,
+  contents: ReadonlyArray<BuilderContent>,
+  items: ReadonlyArray<ItemRef>
+): Ids {
+  const sectionIds = withDescendants(
+    sections,
+    items.filter((i) => i.kind === 'section').map((i) => i.id)
+  )
+  const contentIds = new Set(items.filter((i) => i.kind === 'content').map((i) => i.id))
+  for (const c of contents) if (sectionIds.has(c.moduleId)) contentIds.add(c.id)
+  const asc = (set: Set<number>) => [...set].sort((a, b) => a - b)
+  return { sectionIds: asc(sectionIds), contentIds: asc(contentIds) }
+}
+
+function mergeRows<T extends { id: number; title: string; description: string | null }>(
+  local: ReadonlyArray<T>,
+  server: ReadonlyArray<T>,
+  affected: number[],
+  deleted: number[],
+  known: ReadonlyArray<T> | undefined
+): T[] {
+  const gone = new Set(deleted)
+  const hit = new Set(affected)
+  const serverById = new Map(server.map((r) => [r.id, r]))
+  const localIds = new Set(local.map((r) => r.id))
+  const knownIds = new Set((known ?? []).map((r) => r.id))
+  const merged = local
+    .filter((r) => !gone.has(r.id))
+    .map((r) => {
+      const fresh = hit.has(r.id) ? serverById.get(r.id) : undefined
+      // A rename queued after the bulk op may already be applied locally.
+      return fresh ? { ...fresh, title: r.title, description: r.description } : r
+    })
+  // New server rows (copies); a row known at enqueue time but gone locally was removed since.
+  const added = server.filter((r) => hit.has(r.id) && !localIds.has(r.id) && !knownIds.has(r.id))
+  return [...merged, ...added]
+}
+
+/** `known`: the structure when the op was queued, so rows removed locally since stay removed. */
+export function mergeBulkResult(
+  local: Structure,
+  result: BulkResult,
+  known?: Structure
+): Structure {
+  return {
+    sections: mergeRows(
+      local.sections,
+      result.sections,
+      result.affected.sectionIds,
+      result.deleted.sectionIds,
+      known?.sections
+    ),
+    contents: mergeRows(
+      local.contents,
+      result.contents,
+      result.affected.contentIds,
+      result.deleted.contentIds,
+      known?.contents
+    ),
+  }
 }

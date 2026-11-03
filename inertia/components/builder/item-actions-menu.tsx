@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { NOT_EMPTY_MESSAGE, type MoveTarget } from '~/lib/builder_tree'
+import { MoveTargetList } from '~/components/builder/move-target-list'
 
 export interface ItemActionsMenuProps {
   idBase: string
@@ -156,43 +157,14 @@ export function ItemActionsMenu({
               Choisissez la section de destination. L'élément sera placé à la fin.
             </DialogDescription>
           </DialogHeader>
-          {moveTargets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune destination disponible.</p>
-          ) : (
-            <ul className="max-h-80 space-y-1 overflow-y-auto">
-              {moveTargets.map((target) => {
-                const reasonId = `${idBase}-target-${target.parentId ?? 'root'}-reason`
-                const disabled = target.disabledReason !== null
-                return (
-                  <li key={target.parentId ?? 'root'}>
-                    <button
-                      type="button"
-                      aria-disabled={disabled ? 'true' : undefined}
-                      aria-describedby={disabled ? reasonId : undefined}
-                      onClick={() => {
-                        if (disabled) return
-                        onMoveTo(target.parentId)
-                        setMoveOpen(false)
-                      }}
-                      style={{ paddingLeft: `${0.75 + target.depth * 1.25}rem` }}
-                      className={
-                        disabled
-                          ? 'flex w-full cursor-not-allowed flex-col items-start rounded-md py-2 pr-3 text-left text-sm text-muted-foreground'
-                          : 'flex w-full flex-col items-start rounded-md py-2 pr-3 text-left text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                      }
-                    >
-                      <span>{target.label}</span>
-                      {disabled && (
-                        <span id={reasonId} className="text-xs">
-                          {target.disabledReason}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          <MoveTargetList
+            idBase={idBase}
+            targets={moveTargets}
+            onChoose={(parentId) => {
+              onMoveTo(parentId)
+              setMoveOpen(false)
+            }}
+          />
         </DialogContent>
       </Dialog>
 
