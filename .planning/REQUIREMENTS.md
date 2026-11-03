@@ -67,6 +67,20 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **BUILD-15**: Every bulk action runs in a single DB transaction, validates its payload with VineJS, and writes one audit_log entry listing the affected ids and the action
 - [x] **BUILD-16**: Selection and the bulk action bar are fully keyboard-operable and pass the existing axe-core tests; drag handles and checkboxes do not conflict (activation constraint or dedicated handle)
 
+### Platform Settings (Phase 5.1 — milestone v0.1; added 2026-11-03)
+
+*Source: owner brief `.planning/todos/completed/2026-11-03-admin-platform-settings-page.md` and `05.1-CONTEXT.md` D-01..D-16.*
+
+- [ ] **SETTINGS-01**: An administrator opens `/admin/settings` from an admin-only item of the user menu and edits the singleton `AppSetting` row in four tabs (Apparence, Page d'accueil, Accès, Contact et support), each saved independently, with a French success toast; the active tab survives the save round-trip
+- [ ] **SETTINGS-02**: Only admins can read or write the settings: route middleware (auth + role admin) plus a controller-level policy check; teacher, manager and student get 403, anonymous visitors are redirected to `/login`
+- [ ] **SETTINGS-03**: Invalid input is rejected field by field in French and nothing is persisted: required name/colour/hero title, max lengths, `#RRGGBB` colour (stored uppercase), valid email, `http(s)`-only links (support URL may also be a root-relative path), image URLs root-relative or same-origin only (CSP `imgSrc` unchanged), `socialLinks` limited to facebook/twitter/linkedin/github; `headerHtml`, `footerHtml`, `isActive` and the unexposed fields cannot be written through the page
+- [ ] **SETTINGS-04**: Each save that changes something writes exactly one audit row (`admin.settings.update`) holding only the changed keys with their old and new values, in the same transaction as the change; a save with no change writes none and says « Aucune modification à enregistrer. »
+- [ ] **SETTINGS-05**: Single-instance settings, stated in code: the page works on a fresh database (creates the `is_active` row), saves update that row and never insert a second one; new nullable `announcement_text` column through a reversible migration valid on PostgreSQL, MySQL/MariaDB and SQLite; `socialLinks` stored through the shared JSON column helper; the seeder gives fresh installs the defaults without overwriting an admin's edits
+- [ ] **SETTINGS-06**: Every exposed setting has a visible effect: app name, logo and primary colour in the header; hero title, subtitle and image on the public home page; favicon as `<link rel="icon">`; contact email, support link and social links in the home footer; unsafe stored URLs are not rendered
+- [ ] **SETTINGS-07**: A plain-text announcement banner (`announcementText`, max 280) is shown at the top of the home page when set, never rendered as HTML, the contact email inside it rendered as a `mailto:` link; it replaces the hard-coded demo banner
+- [ ] **SETTINGS-08**: When registration is off, `GET /register`, `POST /register` and a first Google/GitHub login (account creation) are refused with « Les inscriptions sont fermées sur cette plateforme. Contactez un administrateur pour obtenir un compte. » on `/login`, and every « Inscription » / « Créer un compte » link is hidden; existing accounts still sign in, including through OAuth
+- [ ] **SETTINGS-09**: The settings page is accessible: every control labelled, help and errors tied with `aria-describedby`, `aria-invalid` on errors, keyboard-navigable tabs, a `#main-content` landmark, and an axe-core browser test (critical/serious) on the four tabs
+
 ### Page Content Type
 
 - [ ] **PAGE-01**: Teacher can create Page content with WYSIWYG editor
@@ -283,6 +297,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-14 | Phase 5 | Complete |
 | BUILD-15 | Phase 5 | Complete |
 | BUILD-16 | Phase 5 | Complete |
+| SETTINGS-01 | Phase 5.1 | Pending |
+| SETTINGS-02 | Phase 5.1 | Pending |
+| SETTINGS-03 | Phase 5.1 | Pending |
+| SETTINGS-04 | Phase 5.1 | Pending |
+| SETTINGS-05 | Phase 5.1 | Pending |
+| SETTINGS-06 | Phase 5.1 | Pending |
+| SETTINGS-07 | Phase 5.1 | Pending |
+| SETTINGS-08 | Phase 5.1 | Pending |
+| SETTINGS-09 | Phase 5.1 | Pending |
 | PAGE-01 | Phase 6 | Pending |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |
@@ -357,7 +380,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1 content requirements: 41 total
 - Mapped to phases: 56
 - Backlog (not yet mapped to a phase): 1 (DEBT-10)
+- Platform settings requirements (Phase 5.1, milestone v0.1, added 2026-11-03): 9 total (SETTINGS-01..09), all mapped
 
 ---
 *Requirements defined: 2026-02-03*
 *Last updated: 2026-10-09 — technical debt requirements added, traceability renumbered for the 12-phase roadmap*
+*Last updated: 2026-11-03 — SETTINGS-01..09 added for Phase 5.1 (admin platform settings)*
