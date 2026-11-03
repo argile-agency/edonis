@@ -626,6 +626,25 @@ export function applyBulkPatch(
   }
 }
 
+/** `yyyy-MM-dd` values of a details panel's date inputs ('' = no date). */
+export type DateInputs = { from: string; until: string }
+
+/**
+ * Patch for a details-panel date edit: only the bounds that differ from what was
+ * last sent or seeded (D-09: never re-send the other bound), so a bound held back
+ * by the order check goes out once fixed. Null when start > end.
+ */
+export function datePatch(
+  draft: DateInputs,
+  sent: DateInputs
+): Partial<{ availableFrom: string | null; availableUntil: string | null }> | null {
+  if (draft.from !== '' && draft.until !== '' && draft.from > draft.until) return null
+  const patch: Partial<{ availableFrom: string | null; availableUntil: string | null }> = {}
+  if (draft.from !== sent.from) patch.availableFrom = draft.from || null
+  if (draft.until !== sent.until) patch.availableUntil = draft.until || null
+  return patch
+}
+
 /** Selected sections whose sub-tree (sections and contents) is not fully selected, ascending. */
 export function bulkDeleteBlockers(
   sections: ReadonlyArray<BuilderSection>,

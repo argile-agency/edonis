@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { datePatch } from '~/lib/builder_tree'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Switch } from '~/components/ui/switch'
@@ -23,25 +24,40 @@ const DATE_ORDER_MESSAGE = 'La date de fin doit être postérieure à la date de
 
 /** ISO (or yyyy-MM-dd) → yyyy-MM-dd for <input type="date">. */
 const toDateInput = (value: string | null) => value?.slice(0, 10) ?? ''
-const orNull = (value: string) => (value === '' ? null : value)
+
+type Field = 'description' | 'from' | 'until'
 
 /**
- * Details of a section or content (D-04). Local state is seeded from `values`
- * on mount only, so a conflict never overwrites what the teacher typed (D-09).
+ * Details of a section or content (D-04). A field the teacher has typed in keeps
+ * its local value, so a conflict never overwrites what was typed (D-09); untouched
+ * fields follow `values` (reload, re-sync, bulk edits). Only changed fields are
+ * sent, so a stale untouched field never overwrites a colleague's change.
  * The disclosure button lives in the row (05-06).
  */
 export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPanelProps) {
   const [description, setDescription] = useState(values.description ?? '')
-  const [isPublished, setIsPublished] = useState(values.isPublished)
   const [from, setFrom] = useState(toDateInput(values.availableFrom))
   const [until, setUntil] = useState(toDateInput(values.availableUntil))
   const [dateError, setDateError] = useState<string | null>(null)
-  // Last values sent, so a blur without change does not save again.
+  const touched = useRef<Set<Field>>(new Set())
+  // Last values sent (or seeded), so a blur without change does not save again.
   const sent = useRef({
     description: values.description ?? '',
     from: toDateInput(values.availableFrom),
     until: toDateInput(values.availableUntil),
   })
+
+  const reseed = (field: Field, value: string, set: (value: string) => void) => {
+    if (touched.current.has(field)) return
+    sent.current[field] = value
+    set(value)
+  }
+  useEffect(() => reseed('description', values.description ?? '', setDescription), [values.description])
+  useEffect(() => reseed('from', toDateInput(values.availableFrom), setFrom), [values.availableFrom])
+  useEffect(
+    () => reseed('until', toDateInput(values.availableUntil), setUntil),
+    [values.availableUntil]
+  )
 
   const commitDescription = () => {
     if (description === sent.current.description) return
@@ -49,17 +65,17 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
     onSave({ description: description.trim() === '' ? null : description })
   }
 
-  const commitDates = (nextFrom: string, nextUntil: string) => {
-    if (nextFrom !== '' && nextUntil !== '' && nextFrom > nextUntil) {
+  const commitDates = () => {
+    const patch = datePatch({ from, until }, sent.current)
+    if (!patch) {
       setDateError(DATE_ORDER_MESSAGE)
       return
     }
     setDateError(null)
-    if (nextFrom === sent.current.from && nextUntil === sent.current.until) return
-    sent.current.from = nextFrom
-    sent.current.until = nextUntil
-    // Both sent together: a date held back by the order check goes out once fixed.
-    onSave({ availableFrom: orNull(nextFrom), availableUntil: orNull(nextUntil) })
+    if (Object.keys(patch).length === 0) return
+    sent.current.from = from
+    sent.current.until = until
+    onSave(patch)
   }
 
   const errorId = `${idBase}-panel-error`
@@ -74,7 +90,10 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
           value={description}
           rows={3}
           aria-describedby={errorMessage ? errorId : undefined}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            touched.current.add('description')
+            setDescription(e.target.value)
+          }}
           onBlur={commitDescription}
         />
       </div>
@@ -82,11 +101,8 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
       <div className="flex items-center gap-2">
         <Switch
           id={`${idBase}-published`}
-          checked={isPublished}
-          onCheckedChange={(checked) => {
-            setIsPublished(checked)
-            onSave({ isPublished: checked })
-          }}
+          checked={values.isPublished}
+          onCheckedChange={(checked) => onSave({ isPublished: checked })}
         />
         <Label htmlFor={`${idBase}-published`}>Publié</Label>
       </div>
@@ -100,8 +116,11 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
             value={from}
             aria-invalid={dateError ? true : undefined}
             aria-describedby={dateError ? dateErrorId : undefined}
-            onChange={(e) => setFrom(e.target.value)}
-            onBlur={() => commitDates(from, until)}
+            onChange={(e) => {
+              touched.current.add('from')
+              setFrom(e.target.value)
+            }}
+            onBlur={commitDates}
           />
         </div>
         <div className="space-y-2">
@@ -112,8 +131,11 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
             value={until}
             aria-invalid={dateError ? true : undefined}
             aria-describedby={dateError ? dateErrorId : undefined}
-            onChange={(e) => setUntil(e.target.value)}
-            onBlur={() => commitDates(from, until)}
+            onChange={(e) => {
+              touched.current.add('until')
+              setUntil(e.target.value)
+            }}
+            onBlur={commitDates}
           />
         </div>
       </div>

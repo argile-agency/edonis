@@ -12,6 +12,7 @@ import {
   bulkDeletedIds,
   bulkMoveTargets,
   canDeleteSection,
+  datePatch,
   mergeBulkResult,
   moveTargets,
   projectContentDrop,
@@ -565,5 +566,31 @@ test.group('builder_tree - selection and bulk', () => {
       bContents.filter((x) => x.id !== C3)
     )
     assert.deepEqual(sorted(pruned), [s(S2)])
+  })
+})
+
+test.group('builder_tree - details panel dates (CR-01)', () => {
+  test('datePatch sends only the bound that changed', ({ assert }) => {
+    const sent = { from: '2026-11-01', until: '2026-11-15' }
+    assert.deepEqual(datePatch({ from: '2026-11-03', until: '2026-11-15' }, sent), {
+      availableFrom: '2026-11-03',
+    })
+    assert.deepEqual(datePatch({ from: '2026-11-01', until: '' }, sent), { availableUntil: null })
+    assert.deepEqual(datePatch(sent, sent), {})
+  })
+
+  test('datePatch holds an inverted range back, then sends both bounds once fixed', ({
+    assert,
+  }) => {
+    const sent = { from: '2026-11-01', until: '2026-11-15' }
+    assert.isNull(datePatch({ from: '2026-11-20', until: '2026-11-15' }, sent))
+    assert.deepEqual(datePatch({ from: '2026-11-20', until: '2026-11-30' }, sent), {
+      availableFrom: '2026-11-20',
+      availableUntil: '2026-11-30',
+    })
+    // Same day on both bounds is a one-day window, not an inversion.
+    assert.deepEqual(datePatch({ from: '2026-11-15', until: '2026-11-15' }, sent), {
+      availableFrom: '2026-11-15',
+    })
   })
 })
