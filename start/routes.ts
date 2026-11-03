@@ -34,6 +34,7 @@ const TwoFactorController = () => import('#controllers/two_factor_controller')
 const SocialAuthController = () => import('#controllers/social_auth_controller')
 const AccountController = () => import('#controllers/account_controller')
 const AuditLogsController = () => import('#controllers/audit_logs_controller')
+const AppSettingsController = () => import('#controllers/app_settings_controller')
 const FilesController = () => import('#controllers/files_controller')
 
 /*
@@ -200,6 +201,23 @@ router
 router
   .get('/admin/audit-logs', [AuditLogsController, 'index'])
   .as('admin.audit-logs')
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin'] }))
+
+/*
+|--------------------------------------------------------------------------
+| Routes d'administration — Réglages de la plateforme
+|--------------------------------------------------------------------------
+*/
+router
+  .get('/admin/settings', [AppSettingsController, 'show'])
+  .as('admin.settings')
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin'] }))
+router
+  .put('/admin/settings/:tab', [AppSettingsController, 'update'])
+  .as('admin.settings.update')
+  .where('tab', /^(appearance|home|access|contact)$/)
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin'] }))
 
