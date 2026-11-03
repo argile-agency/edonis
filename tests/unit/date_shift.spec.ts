@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
-import { shiftDate, shiftDays } from '../../app/helpers/date_shift.js'
+import { inclusiveEnd, shiftDate, shiftDays } from '../../app/helpers/date_shift.js'
 
 /** Pure date shift: calendar days, wall-clock time kept, null preserved. */
 test.group('date_shift', () => {
@@ -47,5 +47,14 @@ test.group('date_shift', () => {
     const b = a.plus({ days: 3, hours: 4 })
     const gap = b.diff(a).toMillis()
     assert.equal(shiftDate(b, 30)!.diff(shiftDate(a, 30)!).toMillis(), gap)
+  })
+
+  test('inclusiveEnd: a date-only end covers the whole day, in whole seconds (CR-02)', ({
+    assert,
+  }) => {
+    const end = inclusiveEnd(DateTime.fromISO('2026-11-14', paris))
+    assert.equal(end.toISO(), DateTime.fromISO('2026-11-14T23:59:59.000', paris).toISO())
+    const timed = DateTime.fromISO('2026-11-14T14:30', paris)
+    assert.equal(inclusiveEnd(timed).toISO(), timed.toISO())
   })
 })

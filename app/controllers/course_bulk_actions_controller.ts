@@ -25,7 +25,7 @@ import {
   deleteImpactValidator,
 } from '#validators/course_bulk'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
-import { shiftDate, shiftDays } from '../helpers/date_shift.js'
+import { inclusiveEnd, shiftDate, shiftDays } from '../helpers/date_shift.js'
 import { depthOf, subtreeHeight } from '../helpers/category_tree.js'
 import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
 
@@ -308,7 +308,9 @@ export default class CourseBulkActionsController {
   async availability(ctx: HttpContext) {
     return this.run(ctx, bulkAvailabilityValidator, async (_trx, scope, payload) => {
       const from = payload.availableFrom ? DateTime.fromJSDate(payload.availableFrom) : null
-      const until = payload.availableUntil ? DateTime.fromJSDate(payload.availableUntil) : null
+      const until = payload.availableUntil
+        ? inclusiveEnd(DateTime.fromJSDate(payload.availableUntil))
+        : null
       if (from && until && from > until) {
         throw new BulkRefusal(422, {
           errors: [{ field: 'availableUntil', message: AVAILABILITY_ORDER_ERROR }],

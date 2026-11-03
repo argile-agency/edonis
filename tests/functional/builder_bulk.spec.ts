@@ -296,6 +296,30 @@ test.group('Builder - bulk publish, availability, shift', (group) => {
     assert.lengthOf(await bulkAudits(f.course.id), 2)
   })
 
+  test('availability: a date-only end includes that day, so a one-day window is open (CR-02)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const today = DateTime.now().toISODate()!
+    const res = await postBulk(
+      client,
+      route('courses.bulk.availability', { id: f.course.id }),
+      f.owner,
+      {
+        items: [con(f.c1)],
+        availableFrom: today,
+        availableUntil: today,
+      }
+    )
+    res.assertStatus(200)
+    const c1 = await fresh(f.c1)
+    assert.equal(c1.availableUntil?.toFormat('yyyy-MM-dd HH:mm:ss'), `${today} 23:59:59`)
+    c1.isPublished = true
+    assert.isTrue(c1.isAvailable())
+  })
+
   test('shift by days moves every non-null date and keeps nulls (BUILD-13)', async ({
     client,
     route,

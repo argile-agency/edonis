@@ -879,6 +879,32 @@ test.group('Builder - edits and deletes', (group) => {
     assert.equal(after.availableUntil?.toISODate(), '2026-11-30')
   })
 
+  test('a date-only end date includes that day; a one-day window is open (CR-02)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const owner = await createUser({ roles: ['teacher'] })
+    const course = await createCourse(owner)
+    const s = await createModule(course)
+    const c = await createContent(s)
+    const today = DateTime.now().toISODate()!
+
+    const url = route('contents.update', { contentId: c.id })
+    const res = await putJson(client, url, owner, { availableFrom: today, availableUntil: today })
+    res.assertStatus(200)
+    const after = await CourseContent.findOrFail(c.id)
+    assert.equal(after.availableUntil?.toFormat('yyyy-MM-dd HH:mm:ss'), `${today} 23:59:59`)
+    assert.isTrue(after.isAvailable())
+
+    const timed = await putJson(client, route('modules.update', { moduleId: s.id }), owner, {
+      availableUntil: '2026-11-30 14:30:00',
+    })
+    timed.assertStatus(200)
+    const moduleAfter = await CourseModule.findOrFail(s.id)
+    assert.equal(moduleAfter.availableUntil?.toFormat('yyyy-MM-dd HH:mm:ss'), '2026-11-30 14:30:00')
+  })
+
   test('an end date before the start date is refused with 422, also on a partial update', async ({
     client,
     route,
