@@ -30,7 +30,6 @@ Tasks 1-2 are done. Task 3 (`checkpoint:human-verify`, blocking) is waiting for 
 
 ## Deviations from Plan
 
-- The 5 axe runs share one local `check(state)` helper (one `.analyze()` in the source, called 5 times) instead of 5 inline copies. Same tags, filter, log format and per-state assertion message.
 - The migration row (05-09 T1) is green on SQLite from the 05-09 evidence. PostgreSQL and MySQL are still pending the CI matrix.
 
 ## Pending (to complete after Task 3)

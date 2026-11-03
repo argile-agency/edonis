@@ -1,7 +1,7 @@
 ---
 phase: 05
 slug: builder-ui
-status: complete-pending-browser
+status: draft
 nyquist_compliant: false
 wave_0_complete: true
 created: 2026-10-28
