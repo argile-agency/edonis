@@ -388,6 +388,9 @@ export default function CourseBuilder(props: Props) {
         find({ sections: sectionsRef.current, contents: contentsRef.current }) ?? find(snapshot)
       return row?.updatedAt ?? null
     }
+    // Duplicate and shift are not idempotent: "Réessayer" re-sends the first tokens, so a
+    // replay after a lost response (server bumped them) is a 409, never a second copy or shift.
+    let pinned: (ItemRef & { updatedAt: string | null })[] | null = null
     queue.enqueue({
       label,
       apply() {
@@ -395,10 +398,12 @@ export default function CourseBuilder(props: Props) {
         optimistic?.(items)
       },
       async run() {
+        const sent = pinned ?? items.map((ref) => ({ ...ref, updatedAt: token(ref) }))
+        if (action === 'duplicate' || action === 'shift') pinned = sent
         const result = await sendJson<BulkResult>(
           'POST',
           `/courses/${course.id}/builder/bulk/${action}`,
-          { ...body, items: items.map((ref) => ({ ...ref, updatedAt: token(ref) })) }
+          { ...body, items: sent }
         )
         commit(
           mergeBulkResult(
