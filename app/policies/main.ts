@@ -15,4 +15,5 @@
 export const policies = {
   CoursePolicy: () => import('#policies/course_policy'),
   EnrollmentPolicy: () => import('#policies/enrollment_policy'),
+  PlatformSettingsPolicy: () => import('#policies/platform_settings_policy'),
 }
