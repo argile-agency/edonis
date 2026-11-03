@@ -294,9 +294,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create under the course lock, audit rows on deletes, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
-- [ ] 05-05-PLAN.md — Inline title, details panel, actions menu (Monter / Descendre / Déplacer vers… / Supprimer with confirmation) [BUILD-05, BUILD-06, BUILD-08, BUILD-09]
-- [ ] 05-09-PLAN.md — Bulk endpoints (publish/unpublish, availability, date shift, move via the shared move service, duplicate with attachments, delete) in one transaction each with one ids-only audit row; reversible `copied_from_id` migration; date-shift helper [BUILD-12, BUILD-13, BUILD-14, BUILD-15]
+- [x] 05-04-PLAN.md — JSON + conflict on updates, WR-20 clearable/ordered dates, locked refusal of non-empty section delete, depth on create under the course lock, audit rows on deletes, CSRF JSON case [BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10]
+- [x] 05-05-PLAN.md — Inline title, details panel, actions menu (Monter / Descendre / Déplacer vers… / Supprimer with confirmation) [BUILD-05, BUILD-06, BUILD-08, BUILD-09]
+- [x] 05-09-PLAN.md — Bulk endpoints (publish/unpublish, availability, date shift, move via the shared move service, duplicate with attachments, delete) in one transaction each with one ids-only audit row; reversible `copied_from_id` migration; date-shift helper [BUILD-12, BUILD-13, BUILD-14, BUILD-15]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -476,7 +476,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 3/10 | In Progress|  |
+| 5. Builder UI | 6/10 | In Progress|  |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
