@@ -691,8 +691,15 @@ export default function CourseBuilder(props: Props) {
     const up = siblingPlacement(sections, contents, ref, 'up')
     const down = siblingPlacement(sections, contents, ref, 'down')
     const isEditing = editing?.key === row.key
+    const parentTitle = sections.find((s) => s.id === row.parentId)?.title ?? ''
     return {
       row,
+      location:
+        row.kind === 'content'
+          ? `dans la section « ${parentTitle} »`
+          : row.parentId === null
+            ? 'section de niveau 1'
+            : `sous-section de « ${parentTitle} », niveau ${row.depth + 1}`,
       expanded: row.kind === 'section' ? expanded.has(row.id) : undefined,
       onToggleExpanded: () =>
         setExpanded((prev) => {
