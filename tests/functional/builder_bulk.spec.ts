@@ -155,6 +155,8 @@ test.group('Builder - bulk policy and scope', (group) => {
       assert.equal(response.status(), 422, r.name)
       assert.isArray(response.body().errors, r.name)
     }
+    assert.isNotNull(await CourseContent.find(f.c1.id))
+    assert.lengthOf(await bulkAudits(f.course.id), 0)
   })
 })
 
