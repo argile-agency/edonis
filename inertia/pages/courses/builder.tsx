@@ -1,5 +1,21 @@
 import { Head, Link, router, useForm } from '@inertiajs/react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { Eye, FileText, Plus } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -357,9 +373,19 @@ export default function CourseBuilder(props: Props) {
     })
   }
 
-  // --- rows ---
+  // --- rows and drag ---
 
   const rows = buildRows(sections, contents, expanded)
+
+  // DragOverlay portals into document.body, which only exists after hydration.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const activeRow = activeKey ? rows.find((r) => r.key === activeKey) : undefined
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   function rowProps(row: Row): BuilderRowProps {
     const ref = refOf(row)
@@ -458,11 +484,36 @@ export default function CourseBuilder(props: Props) {
             </CardContent>
           </Card>
         ) : (
-          <ul aria-label="Plan du cours">
-            {rows.map((row) => (
-              <BuilderRow key={row.key} {...rowProps(row)} />
-            ))}
-          </ul>
+          <DndContext
+            id="course-builder"
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+            onDragStart={({ active }) => setActiveKey(String(active.id))}
+            onDragEnd={() => setActiveKey(null)}
+            onDragCancel={() => setActiveKey(null)}
+          >
+            <SortableContext items={rows.map((r) => r.key)} strategy={verticalListSortingStrategy}>
+              <ul aria-label="Plan du cours">
+                {rows.map((row) => (
+                  <BuilderRow key={row.key} {...rowProps(row)} />
+                ))}
+              </ul>
+            </SortableContext>
+            {mounted &&
+              createPortal(
+                <DragOverlay>
+                  {activeRow && (
+                    <div className="rounded-lg border bg-card p-3 font-medium shadow-lg">
+                      {activeRow.kind === 'section'
+                        ? activeRow.section.title
+                        : activeRow.content.title}
+                    </div>
+                  )}
+                </DragOverlay>,
+                document.body
+              )}
+          </DndContext>
         )}
       </div>
 

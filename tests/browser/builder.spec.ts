@@ -120,6 +120,25 @@ test.group('Course builder', (group) => {
     fixture = null
   })
 
+  test('builder hydrates without dnd-kit mismatch', async ({ visit, assert }) => {
+    const f = (fixture = await createFixture())
+    const messages: string[] = []
+    const page = await visit('/login')
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') messages.push(msg.text())
+    })
+    await login(page, 'teacher@edonis.test')
+    await page.goto(`/courses/${f.course.id}/builder`)
+    await page.waitForLoadState('networkidle')
+
+    // The app header's own hydration warnings (phase 4) are known; only dnd-kit ones fail.
+    const dndKit = messages.filter((m) =>
+      /DndDescribedBy|DndLiveRegion|aria-roledescription/.test(m)
+    )
+    assert.deepEqual(dndKit, [])
+    assert.isTrue(await page.getByRole('button', { name: 'Déplacer « Contenu A »' }).isVisible())
+  })
+
   test('menu move to another section saves and persists (BUILD-02, BUILD-10)', async ({
     visit,
     assert,

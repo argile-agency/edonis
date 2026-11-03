@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   ChevronDown,
   ChevronRight,
@@ -6,6 +7,7 @@ import {
   FileText,
   FileUp,
   Film,
+  GripVertical,
   HelpCircle,
   Link as LinkIcon,
   Pencil,
@@ -52,8 +54,8 @@ export interface BuilderRowProps {
   onCloseFocusTarget?: () => HTMLElement | null
   onAddContent?(): void
   onAddSubSection?(): void
-  /** Drag handle slot (05-07). */
-  handle?: ReactNode
+  /** Depth shown while this section row is dragged (projected drop level). */
+  projectedDepth?: number
   /** Selection slot (05-10): the checkbox renders only when onToggleSelect is given. */
   selected?: boolean
   onToggleSelect?: () => void
@@ -67,9 +69,31 @@ export function BuilderRow(props: BuilderRowProps) {
   const title = item.title
   const kindLabel = isSection ? 'la section' : 'le contenu'
   const Icon = isSection ? null : CONTENT_ICONS[row.content.contentType]
+  const {
+    setNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: row.key,
+    data: { kind: row.kind },
+    attributes: { roleDescription: 'élément déplaçable' },
+  })
 
   return (
-    <li data-row-key={row.key} style={{ paddingLeft: row.depth * 24 }} className="mb-2 list-none">
+    <li
+      ref={setNodeRef}
+      data-row-key={row.key}
+      style={{
+        paddingLeft: (isDragging ? (props.projectedDepth ?? row.depth) : row.depth) * 24,
+        transform: CSS.Translate.toString(transform),
+        transition,
+      }}
+      className={`mb-2 list-none${isDragging ? ' opacity-40' : ''}`}
+    >
       <div className="rounded-lg border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
           {props.onToggleSelect && (
@@ -80,7 +104,17 @@ export function BuilderRow(props: BuilderRowProps) {
               aria-label={`Sélectionner « ${title} »`}
             />
           )}
-          {props.handle}
+          {/* Drag listeners live on this button only: touch elsewhere scrolls, the checkbox never drags. */}
+          <button
+            type="button"
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            aria-label={`Déplacer « ${title} »`}
+            className="inline-flex size-9 touch-none cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <GripVertical className="h-4 w-4" aria-hidden="true" />
+          </button>
           {isSection ? (
             <Button
               type="button"
@@ -174,7 +208,7 @@ export function BuilderRow(props: BuilderRowProps) {
           />
         </div>
 
-        {props.panelOpen && (
+        {props.panelOpen && !isDragging && (
           <div className="mt-3">
             <DetailsPanel
               idBase={row.key}
