@@ -1,19 +1,31 @@
 import { test } from '@japa/runner'
 import {
+  BULK_CONTENT_ROOT_MESSAGE,
   DEPTH_MESSAGE,
   MAX_SECTION_DEPTH,
+  applyBulkMove,
+  applyBulkPatch,
   applyContentMove,
   applySectionMove,
   buildRows,
+  bulkDeleteBlockers,
+  bulkDeletedIds,
+  bulkMoveTargets,
   canDeleteSection,
+  mergeBulkResult,
   moveTargets,
   projectContentDrop,
   projectSectionDrop,
+  pruneSelection,
+  quickSelect,
   rowKey,
   sectionDepth,
   sectionRowsForDrag,
   sectionSubtreeHeight,
+  selectedItems,
   siblingPlacement,
+  topLevelItems,
+  type BulkResult,
   type BuilderContent,
   type BuilderSection,
 } from '../../inertia/lib/builder_tree.js'
@@ -338,5 +350,220 @@ test.group('Builder tree | canDeleteSection', () => {
     assert.isTrue(canDeleteSection(sections, contents, S2))
     assert.isFalse(canDeleteSection(sections, contents, S1))
     assert.isFalse(canDeleteSection(sections, [], S1))
+  })
+})
+
+/**
+ * Bulk fixture: S1 published {c1 page published, c2 video draft, S11 published
+ * {c4 video published}}, S2 draft {c3 link published}.
+ */
+test.group('builder_tree - selection and bulk', () => {
+  const bs = (id: number, parentId: number | null, order: number, isPublished: boolean) => ({
+    ...section(id, parentId, order, `S${id}`),
+    isPublished,
+  })
+  const bc = (
+    id: number,
+    moduleId: number,
+    order: number,
+    contentType: BuilderContent['contentType'],
+    isPublished: boolean
+  ) => ({ ...content(id, moduleId, order), contentType, isPublished })
+
+  const C1 = 201
+  const C2 = 202
+  const C3 = 203
+  const C4 = 204
+  const bSections: BuilderSection[] = [
+    bs(S2, null, 2, false),
+    bs(S11, S1, 1, true),
+    bs(S1, null, 1, true),
+  ]
+  const bContents: BuilderContent[] = [
+    bc(C3, S2, 1, 'link', true),
+    bc(C4, S11, 1, 'video', true),
+    bc(C2, S1, 2, 'video', false),
+    bc(C1, S1, 1, 'page', true),
+  ]
+  const s = (id: number) => rowKey({ kind: 'section', id })
+  const c = (id: number) => rowKey({ kind: 'content', id })
+  const sorted = (set: Set<string>) => [...set].sort()
+  const reasonOf = (
+    targets: { parentId: number | null; disabledReason: string | null }[],
+    id: number | null
+  ) => targets.find((t) => t.parentId === id)?.disabledReason
+
+  test('quickSelect is data-based and filters by state and type', ({ assert }) => {
+    const every = quickSelect(bSections, bContents, 'all')
+    assert.equal(every.size, 7)
+    assert.isTrue(every.has(c(C4)))
+    assert.equal(quickSelect(bSections, bContents, 'none').size, 0)
+    assert.deepEqual(
+      sorted(quickSelect(bSections, bContents, 'published')),
+      [s(S1), s(S11), c(C1), c(C4), c(C3)].sort()
+    )
+    assert.deepEqual(
+      sorted(quickSelect(bSections, bContents, 'unpublished')),
+      [s(S2), c(C2)].sort()
+    )
+    assert.deepEqual(
+      sorted(quickSelect(bSections, bContents, { contentType: 'video' })),
+      [c(C2), c(C4)].sort()
+    )
+  })
+
+  test('selectedItems returns tree order whatever the insertion order', ({ assert }) => {
+    const reversed = new Set([...quickSelect(bSections, bContents, 'all')].reverse())
+    assert.deepEqual(selectedItems(bSections, bContents, reversed).map(rowKey), [
+      s(S1),
+      c(C1),
+      c(C2),
+      s(S11),
+      c(C4),
+      s(S2),
+      c(C3),
+    ])
+  })
+
+  test('topLevelItems drops items under a selected section', ({ assert }) => {
+    const items = selectedItems(bSections, bContents, new Set([s(S11), c(C4), c(C1)]))
+    assert.deepEqual(topLevelItems(bSections, bContents, items).map(rowKey), [c(C1), s(S11)])
+  })
+
+  test('bulkMoveTargets: first applicable reason wins', ({ assert }) => {
+    const mixed = bulkMoveTargets(bSections, bContents, [
+      { kind: 'content', id: C1 },
+      { kind: 'section', id: S11 },
+    ])
+    assert.equal(reasonOf(mixed, null), BULK_CONTENT_ROOT_MESSAGE)
+    assert.match(reasonOf(mixed, S11) ?? '', /elle-même/)
+    assert.isNull(reasonOf(mixed, S2))
+
+    const parent = bulkMoveTargets(bSections, bContents, [{ kind: 'section', id: S1 }])
+    assert.equal(reasonOf(parent, S2), DEPTH_MESSAGE)
+    assert.isNull(reasonOf(parent, null))
+
+    // c3 travels with its selected section: it does not block the root.
+    const withChild = bulkMoveTargets(bSections, bContents, [
+      { kind: 'section', id: S2 },
+      { kind: 'content', id: C3 },
+    ])
+    assert.isNull(reasonOf(withChild, null))
+  })
+
+  test('applyBulkMove appends in tree order, like the server', ({ assert }) => {
+    const result = applyBulkMove(
+      bSections,
+      bContents,
+      [
+        { kind: 'content', id: C3 },
+        { kind: 'content', id: C1 },
+      ],
+      S2
+    )
+    const inS2 = result.contents
+      .filter((x) => x.moduleId === S2)
+      .sort((a, b) => a.order - b.order)
+      .map((x) => [x.id, x.order])
+    assert.deepEqual(inS2, [
+      [C1, 1],
+      [C3, 2],
+    ])
+    const inS1 = result.contents.filter((x) => x.moduleId === S1).map((x) => [x.id, x.order])
+    assert.deepEqual(inS1, [[C2, 1]])
+  })
+
+  test('bulkDeleteBlockers lists sections whose sub-tree is not fully selected', ({ assert }) => {
+    assert.deepEqual(bulkDeleteBlockers(bSections, bContents, new Set([s(S1), c(C1)])), [S1])
+    assert.deepEqual(
+      bulkDeleteBlockers(bSections, bContents, new Set([s(S1), c(C1), c(C2), s(S11), c(C4)])),
+      []
+    )
+    assert.deepEqual(bulkDeleteBlockers(bSections, bContents, new Set([c(C2)])), [])
+  })
+
+  test('bulkDeletedIds covers the selected rows and their sub-trees', ({ assert }) => {
+    assert.deepEqual(
+      bulkDeletedIds(bSections, bContents, [
+        { kind: 'section', id: S11 },
+        { kind: 'content', id: C4 },
+      ]),
+      { sectionIds: [S11], contentIds: [C4] }
+    )
+    const deep = bulkDeletedIds(
+      bSections,
+      bContents,
+      selectedItems(bSections, bContents, new Set([s(S1), c(C1), c(C2), s(S11), c(C4)]))
+    )
+    assert.includeMembers(deep.sectionIds, [S1, S11])
+    assert.includeMembers(deep.contentIds, [C1, C2, C4])
+  })
+
+  test('mergeBulkResult keeps local titles, adds copies, drops deleted rows', ({ assert }) => {
+    const local = {
+      sections: bSections,
+      contents: bContents.map((x) => (x.id === C1 ? { ...x, title: 'Renommé' } : x)),
+    }
+    const result: BulkResult = {
+      sections: bSections.map((x) => ({ ...x, title: 'server' })),
+      contents: [
+        ...bContents
+          .filter((x) => x.id !== C3)
+          .map((x) => ({ ...x, isPublished: true, title: 'server', updatedAt: 'fresh' })),
+        { ...bc(299, S1, 3, 'page', false), title: 'c1 (copie)' },
+      ],
+      affected: { sectionIds: [], contentIds: [C1, 299] },
+      deleted: { sectionIds: [], contentIds: [C3] },
+    }
+    const merged = mergeBulkResult(local, result)
+    const byId = new Map(merged.contents.map((x) => [x.id, x]))
+    assert.equal(byId.get(C1)?.title, 'Renommé')
+    assert.equal(byId.get(C1)?.updatedAt, 'fresh')
+    assert.equal(byId.get(299)?.title, 'c1 (copie)')
+    assert.isFalse(byId.has(C3))
+    // Neither affected nor deleted: untouched although the server row differs.
+    assert.equal(byId.get(C2)?.title, `c${C2}`)
+    assert.isFalse(byId.get(C2)?.isPublished)
+    assert.deepEqual(merged.sections, bSections)
+
+    // A row known when the op was queued but removed locally since stays removed.
+    const removed = mergeBulkResult(
+      { sections: bSections, contents: local.contents.filter((x) => x.id !== C1) },
+      result,
+      local
+    )
+    assert.isFalse(removed.contents.some((x) => x.id === C1))
+    assert.isTrue(removed.contents.some((x) => x.id === 299))
+  })
+
+  test('applyBulkPatch changes exactly the given items', ({ assert }) => {
+    const result = applyBulkPatch(
+      bSections,
+      bContents,
+      [
+        { kind: 'section', id: S2 },
+        { kind: 'content', id: C2 },
+      ],
+      { isPublished: true, availableFrom: '2026-09-01' }
+    )
+    const sec = new Map(result.sections.map((x) => [x.id, x]))
+    const con = new Map(result.contents.map((x) => [x.id, x]))
+    assert.isTrue(sec.get(S2)?.isPublished)
+    assert.equal(sec.get(S2)?.availableFrom, '2026-09-01')
+    assert.isTrue(con.get(C2)?.isPublished)
+    assert.isNull(con.get(C1)?.availableFrom)
+    assert.strictEqual(
+      sec.get(S1),
+      bSections.find((x) => x.id === S1)
+    )
+  })
+
+  test('pruneSelection drops keys of rows that no longer exist', ({ assert }) => {
+    const pruned = pruneSelection(
+      new Set([s(S2), c(C3), c(999), s(999)]),
+      bSections,
+      bContents.filter((x) => x.id !== C3)
+    )
+    assert.deepEqual(sorted(pruned), [s(S2)])
   })
 })
