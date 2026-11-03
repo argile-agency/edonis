@@ -47,6 +47,7 @@ The builder is now a flat, indented list of section and content rows, one `Build
 | 2 | db493e5 | feat(builder): render flat sections and contents props for the builder |
 | 3 | 83ff206 | feat(builder): rebuild the course builder with inline editing, move menu and autosave |
 | 4 | f52d627 | test(builder): cover menu moves, inline editing, deletes, add flows and save indicator in the browser |
+| fix | c3a6660 | fix(builder): keep server tokens on rollback and make delete focus deterministic |
 
 ## Final props shape (`courses/builder`)
 
@@ -83,7 +84,9 @@ It also asserts that `body` is not left with `pointer-events: none` after the mo
 2. **[Rule 2 - a11y] `id="contentType"` on the type `SelectTrigger`.** The existing `<Label htmlFor="contentType">` pointed at nothing, so the label is now associated with the trigger. The spec uses this id. Commit 83ff206.
 3. **Content type icons moved into `builder-row.tsx`**, the only place that renders them. Added `assignment` (ClipboardList) and `quiz` (HelpCircle) icons, which fell back to FileText before.
 4. **Browser spec uses string `page.evaluate` expressions.** The root tsconfig has no DOM lib, so `window` / `document` in callbacks fail `bun run typecheck`.
-5. **`DB_CONNECTION=sqlite` set on every `node ace` run**, as in 05-02 and 05-09, because the symlinked `.env` selects Postgres.
+5. **[Rule 1 - Bug] A rollback no longer restores stale tokens.** Example: a rename queued behind a move snapshots the item's pre-move `updatedAt`. If the rename then fails, its rollback put that old token back, and "Réessayer" got a false 409. Rollback now restores the snapshot but keeps the current `updatedAt` of every item still present (`withCurrentTokens`). Commit c3a6660.
+6. **[Rule 1 - Bug] Delete focus is no longer a race.** Radix FocusScope runs its unmount autofocus in a `setTimeout`, after the page's focus effect. The effect cleared the pending target too early, so Radix could pull focus back to `<body>`. `onCloseFocusTarget` now consumes the ref (`takeFocusTarget`), and the effect no longer clears it. In the spec, test 1 waits for the dialog to detach before the `pointer-events` check, because the exit animation holds the modal layer. Commit c3a6660.
+7. **`DB_CONNECTION=sqlite` set on every `node ace` run**, as in 05-02 and 05-09, because the symlinked `.env` selects Postgres.
 
 ## Known limitations
 
@@ -114,4 +117,4 @@ None. `handle`, `selected` and `onToggleSelect` are intentional empty slots for 
 ## Self-Check: PASSED
 
 - Files exist: builder-row.tsx, builder.tsx, builder.spec.ts, the controller and builder_moves.spec.ts
-- Commits 894cb56, db493e5, 83ff206 and f52d627 are on worktree-agent-a2540a06c9497be75
+- Commits 894cb56, db493e5, 83ff206, f52d627 and c3a6660 are on worktree-agent-a2540a06c9497be75
