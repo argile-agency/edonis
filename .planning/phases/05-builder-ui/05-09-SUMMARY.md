@@ -52,6 +52,7 @@ There are six all-or-nothing JSON bulk endpoints for the builder: publish/unpubl
 | 1 | 7d98b6e | feat(builder): add copied_from_id to sections and contents and a date shift helper |
 | 2 | 8d3c18e | feat(builder): add bulk publish, availability and date shift endpoints |
 | 3 | bb2b3e5 | feat(builder): add bulk move, duplicate and delete endpoints |
+| 2 (follow-up) | fe00c81 | test(05-09): assert no write and no audit on an empty bulk batch |
 
 ## builder_tree import path (A7)
 
@@ -71,6 +72,8 @@ All routes are `POST /courses/:id/builder/bulk/<action>` inside the builder grou
 | courses.bulk.delete | /delete | destroy | none |
 
 `items: { kind: 'section' | 'content'; id: number; updatedAt: string | null }[]` takes 1 to 1000 entries. Duplicate `kind:id` entries are collapsed.
+
+**Date format (request side):** `availableFrom`, `availableUntil`, `from` and `to` go through `vine.date()` with its default formats, which accept only `YYYY-MM-DD` or `YYYY-MM-DD HH:mm:ss` (`DEFAULT_DATE_FORMATS` in `@vinejs/vine`). A full ISO string such as `toISO()` (`…T…Z`) is refused with a VineJS 422, so 05-10 must send one of those two formats. The `updatedAt` tokens are the exception: they are free strings parsed with `DateTime.fromISO`, so send back exactly the `updatedAt` received. Dates in the 200 response are ISO strings (`toISO()`).
 
 **200**
 ```
@@ -135,4 +138,5 @@ None. `SHIFT_ASSIGNMENTS_TABLE` throws if it is ever flipped without implementin
 ## Self-Check: PASSED
 
 - Files exist: every file under key-files.created
-- Commits 7d98b6e, 8d3c18e, bb2b3e5 are present on worktree-agent-ad37f4fb3f6a2d865
+- Commits 7d98b6e, 8d3c18e, bb2b3e5, fe00c81 are present on worktree-agent-ad37f4fb3f6a2d865
+- The temporary migration-check script is gone (`/tmp/mig-check-0509.cjs`: no such file)
