@@ -113,6 +113,42 @@ async function eventually<T>(get: () => Promise<T | null>, timeout = 5000): Prom
   return found
 }
 
+/** dnd-kit's announcement region (client-only portal). */
+const liveRegion = (page: Page) => page.locator('[id^="DndLiveRegion"]')
+
+/** Presses keys one by one; dnd-kit needs a moment to measure between steps. */
+async function press(page: Page, ...keys: string[]) {
+  for (const key of keys) {
+    await page.keyboard.press(key)
+    await page.waitForTimeout(150)
+  }
+}
+
+/** Focuses a row's drag handle and picks it up with Space. */
+async function grab(page: Page, title: string) {
+  await page.getByRole('button', { name: `Déplacer « ${title} »` }).focus()
+  await page.keyboard.press('Space')
+  await page.waitForTimeout(150)
+}
+
+async function sectionParent(id: number) {
+  const section = await CourseModule.findOrFail(id)
+  return section.parentId
+}
+
+async function contentModule(id: number) {
+  const content = await CourseContent.findOrFail(id)
+  return content.moduleId
+}
+
+async function contentOrder(moduleId: number): Promise<number[]> {
+  const items = await CourseContent.query()
+    .where('module_id', moduleId)
+    .orderBy('order', 'asc')
+    .orderBy('id', 'asc')
+  return items.map((c) => c.id)
+}
+
 test.group('Course builder', (group) => {
   group.each.teardown(async () => {
     // Sections, contents and progress cascade with the course.
@@ -375,5 +411,118 @@ test.group('Course builder', (group) => {
     )
     assert.equal(created.contentType, 'video')
     assert.equal(created.moduleId, sub.id)
+  })
+
+  test('keyboard drag reorders a content within its section (BUILD-01)', async ({
+    visit,
+    assert,
+  }) => {
+    const f = (fixture = await createFixture())
+    const page = await openBuilder(visit, f)
+
+    await grab(page, 'Contenu A')
+    assert.include(await liveRegion(page).textContent(), '« Contenu A » saisi.')
+    await press(page, 'ArrowDown', 'Space')
+    await waitSaved(page)
+
+    const expected = `${f.c2.id},${f.c1.id}`
+    assert.isTrue(
+      await until(async () => {
+        const order = await contentOrder(f.s1.id)
+        return order.join() === expected
+      })
+    )
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    const keys = await rowKeys(page)
+    assert.isBelow(keys.indexOf(`c-${f.c2.id}`), keys.indexOf(`c-${f.c1.id}`))
+  })
+
+  test('keyboard drag moves a content into an empty section (BUILD-02)', async ({
+    visit,
+    assert,
+  }) => {
+    const f = (fixture = await createFixture())
+    const page = await openBuilder(visit, f)
+
+    // Rows: S1, Contenu A, Contenu B, S11, S2 → three steps put Contenu A right after S2.
+    await grab(page, 'Contenu A')
+    await press(page, 'ArrowDown', 'ArrowDown', 'ArrowDown')
+    assert.include(await liveRegion(page).textContent(), 'Sera déposé dans « S2 », position 1.')
+    await press(page, 'Space')
+    await waitSaved(page)
+
+    assert.isTrue(await until(async () => (await contentModule(f.c1.id)) === f.s2.id))
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    const keys = await rowKeys(page)
+    assert.isAbove(keys.indexOf(`c-${f.c1.id}`), keys.indexOf(`s-${f.s2.id}`))
+  })
+
+  test('keyboard ArrowRight nests a section, never past 2 levels (BUILD-03)', async ({
+    visit,
+    assert,
+  }) => {
+    const f = (fixture = await createFixture())
+    const page = await openBuilder(visit, f)
+
+    // Sections-only list during the drag: S1, S11, S2. ArrowRight puts S2 under S1, after S11.
+    await grab(page, 'S2')
+    await press(page, 'ArrowRight')
+    assert.include(await liveRegion(page).textContent(), 'Sera déposé dans « S1 », position 2.')
+    await press(page, 'Space')
+    await waitSaved(page)
+    assert.isTrue(await until(async () => (await sectionParent(f.s2.id)) === f.s1.id))
+
+    // S1 has sub-sections: a third level is not offered, the drop stays at the root.
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await grab(page, 'S1')
+    await press(page, 'ArrowRight', 'Space')
+    await page.waitForTimeout(500)
+    assert.notInclude(await page.locator('#save-status').innerText(), 'Enregistrement')
+    assert.isNull(await sectionParent(f.s1.id))
+    assert.equal(await sectionParent(f.s2.id), f.s1.id)
+  })
+
+  test('keyboard ArrowUp moves a section below content rows exactly one slot (reflow)', async ({
+    visit,
+    assert,
+  }) => {
+    const f = (fixture = await createFixture())
+    const page = await openBuilder(visit, f)
+
+    // S2 sits below S1's contents, which are hidden while a section is dragged.
+    await grab(page, 'S2')
+    await press(page, 'ArrowUp')
+    assert.include(await liveRegion(page).textContent(), 'Sera déposé dans « S1 », position 1.')
+    await press(page, 'Space')
+    await waitSaved(page)
+
+    assert.isTrue(await until(async () => (await sectionParent(f.s2.id)) === f.s1.id))
+    const children = await CourseModule.query()
+      .where('parent_id', f.s1.id)
+      .orderBy('order', 'asc')
+      .orderBy('id', 'asc')
+    assert.deepEqual(
+      children.map((s) => s.id),
+      [f.s2.id, f.s11.id]
+    )
+  })
+
+  test('Escape cancels a keyboard drag without saving', async ({ visit, assert }) => {
+    const f = (fixture = await createFixture())
+    const page = await openBuilder(visit, f)
+    const before = await rowKeys(page)
+
+    await grab(page, 'Contenu A')
+    await press(page, 'ArrowDown')
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(500)
+
+    assert.include(await liveRegion(page).textContent(), 'Déplacement annulé.')
+    assert.notInclude(await page.locator('#save-status').innerText(), 'Enregistrement')
+    assert.deepEqual(await rowKeys(page), before)
+    assert.deepEqual(await contentOrder(f.s1.id), [f.c1.id, f.c2.id])
   })
 })
