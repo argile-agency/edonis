@@ -501,10 +501,13 @@ export default function CourseBuilder(props: Props) {
           ? `Sera déposé dans ${placeOf(projectionRef.current)}.`
           : 'Emplacement impossible ici.'
         : undefined,
-    onDragOver: () =>
-      projectionRef.current
-        ? `Sera déposé dans ${placeOf(projectionRef.current)}.`
-        : 'Emplacement impossible ici.',
+    // At pick-up `over` is the row itself: keep "saisi." audible instead of the unchanged slot.
+    onDragOver: ({ active, over }) =>
+      over?.id === active.id && depthOffsetRef.current === 0
+        ? undefined
+        : projectionRef.current
+          ? `Sera déposé dans ${placeOf(projectionRef.current)}.`
+          : 'Emplacement impossible ici.',
     onDragEnd: ({ active }) => {
       const key = String(active.id)
       if (projectionRef.current) {
