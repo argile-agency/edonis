@@ -15,7 +15,13 @@ import {
   FileText,
   LayoutDashboard,
   PlusCircle,
+  Mail,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Github,
 } from 'lucide-react'
+import { isExternalUrl, isSafeImageSrc, isSafeLink } from '~/lib/safe_url'
 
 interface Role {
   id: number
@@ -39,6 +45,33 @@ interface AppSettings {
   heroSubtitle: string | null
   showPublicCourses: boolean
   allowRegistration: boolean
+  announcementText?: string | null
+  heroImageUrl?: string | null
+  contactEmail?: string | null
+  supportUrl?: string | null
+  socialLinks?: Record<string, string | null> | null
+}
+
+const SOCIAL_LINKS = [
+  { key: 'facebook', label: 'Facebook', Icon: Facebook },
+  { key: 'twitter', label: 'X', Icon: Twitter },
+  { key: 'linkedin', label: 'LinkedIn', Icon: Linkedin },
+  { key: 'github', label: 'GitHub', Icon: Github },
+] as const
+
+// Plain text only; the contact email (first occurrence) becomes a mailto link.
+function AnnouncementText({ text, email }: { text: string; email: string | null | undefined }) {
+  const at = email ? text.indexOf(email) : -1
+  if (!email || at === -1) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, at)}
+      <a href={'mailto:' + email} className="font-medium underline underline-offset-4">
+        {email}
+      </a>
+      {text.slice(at + email.length)}
+    </>
+  )
 }
 
 interface MenuItem {
@@ -110,15 +143,33 @@ interface Props {
 
 export default function Home({ auth, appSettings, menus, dashboardData }: Props) {
   const user = auth.user
-  const settings = appSettings || {
+  const settings: AppSettings = appSettings || {
     appName: 'Edonis LMS',
+    appLogoUrl: null,
     primaryColor: '#5046E5',
     welcomeMessage: 'Bienvenue sur notre plateforme',
     heroTitle: 'Apprenez à votre rythme',
     heroSubtitle: 'Découvrez nos cours en ligne',
     showPublicCourses: true,
     allowRegistration: true,
+    announcementText: null,
+    heroImageUrl: null,
+    contactEmail: null,
+    supportUrl: null,
+    socialLinks: null,
   }
+  // SQLite/MySQL may send 0/1, never compare with !== false.
+  const registrationOpen = !appSettings || Boolean(appSettings.allowRegistration)
+  const announcement = settings.announcementText?.trim()
+  const contactEmail = settings.contactEmail?.trim()
+  const supportUrl = isSafeLink(settings.supportUrl) ? settings.supportUrl : null
+  // socialLinks has no consume on the model: MySQL/SQLite may send a JSON string, skip it then.
+  const socialSource = typeof settings.socialLinks === 'object' ? settings.socialLinks : null
+  const socials = SOCIAL_LINKS.flatMap((s) => {
+    const url = socialSource?.[s.key]
+    return isSafeLink(url) && url.startsWith('http') ? [{ ...s, url }] : []
+  })
+  const hasContact = Boolean(contactEmail || supportUrl || socials.length)
 
   // Déterminer le rôle principal de l'utilisateur
   const isStudent = user?.roles?.some((r) => r.slug === 'student')
@@ -133,20 +184,16 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
         {/* Header avec menu dynamique */}
         <AppHeader user={user} appSettings={appSettings} menus={menus} />
 
-        <div className="border-b bg-primary/10">
-          <p className="container mx-auto px-4 py-2 text-center text-sm">
-            Environnement de démonstration — un projet pilote ?{' '}
-            <a
-              href="mailto:contact@edonis.org"
-              className="font-medium underline underline-offset-4"
-            >
-              contact@edonis.org
-            </a>
-          </p>
-        </div>
+        {announcement && (
+          <div role="region" aria-label="Annonce" className="border-b bg-primary/10">
+            <p className="container mx-auto px-4 py-2 text-center text-sm">
+              <AnnouncementText text={announcement} email={contactEmail} />
+            </p>
+          </div>
+        )}
 
         {/* Contenu principal basé sur le rôle */}
-        {!user && <PublicHomePage settings={settings} />}
+        {!user && <PublicHomePage settings={settings} registrationOpen={registrationOpen} />}
         {user && isStudent && <StudentHomePage user={user} data={dashboardData} />}
         {user && isInstructor && <InstructorHomePage user={user} data={dashboardData} />}
         {user && isAdmin && !isStudent && !isInstructor && <AdminHomePage user={user} />}
@@ -166,6 +213,51 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
                   </Link>
                 ))}
               </div>
+              {hasContact && (
+                <div className="flex items-center gap-4">
+                  {contactEmail && (
+                    <span className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <a
+                        href={'mailto:' + contactEmail}
+                        className="text-sm text-muted-foreground hover:text-foreground transition"
+                      >
+                        {contactEmail}
+                      </a>
+                    </span>
+                  )}
+                  {supportUrl &&
+                    (isExternalUrl(supportUrl) ? (
+                      <a
+                        href={supportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-muted-foreground hover:text-foreground transition"
+                      >
+                        Aide et support
+                      </a>
+                    ) : (
+                      <Link
+                        href={supportUrl}
+                        className="text-sm text-muted-foreground hover:text-foreground transition"
+                      >
+                        Aide et support
+                      </Link>
+                    ))}
+                  {socials.map(({ key, label, Icon, url }) => (
+                    <a
+                      key={key}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${settings.appName} sur ${label}`}
+                      className="p-2 -m-2 text-muted-foreground hover:text-foreground transition"
+                    >
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </a>
+                  ))}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 © {new Date().getFullYear()} {settings.appName}. Tous droits réservés.
               </p>
@@ -178,7 +270,13 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
 }
 
 // Page d'accueil pour visiteurs non connectés
-function PublicHomePage({ settings }: { settings: any }) {
+function PublicHomePage({
+  settings,
+  registrationOpen,
+}: {
+  settings: AppSettings
+  registrationOpen: boolean
+}) {
   return (
     <div className="container mx-auto px-4">
       {/* Hero Section */}
@@ -188,15 +286,25 @@ function PublicHomePage({ settings }: { settings: any }) {
           {settings.heroSubtitle}
         </p>
         <div className="flex gap-4 justify-center">
-          <Link href="/register">
-            <Button size="lg">Commencer maintenant</Button>
-          </Link>
+          {registrationOpen && (
+            <Link href="/register">
+              <Button size="lg">Commencer maintenant</Button>
+            </Link>
+          )}
           <Link href="/courses">
             <Button size="lg" variant="outline">
               Explorer les cours
             </Button>
           </Link>
         </div>
+        {isSafeImageSrc(settings.heroImageUrl) && (
+          <img
+            src={settings.heroImageUrl}
+            alt=""
+            className="mx-auto mt-12 w-full max-w-4xl rounded-lg border object-cover max-h-96"
+            loading="eager"
+          />
+        )}
       </section>
 
       {/* Features */}
