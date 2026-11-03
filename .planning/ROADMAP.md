@@ -324,6 +324,7 @@ Plans:
 **Plans:** 0 plans
 
 **Scope from the owner (05-CONTEXT D-06 and 2026-11-03):**
+
 - Soft delete with `deleted_at` (CLAUDE.md database conventions) for sections and contents; learner progress is kept while an item is in the trash
 - Trash reachable from the course and from course editing, with restore
 - Emptied after 30 days by default; retention configurable in the platform administration settings
@@ -497,7 +498,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 6 -> 3 · v1.0 (option (a), own
 | 2. Security and Correctness Hardening | 16/16 | Complete    | 2026-10-28 |
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
-| 5. Builder UI | 10/10 | Complete   | 2026-11-03 |
+| 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
 | 5.1. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |

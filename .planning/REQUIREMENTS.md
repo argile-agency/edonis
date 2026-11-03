@@ -50,22 +50,22 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Course Builder
 
-- [ ] **BUILD-01**: Teacher can drag-and-drop content items to reorder within a section
-- [ ] **BUILD-02**: Teacher can drag-and-drop content items between sections
-- [ ] **BUILD-03**: Teacher can drag-and-drop sections to reorder them
-- [ ] **BUILD-04**: Teacher can add new section (module) to course
-- [ ] **BUILD-05**: Teacher can rename a section
-- [ ] **BUILD-06**: Teacher can delete an empty section
-- [ ] **BUILD-07**: Teacher can add content item to a section (opens type selector)
-- [ ] **BUILD-08**: Teacher can edit content inline (modal or expandable form in builder)
-- [ ] **BUILD-09**: Teacher can delete content item from section
-- [ ] **BUILD-10**: Changes are autosaved (with save indicator)
-- [ ] **BUILD-11**: Teacher can select multiple content items and sections (checkboxes, select all/none, quick selections: published, unpublished, by content type); the selection count is announced via aria-live
-- [ ] **BUILD-12**: Bulk publish / unpublish selected items
-- [ ] **BUILD-13**: Bulk set availability window (available_from / available_until) and bulk date shift, either by N days or by "old start date → new start date" (the shift preserves relative spacing). Applies to module and content dates (available_from / available_until, due_date)
-- [ ] **BUILD-14**: Bulk move to another section, bulk duplicate, bulk delete (confirmation required). Duplicated modules and contents store `copied_from_id` (nullable FK, ON DELETE SET NULL)
-- [ ] **BUILD-15**: Every bulk action runs in a single DB transaction, validates its payload with VineJS, and writes one audit_log entry listing the affected ids and the action
-- [ ] **BUILD-16**: Selection and the bulk action bar are fully keyboard-operable and pass the existing axe-core tests; drag handles and checkboxes do not conflict (activation constraint or dedicated handle)
+- [x] **BUILD-01**: Teacher can drag-and-drop content items to reorder within a section
+- [x] **BUILD-02**: Teacher can drag-and-drop content items between sections
+- [x] **BUILD-03**: Teacher can drag-and-drop sections to reorder them
+- [x] **BUILD-04**: Teacher can add new section (module) to course
+- [x] **BUILD-05**: Teacher can rename a section
+- [x] **BUILD-06**: Teacher can delete an empty section
+- [x] **BUILD-07**: Teacher can add content item to a section (opens type selector)
+- [x] **BUILD-08**: Teacher can edit content inline (modal or expandable form in builder)
+- [x] **BUILD-09**: Teacher can delete content item from section
+- [x] **BUILD-10**: Changes are autosaved (with save indicator)
+- [x] **BUILD-11**: Teacher can select multiple content items and sections (checkboxes, select all/none, quick selections: published, unpublished, by content type); the selection count is announced via aria-live
+- [x] **BUILD-12**: Bulk publish / unpublish selected items
+- [x] **BUILD-13**: Bulk set availability window (available_from / available_until) and bulk date shift, either by N days or by "old start date → new start date" (the shift preserves relative spacing). Applies to module and content dates (available_from / available_until, due_date)
+- [x] **BUILD-14**: Bulk move to another section, bulk duplicate, bulk delete (confirmation required). Duplicated modules and contents store `copied_from_id` (nullable FK, ON DELETE SET NULL)
+- [x] **BUILD-15**: Every bulk action runs in a single DB transaction, validates its payload with VineJS, and writes one audit_log entry listing the affected ids and the action
+- [x] **BUILD-16**: Selection and the bulk action bar are fully keyboard-operable and pass the existing axe-core tests; drag handles and checkboxes do not conflict (activation constraint or dedicated handle)
 
 ### Page Content Type
 
@@ -267,22 +267,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONTACT-01 | Phase 3 | Pending |
 | CONTACT-02 | Phase 3 | Pending |
 | CONTACT-03 | Phase 3 | Pending |
-| BUILD-01 | Phase 5 | Pending |
-| BUILD-02 | Phase 5 | Pending |
-| BUILD-03 | Phase 5 | Pending |
-| BUILD-04 | Phase 5 | Pending |
-| BUILD-05 | Phase 5 | Pending |
-| BUILD-06 | Phase 5 | Pending |
-| BUILD-07 | Phase 5 | Pending |
-| BUILD-08 | Phase 5 | Pending |
-| BUILD-09 | Phase 5 | Pending |
-| BUILD-10 | Phase 5 | Pending |
-| BUILD-11 | Phase 5 | Pending |
-| BUILD-12 | Phase 5 | Pending |
-| BUILD-13 | Phase 5 | Pending |
-| BUILD-14 | Phase 5 | Pending |
-| BUILD-15 | Phase 5 | Pending |
-| BUILD-16 | Phase 5 | Pending |
+| BUILD-01 | Phase 5 | Complete |
+| BUILD-02 | Phase 5 | Complete |
+| BUILD-03 | Phase 5 | Complete |
+| BUILD-04 | Phase 5 | Complete |
+| BUILD-05 | Phase 5 | Complete |
+| BUILD-06 | Phase 5 | Complete |
+| BUILD-07 | Phase 5 | Complete |
+| BUILD-08 | Phase 5 | Complete |
+| BUILD-09 | Phase 5 | Complete |
+| BUILD-10 | Phase 5 | Complete |
+| BUILD-11 | Phase 5 | Complete |
+| BUILD-12 | Phase 5 | Complete |
+| BUILD-13 | Phase 5 | Complete |
+| BUILD-14 | Phase 5 | Complete |
+| BUILD-15 | Phase 5 | Complete |
+| BUILD-16 | Phase 5 | Complete |
 | PAGE-01 | Phase 6 | Pending |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |
