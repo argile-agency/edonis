@@ -48,14 +48,25 @@ import AppHeader from '~/components/layout/app-header'
 import { BuilderRow, type BuilderRowProps } from '~/components/builder/builder-row'
 import type { DetailsValues } from '~/components/builder/details-panel'
 import { SaveStatus } from '~/components/builder/save-status'
+import { BulkActionBar, SelectionControls } from '~/components/builder/bulk-action-bar'
 import { sendJson, useSaveQueue } from '~/lib/builder_save_queue'
 import type { SaveError } from '~/lib/save_queue'
 import {
+  applyBulkMove,
+  applyBulkPatch,
   applyContentMove,
   applySectionMove,
   buildRows,
+  bulkDeleteBlockers,
+  bulkDeletedIds,
+  bulkMoveTargets,
   canDeleteSection,
+  mergeBulkResult,
   moveTargets,
+  pruneSelection,
+  quickSelect,
+  selectedItems,
+  type BulkResult,
   projectContentDrop,
   projectSectionDrop,
   sectionRowsForDrag,
@@ -132,13 +143,22 @@ export default function CourseBuilder(props: Props) {
   const [contents, setContents] = useState(props.contents)
   const sectionsRef = useRef(props.sections)
   const contentsRef = useRef(props.contents)
+  // Row keys ('s-12', 'c-34'), data-based: rows inside collapsed sections can be selected.
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const prune = () =>
+    setSelected((prev) => {
+      const next = pruneSelection(prev, sectionsRef.current, contentsRef.current)
+      return next.size === prev.size ? prev : next
+    })
   const commitSections = (next: BuilderSection[]) => {
     sectionsRef.current = next
     setSections(next)
+    prune()
   }
   const commitContents = (next: BuilderContent[]) => {
     contentsRef.current = next
     setContents(next)
+    prune()
   }
 
   const [expanded, setExpanded] = useState(() => new Set(props.sections.map((s) => s.id)))
@@ -339,6 +359,98 @@ export default function CourseBuilder(props: Props) {
       () => sendJson('DELETE', urlOf(ref))
     )
     focusLater(neighbour ? `${neighbour.key}-title` : null)
+  }
+
+  // --- bulk actions (05-09 endpoints, same queue and indicator as single edits) ---
+
+  const commit = (next: Snapshot) => {
+    commitSections(next.sections)
+    commitContents(next.contents)
+  }
+
+  /** Items are fixed at enqueue time (tree order); tokens are read at run time. */
+  const enqueueBulk = (
+    label: string,
+    action: 'publish' | 'availability' | 'shift' | 'move' | 'duplicate' | 'delete',
+    body: Record<string, unknown>,
+    optimistic?: (items: ItemRef[]) => void
+  ) => {
+    const items = selectedItems(sectionsRef.current, contentsRef.current, selected)
+    if (items.length === 0) return
+    let snapshot: Snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+    // Optimistically deleted rows are gone from the refs: fall back to their snapshot token.
+    const token = (ref: ItemRef) => {
+      const find = (s: Snapshot) =>
+        ref.kind === 'section'
+          ? s.sections.find((x) => x.id === ref.id)
+          : s.contents.find((x) => x.id === ref.id)
+      const row =
+        find({ sections: sectionsRef.current, contents: contentsRef.current }) ?? find(snapshot)
+      return row?.updatedAt ?? null
+    }
+    queue.enqueue({
+      label,
+      apply() {
+        snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+        optimistic?.(items)
+      },
+      async run() {
+        const result = await sendJson<BulkResult>(
+          'POST',
+          `/courses/${course.id}/builder/bulk/${action}`,
+          { ...body, items: items.map((ref) => ({ ...ref, updatedAt: token(ref) })) }
+        )
+        commit(
+          mergeBulkResult(
+            { sections: sectionsRef.current, contents: contentsRef.current },
+            result,
+            snapshot
+          )
+        )
+        // Duplicated sections open like freshly created ones.
+        const fresh = sectionsRef.current.filter((s) => !knownSectionIdsRef.current.has(s.id))
+        if (fresh.length > 0) {
+          for (const s of fresh) knownSectionIdsRef.current.add(s.id)
+          setExpanded((prev) => new Set([...prev, ...fresh.map((s) => s.id)]))
+        }
+      },
+      rollback() {
+        // Tokens are server truth: an earlier op may have saved since the snapshot.
+        commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
+        commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
+      },
+    })
+  }
+
+  const patchSelection =
+    (patch: Parameters<typeof applyBulkPatch>[3]) => (items: ItemRef[]) =>
+      commit(applyBulkPatch(sectionsRef.current, contentsRef.current, items, patch))
+
+  const bulk = {
+    publish: (isPublished: boolean) =>
+      enqueueBulk(
+        isPublished ? 'Publier' : 'Dépublier',
+        'publish',
+        { isPublished },
+        patchSelection({ isPublished })
+      ),
+    availability: (v: { availableFrom: string | null; availableUntil: string | null }) =>
+      enqueueBulk('Disponibilité', 'availability', v, patchSelection(v)),
+    shift: (v: { days: number } | { from: string; to: string }) =>
+      enqueueBulk('Décaler les dates', 'shift', v),
+    move: (parentId: number | null) => {
+      enqueueBulk('Déplacer', 'move', { parentId }, (items) =>
+        commit(applyBulkMove(sectionsRef.current, contentsRef.current, items, parentId))
+      )
+      if (parentId !== null) expand(parentId)
+    },
+    duplicate: () => enqueueBulk('Dupliquer', 'duplicate', {}),
+    // Focus then goes to the master checkbox (bulk-action-bar's dialog close handler).
+    remove: () =>
+      enqueueBulk('Supprimer', 'delete', {}, (items) => {
+        const ids = bulkDeletedIds(sectionsRef.current, contentsRef.current, items)
+        removeItems(ids.sectionIds, ids.contentIds)
+      }),
   }
 
   // --- creation (Inertia forms, unchanged endpoints) ---
@@ -564,8 +676,18 @@ export default function CourseBuilder(props: Props) {
       onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
       onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
       projectedDepth: row.key === activeKey ? projectedDepth : undefined,
+      selected: selected.has(row.key),
+      onToggleSelect: () =>
+        setSelected((prev) => {
+          const next = new Set(prev)
+          if (next.has(row.key)) next.delete(row.key)
+          else next.add(row.key)
+          return next
+        }),
     }
   }
+
+  const selection = selected.size > 0 ? selectedItems(sections, contents, selected) : []
 
   return (
     <>
@@ -619,6 +741,29 @@ export default function CourseBuilder(props: Props) {
             </CardContent>
           </Card>
         ) : (
+          <>
+          <SelectionControls
+            total={sections.length + contents.length}
+            selectedCount={selected.size}
+            onSelectAll={() => setSelected(quickSelect(sections, contents, 'all'))}
+            onClear={() => setSelected(new Set())}
+            onQuickSelect={(q) => setSelected(quickSelect(sections, contents, q))}
+          />
+          {selected.size > 0 && (
+            <BulkActionBar
+              count={selected.size}
+              deleteBlocked={bulkDeleteBlockers(sections, contents, selected).length > 0}
+              moveTargets={bulkMoveTargets(sections, contents, selection)}
+              onPublish={() => bulk.publish(true)}
+              onUnpublish={() => bulk.publish(false)}
+              onAvailability={bulk.availability}
+              onShift={bulk.shift}
+              onMove={bulk.move}
+              onDuplicate={bulk.duplicate}
+              onDelete={bulk.remove}
+              onClear={() => setSelected(new Set())}
+            />
+          )}
           <DndContext
             id="course-builder"
             sensors={sensors}
@@ -658,6 +803,7 @@ export default function CourseBuilder(props: Props) {
                 document.body
               )}
           </DndContext>
+          </>
         )}
       </div>
 
