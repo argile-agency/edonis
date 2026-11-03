@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
 milestone: v0.1
-milestone_name: milestone
+milestone_name: MVP (2026-12-20)
 status: planning
 stopped_at: Phase 5.1 UI-SPEC approved
 last_updated: "2026-11-03T15:21:46.046Z"
