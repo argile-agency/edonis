@@ -163,7 +163,7 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
   const announcement = settings.announcementText?.trim()
   const contactEmail = settings.contactEmail?.trim()
   const supportUrl = isSafeLink(settings.supportUrl) ? settings.supportUrl : null
-  // socialLinks has no consume on the model: MySQL/SQLite may send a JSON string, skip it then.
+  // Defence in depth: the model consume parses socialLinks, but never iterate a raw JSON string.
   const socialSource = typeof settings.socialLinks === 'object' ? settings.socialLinks : null
   const socials = SOCIAL_LINKS.flatMap((s) => {
     const url = socialSource?.[s.key]
