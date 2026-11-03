@@ -5,16 +5,16 @@ subsystem: builder-ui
 tags: [builder, dnd-kit, drag-and-drop, a11y, ssr, browser-tests]
 requires: [05-01, 05-02, 05-06]
 provides:
-  - "@dnd-kit/core 6.3.1, @dnd-kit/sortable 10.0.0, @dnd-kit/utilities 3.2.2 pinned exactly"
-  - "inertia/components/builder/builder-row.tsx: useSortable row, handle-only activation, projectedDepth placeholder indent"
-  - "inertia/pages/courses/builder.tsx: DndContext id=course-builder, sensors, projections, auto-expand, French announcements, mounted-gated DragOverlay"
-  - "tests/browser/builder.spec.ts: hydration smoke test + 5 keyboard-drag tests"
+  - '@dnd-kit/core 6.3.1, @dnd-kit/sortable 10.0.0, @dnd-kit/utilities 3.2.2 pinned exactly'
+  - 'inertia/components/builder/builder-row.tsx: useSortable row, handle-only activation, projectedDepth placeholder indent'
+  - 'inertia/pages/courses/builder.tsx: DndContext id=course-builder, sensors, projections, auto-expand, French announcements, mounted-gated DragOverlay'
+  - 'tests/browser/builder.spec.ts: hydration smoke test + 5 keyboard-drag tests'
 affects: [05-08, 05-10]
 tech-stack:
-  added: ["@dnd-kit/core@6.3.1", "@dnd-kit/sortable@10.0.0", "@dnd-kit/utilities@3.2.2"]
+  added: ['@dnd-kit/core@6.3.1', '@dnd-kit/sortable@10.0.0', '@dnd-kit/utilities@3.2.2']
   patterns:
-    - "Flattened single list; a section drag switches the list to sectionRowsForDrag (sections-only variant)"
-    - "One project(key, overKey) against the same list given to SortableContext; latest result kept in a ref for announcements"
+    - 'Flattened single list; a section drag switches the list to sectionRowsForDrag (sections-only variant)'
+    - 'One project(key, overKey) against the same list given to SortableContext; latest result kept in a ref for announcements'
     - "Drops call the menu's move() with focusActions=false: one save path, focus stays on the handle"
 key-files:
   created: []
@@ -25,13 +25,13 @@ key-files:
     - inertia/pages/courses/builder.tsx
     - tests/browser/builder.spec.ts
 decisions:
-  - "Sections-only list during section drags shipped (not the keep-contents-mounted fallback); keyboard reflow is decided by CI e2e / 05-08"
+  - 'Sections-only list during section drags shipped (not the keep-contents-mounted fallback); keyboard reflow is decided by CI e2e / 05-08'
   - "The handle button is rendered inside BuilderRow (it needs useSortable's setActivatorNodeRef); the unused handle?: ReactNode slot was removed"
   - "move() gained focusActions (default true): drag drops skip focusLater so dnd-kit's restoreFocus keeps focus on the handle and no stale pendingFocusRef is left"
   - "Keyboard getter for sections keeps x on Up/Down (sortableKeyboardCoordinates resets it to the target's left) so a Left/Right level shift survives vertical moves"
-  - "The pick-up onDragOver (over = the row itself, no shift) is not announced, so « X » saisi. stays in the live region"
+  - 'The pick-up onDragOver (over = the row itself, no shift) is not announced, so « X » saisi. stays in the live region'
 metrics:
-  duration: "~45 min"
+  duration: '~45 min'
   completed: 2026-11-03
   tasks: 3
   files: 5
@@ -43,13 +43,13 @@ Teachers can now drag contents and sections by a grip handle, with the mouse, to
 
 ## Commits
 
-| Task | Commit | Message |
-|------|--------|---------|
-| 1 (deps) | 65d9706 | build(deps): add dnd-kit core, sortable and utilities pinned |
-| 1 | 1b23218 | feat(builder): add sortable rows and drag handles with SSR-safe DndContext |
-| 2 | c2a5498 | feat(builder): drag contents and sections with projections and French announcements |
-| 3 (fix) | 26fc65f | fix(builder): keep the pick-up drag announcement audible |
-| 3 | 64e57f1 | test(builder): cover keyboard drag of contents and sections |
+| Task     | Commit  | Message                                                                             |
+| -------- | ------- | ----------------------------------------------------------------------------------- |
+| 1 (deps) | 65d9706 | build(deps): add dnd-kit core, sortable and utilities pinned                        |
+| 1        | 1b23218 | feat(builder): add sortable rows and drag handles with SSR-safe DndContext          |
+| 2        | c2a5498 | feat(builder): drag contents and sections with projections and French announcements |
+| 3 (fix)  | 26fc65f | fix(builder): keep the pick-up drag announcement audible                            |
+| 3        | 64e57f1 | test(builder): cover keyboard drag of contents and sections                         |
 
 ## Installed versions
 
@@ -71,6 +71,7 @@ Teachers can now drag contents and sections by a grip handle, with the mouse, to
 ## Section-drag variant shipped
 
 **Sections-only list** (RESEARCH Pattern 1), not the fallback. I checked the dnd-kit 6.3.1 source for the reflow risk:
+
 - `useRect` re-measures the active node on any body `childList` mutation
 - the keyboard sensor takes its reference coordinates from `collisionRect` at the first key press, which is already after the reflow
 - `MeasuringStrategy.Always` re-measures the droppables
@@ -83,7 +84,7 @@ Not fired. No hydration mismatch naming dnd-kit (SSR check above), no dnd-kit ru
 
 ## Deviations from Plan
 
-1. **[Rule 1 - Bug] Drops skip the menu's focus move.** `move()` ends with `focusLater(`${key}-actions`)`. On a drop, that would pull focus off the handle (Task 2 requires focus to stay there), and a stale `pendingFocusRef` would be consumed by the next dialog close. `move(row, placement, focusActions = true)`, and drops pass `false`. Commit c2a5498.
+1. **[Rule 1 - Bug] Drops skip the menu's focus move.** `move()` ends with a `focusLater` call on the row's actions button. On a drop, that would pull focus off the handle (Task 2 requires focus to stay there), and a stale `pendingFocusRef` would be consumed by the next dialog close. `move(row, placement, focusActions = true)`, and drops pass `false`. Commit c2a5498.
 2. **[Rule 1 - Bug] Pick-up announcement.** dnd-kit fires `onDragOver` with `over` = the row itself right after pick-up, which replaced "« X » saisi." in the live region (05-10 Task 4 waits for "saisi"). That announcement is now skipped while over is the row itself with no level shift. Commit 26fc65f.
 3. **Keyboard getter for sections keeps x on Up/Down.** `sortableKeyboardCoordinates` returns the target's `left`, which would discard an earlier ArrowRight. Commit c2a5498.
 4. **Handle rendered in `BuilderRow`, and the `handle?: ReactNode` prop removed.** `setActivatorNodeRef` comes from the row's `useSortable`. A `projectedDepth` prop indents the dragged section at its projected level.
