@@ -1,5 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react'
+import { Head, Link, useForm, usePage } from '@inertiajs/react'
 import { FormEvent, useState } from 'react'
+import { FlashMessages } from '~/components/flash-toaster'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -51,6 +52,8 @@ export default function Login() {
     password: '',
   })
   const [showPassword, setShowPassword] = useState(false)
+  const { appSettings } = usePage<{ appSettings: { allowRegistration?: boolean } | null }>().props
+  const registrationOpen = !appSettings || Boolean(appSettings.allowRegistration)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -60,6 +63,7 @@ export default function Login() {
   return (
     <>
       <Head title="Connexion" />
+      <FlashMessages />
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
@@ -176,12 +180,14 @@ export default function Login() {
                 </div>
 
                 {/* Lien vers inscription */}
-                <p className="text-sm text-center text-muted-foreground">
-                  Vous n'avez pas de compte ?{' '}
-                  <Link href="/register" className="font-medium text-primary hover:underline">
-                    Créer un compte
-                  </Link>
-                </p>
+                {registrationOpen && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Vous n'avez pas de compte ?{' '}
+                    <Link href="/register" className="font-medium text-primary hover:underline">
+                      Créer un compte
+                    </Link>
+                  </p>
+                )}
               </CardFooter>
             </form>
           </Card>

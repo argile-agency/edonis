@@ -1,9 +1,11 @@
-import { Head, Link } from '@inertiajs/react'
+import { Head, Link, usePage } from '@inertiajs/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { ChevronLeft, Heart, Users, Target, Lightbulb } from 'lucide-react'
 
 export default function About() {
+  const { appSettings } = usePage<{ appSettings: { allowRegistration?: boolean } | null }>().props
+  const registrationOpen = !appSettings || Boolean(appSettings.allowRegistration)
   return (
     <>
       <Head title="À propos" />
@@ -168,9 +170,11 @@ export default function About() {
               Prêt à commencer votre parcours d'apprentissage ?
             </p>
             <div className="flex gap-4 justify-center">
-              <Link href="/register">
-                <Button size="lg">Créer un compte</Button>
-              </Link>
+              {registrationOpen && (
+                <Link href="/register">
+                  <Button size="lg">Créer un compte</Button>
+                </Link>
+              )}
               <Link href="/contact">
                 <Button variant="outline" size="lg">
                   Nous contacter

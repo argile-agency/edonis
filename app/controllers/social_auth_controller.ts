@@ -4,6 +4,7 @@ import User from '#models/user'
 import UserRole from '#models/user_role'
 import SocialAccount from '#models/social_account'
 import AuditService from '#services/audit_service'
+import { REGISTRATION_CLOSED_MESSAGE, isRegistrationOpen } from '../helpers/registration.js'
 
 const SUPPORTED_PROVIDERS = ['google', 'github'] as const
 type Provider = (typeof SUPPORTED_PROVIDERS)[number]
@@ -67,6 +68,11 @@ export default class SocialAuthController {
       let isNewUser = false
 
       if (!user) {
+        // Existing accounts never reach this branch, so they keep signing in
+        if (!(await isRegistrationOpen())) {
+          session.flash('error', REGISTRATION_CLOSED_MESSAGE)
+          return response.redirect().toRoute('login')
+        }
         isNewUser = true
         user = await User.create({
           fullName: socialUser.name || socialUser.nickName || email.split('@')[0],
