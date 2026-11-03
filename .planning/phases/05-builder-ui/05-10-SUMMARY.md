@@ -50,6 +50,8 @@ Teachers can now tick sections and contents, select all or none, or use a quick 
 | 2b | 3e091a1 | feat(builder): add selection controls and bulk action bar |
 | 3 | 620f012 | feat(builder): wire selection and bulk actions into the builder |
 | 4 | 3bada53 | test(builder): cover selection and bulk actions in the browser |
+| 2 (follow-up) | dd08988 | fix(builder): keep the bulk delete button at AA contrast |
+| 4 (follow-up) | e4d84f5 | test(builder): use exact locators in bulk browser spec |
 
 ## Final component props
 
@@ -116,6 +118,12 @@ No deviation. The client reads `{ sections, contents, affected, deleted }` as do
 5. **Extra helper `sectionTargets`** (private) in `builder_tree.ts`. It is the label-building code of `moveTargets`, moved out so `bulkMoveTargets` reuses it unchanged.
 6. **Duplicated sections are expanded** after the merge (same rule as created sections, through `knownSectionIdsRef`).
 7. **[Precaution] `DB_CONNECTION=sqlite` exported for every `node ace` run**, as in 05-02 and 05-09.
+8. **[Rule 1 - Bug] Contrast of the enabled "Supprimer…" button.** `text-destructive` (hsl 0 65% 55%) is about 4.2:1 on the light bar, below AA, so axe test 11 would fail on `color-contrast`. The button now uses the default outline text. The AlertDialog still carries the destructive styling. Commit dd08988.
+9. **[Rule 1 - Bug] Locators in the spec I could not run.** Playwright matches `name` and `getByLabel` as case-insensitive substrings:
+   - "Publier" also matched "Dépublier";
+   - "Ancienne date de début" also matched the anchor radio's label.
+
+   The bar, checkbox and dialog-label locators now use `exact: true`. The axe test also waits for the shift dialog to close before opening the move dialog. Commit e4d84f5.
 
 ## TDD Gate Compliance
 
@@ -136,4 +144,4 @@ None.
 ## Self-Check: PASSED
 
 - Files exist: move-target-list.tsx, bulk-action-bar.tsx, builder_bulk.spec.ts (browser).
-- Commits 90b2172, 0f6c00f, 3e091a1, 620f012 and 3bada53 are present on worktree-agent-aff29f162a400a623.
+- Commits 90b2172, 0f6c00f, 3e091a1, 620f012, 3bada53, dd08988 and e4d84f5 are present on worktree-agent-aff29f162a400a623.
