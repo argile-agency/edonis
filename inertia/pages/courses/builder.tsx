@@ -1,5 +1,27 @@
 import { Head, Link, router, useForm } from '@inertiajs/react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  closestCenter,
+  DndContext,
+  type Announcements,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type KeyboardCoordinateGetter,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { Eye, FileText, Plus } from 'lucide-react'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -34,6 +56,9 @@ import {
   buildRows,
   canDeleteSection,
   moveTargets,
+  projectContentDrop,
+  projectSectionDrop,
+  sectionRowsForDrag,
   siblingPlacement,
   type BuilderContent,
   type BuilderRow as Row,
@@ -62,6 +87,26 @@ type ItemPatch = Partial<
 >
 type Saved = { item: { id: number; updatedAt?: string | null } }
 type Snapshot = { sections: BuilderSection[]; contents: BuilderContent[] }
+type Projection = (Placement & { depth?: number }) | null
+
+/** Row indentation; also the horizontal drag distance for one section level. */
+const INDENT_PX = 24
+const ROOT_LABEL = 'Racine du cours'
+const DRAG_INSTRUCTIONS =
+  "Pour déplacer, appuyez sur Espace, utilisez les flèches haut et bas (gauche et droite pour changer le niveau d'une section), puis Espace pour déposer ou Échap pour annuler."
+
+/** Sections: Up/Down keep the level shift, Left/Right change the level. Contents: vertical only. */
+const builderKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
+  if (!String(args.active).startsWith('s-')) return sortableKeyboardCoordinates(event, args)
+  const { currentCoordinates } = args
+  if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
+    event.preventDefault()
+    const shift = event.code === 'ArrowRight' ? INDENT_PX : -INDENT_PX
+    return { ...currentCoordinates, x: currentCoordinates.x + shift }
+  }
+  const next = sortableKeyboardCoordinates(event, args)
+  return next && { ...next, x: currentCoordinates.x }
+}
 
 const urlOf = (ref: ItemRef) =>
   ref.kind === 'section' ? `/modules/${ref.id}` : `/contents/${ref.id}`
@@ -248,7 +293,7 @@ export default function CourseBuilder(props: Props) {
     )
   }
 
-  const move = (row: Row, placement: Placement) => {
+  const move = (row: Row, placement: Placement, focusActions = true) => {
     const ref = refOf(row)
     save(
       'Déplacer',
@@ -271,7 +316,7 @@ export default function CourseBuilder(props: Props) {
     )
     // The destination must be open, or the moved row (and its focus target) disappears.
     if (placement.parentId !== null) expand(placement.parentId)
-    focusLater(`${row.key}-actions`)
+    if (focusActions) focusLater(`${row.key}-actions`)
   }
 
   /** "Déplacer vers…": the item goes to the end of the destination. */
@@ -357,9 +402,124 @@ export default function CourseBuilder(props: Props) {
     })
   }
 
-  // --- rows ---
+  // --- rows and drag ---
 
   const rows = buildRows(sections, contents, expanded)
+
+  // DragOverlay portals into document.body, which only exists after hydration.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const [activeKey, setActiveKey] = useState<string | null>(null)
+  const [projectedDepth, setProjectedDepth] = useState<number | undefined>(undefined)
+  const activeRow = activeKey ? rows.find((r) => r.key === activeKey) : undefined
+  // A dragged section moves among sections only, without its own sub-tree.
+  const dragRows = activeKey?.startsWith('s-') ? sectionRowsForDrag(rows, activeKey) : rows
+  const depthOffsetRef = useRef(0)
+  const projectionRef = useRef<Projection>(null)
+  const depthChangedRef = useRef(false)
+  const expandTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: builderKeyboardCoordinates })
+  )
+
+  const titleOf = (key: string) => {
+    const r = rows.find((x) => x.key === key)
+    return r ? (r.kind === 'section' ? r.section.title : r.content.title) : ''
+  }
+  const placeOf = (p: Placement) =>
+    `« ${p.parentId === null ? ROOT_LABEL : (sections.find((s) => s.id === p.parentId)?.title ?? '')} », position ${p.position + 1}`
+
+  const project = (key: string, overKey: string | null): Projection => {
+    if (!overKey) return null
+    return key.startsWith('s-')
+      ? projectSectionDrop(dragRows, key, overKey, depthOffsetRef.current, sections)
+      : projectContentDrop(dragRows, key, overKey)
+  }
+
+  const refresh = (key: string, overKey: string | null) => {
+    const next = project(key, overKey)
+    depthChangedRef.current = next?.depth !== projectionRef.current?.depth
+    projectionRef.current = next
+    if (key.startsWith('s-')) setProjectedDepth(next?.depth)
+  }
+
+  /** Index among the row's siblings, the same meaning as a Placement position. */
+  const currentPlacement = (row: Row): Placement => ({
+    parentId: row.parentId,
+    position: rows
+      .filter((r) => r.kind === row.kind && r.parentId === row.parentId)
+      .findIndex((r) => r.key === row.key),
+  })
+
+  const endDrag = () => {
+    clearTimeout(expandTimerRef.current)
+    depthOffsetRef.current = 0
+    setActiveKey(null)
+    setProjectedDepth(undefined)
+  }
+
+  const onDragStart = ({ active }: DragStartEvent) => {
+    depthOffsetRef.current = 0
+    projectionRef.current = null
+    setActiveKey(String(active.id))
+  }
+
+  const onDragMove = ({ active, over, delta }: DragMoveEvent) => {
+    depthOffsetRef.current = Math.round(delta.x / INDENT_PX)
+    refresh(String(active.id), over ? String(over.id) : null)
+  }
+
+  const onDragOver = ({ active, over }: DragOverEvent) => {
+    clearTimeout(expandTimerRef.current)
+    const target = over ? rows.find((r) => r.key === over.id) : undefined
+    // D-03: a collapsed section opens after a short hover so a content can land inside it.
+    if (String(active.id).startsWith('c-') && target?.kind === 'section' && target.collapsed) {
+      expandTimerRef.current = setTimeout(() => expand(target.id), 600)
+    }
+    refresh(String(active.id), over ? String(over.id) : null)
+  }
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    const key = String(active.id)
+    const projection = project(key, over ? String(over.id) : null)
+    projectionRef.current = projection
+    endDrag()
+    const row = rows.find((r) => r.key === key)
+    if (!row || !projection) return
+    const current = currentPlacement(row)
+    if (current.parentId === projection.parentId && current.position === projection.position) return
+    // Same save path as the menu; focus stays on the handle (dnd-kit restoreFocus).
+    move(row, { parentId: projection.parentId, position: projection.position }, false)
+  }
+
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `« ${titleOf(String(active.id))} » saisi.`,
+    onDragMove: () =>
+      depthChangedRef.current
+        ? projectionRef.current
+          ? `Sera déposé dans ${placeOf(projectionRef.current)}.`
+          : 'Emplacement impossible ici.'
+        : undefined,
+    // At pick-up `over` is the row itself: keep "saisi." audible instead of the unchanged slot.
+    onDragOver: ({ active, over }) =>
+      over?.id === active.id && depthOffsetRef.current === 0
+        ? undefined
+        : projectionRef.current
+          ? `Sera déposé dans ${placeOf(projectionRef.current)}.`
+          : 'Emplacement impossible ici.',
+    onDragEnd: ({ active }) => {
+      const key = String(active.id)
+      if (projectionRef.current) {
+        return `« ${titleOf(key)} » déposé dans ${placeOf(projectionRef.current)}.`
+      }
+      return key.startsWith('s-')
+        ? 'Déplacement impossible : profondeur maximale de 2 niveaux.'
+        : 'Déplacement impossible : un contenu doit rester dans une section.'
+    },
+    onDragCancel: ({ active }) =>
+      `Déplacement annulé. « ${titleOf(String(active.id))} » est revenu à sa place.`,
+  }
 
   function rowProps(row: Row): BuilderRowProps {
     const ref = refOf(row)
@@ -403,6 +563,7 @@ export default function CourseBuilder(props: Props) {
       onCloseFocusTarget: () => takeFocusTarget(),
       onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
       onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
+      projectedDepth: row.key === activeKey ? projectedDepth : undefined,
     }
   }
 
@@ -458,11 +619,45 @@ export default function CourseBuilder(props: Props) {
             </CardContent>
           </Card>
         ) : (
-          <ul aria-label="Plan du cours">
-            {rows.map((row) => (
-              <BuilderRow key={row.key} {...rowProps(row)} />
-            ))}
-          </ul>
+          <DndContext
+            id="course-builder"
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+            accessibility={{
+              announcements,
+              screenReaderInstructions: { draggable: DRAG_INSTRUCTIONS },
+            }}
+            onDragStart={onDragStart}
+            onDragMove={onDragMove}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+            onDragCancel={endDrag}
+          >
+            <SortableContext
+              items={dragRows.map((r) => r.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul aria-label="Plan du cours">
+                {dragRows.map((row) => (
+                  <BuilderRow key={row.key} {...rowProps(row)} />
+                ))}
+              </ul>
+            </SortableContext>
+            {mounted &&
+              createPortal(
+                <DragOverlay>
+                  {activeRow && (
+                    <div className="rounded-lg border bg-card p-3 font-medium shadow-lg">
+                      {activeRow.kind === 'section'
+                        ? activeRow.section.title
+                        : activeRow.content.title}
+                    </div>
+                  )}
+                </DragOverlay>,
+                document.body
+              )}
+          </DndContext>
         )}
       </div>
 
