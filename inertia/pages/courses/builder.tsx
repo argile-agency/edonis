@@ -176,22 +176,50 @@ export default function CourseBuilder(props: Props) {
 
   const queue = useSaveQueue()
 
+  // Ops settled so far (saved or failed). Props from a visit that started before an op
+  // settled may have been read before that op committed: they are dropped and fetched again.
+  const settledRef = useRef(0)
+  // Settled count at the start of the visit whose props arrived last (set in its onSuccess,
+  // which Inertia runs before React re-renders); null = unknown, props applied as they are.
+  const propsStartRef = useRef<number | null>(null)
+  const resyncRef = useRef(false)
+  /** onSuccess for every visit that returns `sections`/`contents`; call it when the visit starts. */
+  const trackVisit = () => {
+    const start = settledRef.current
+    return () => {
+      propsStartRef.current = start
+    }
+  }
+  // Plain partial reload: the `reload()` helper would also dismiss the retry list.
+  const resync = () => router.reload({ only: ['sections', 'contents'], onSuccess: trackVisit() })
+
   // Props re-sync: new server props (creation, "Recharger") are applied once no save is in flight.
   useEffect(() => {
     const latest = latestPropsRef.current
     if (latest.sections !== props.sections || latest.contents !== props.contents) {
       latestPropsRef.current = { sections: props.sections, contents: props.contents }
     }
-    if (queue.pending > 0 || latestPropsRef.current === appliedPropsRef.current) return
-    const next = latestPropsRef.current
-    appliedPropsRef.current = next
-    commitSections(next.sections)
-    commitContents(next.contents)
-    const fresh = next.sections.filter((s) => !knownSectionIdsRef.current.has(s.id))
-    if (fresh.length > 0) {
-      for (const s of fresh) knownSectionIdsRef.current.add(s.id)
-      setExpanded((prev) => new Set([...prev, ...fresh.map((s) => s.id)]))
+    if (queue.pending > 0) return
+    let stale = resyncRef.current
+    resyncRef.current = false
+    if (latestPropsRef.current !== appliedPropsRef.current) {
+      const next = latestPropsRef.current
+      appliedPropsRef.current = next
+      const start = propsStartRef.current
+      propsStartRef.current = null
+      if (start !== null && start !== settledRef.current) {
+        stale = true
+      } else {
+        commitSections(next.sections)
+        commitContents(next.contents)
+        const fresh = next.sections.filter((s) => !knownSectionIdsRef.current.has(s.id))
+        if (fresh.length > 0) {
+          for (const s of fresh) knownSectionIdsRef.current.add(s.id)
+          setExpanded((prev) => new Set([...prev, ...fresh.map((s) => s.id)]))
+        }
+      }
     }
+    if (stale) resync()
   }, [props.sections, props.contents, queue.pending])
 
   // The ref is kept: Radix asks onCloseFocusTarget later (setTimeout on unmount), which consumes it.
@@ -215,7 +243,11 @@ export default function CourseBuilder(props: Props) {
   const expand = (id: number) => setExpanded((prev) => new Set(prev).add(id))
 
   const reload = () =>
-    router.reload({ only: ['sections', 'contents'], onFinish: () => queue.dismiss() })
+    router.reload({
+      only: ['sections', 'contents'],
+      onSuccess: trackVisit(),
+      onFinish: () => queue.dismiss(),
+    })
 
   // --- state helpers (whole arrays and id lists, so bulk actions can reuse them) ---
 
@@ -258,9 +290,12 @@ export default function CourseBuilder(props: Props) {
       },
       async run() {
         const res = await send(tokenOf(ref))
+        settledRef.current++
         if (res.item.updatedAt !== undefined) patchItem(ref, { updatedAt: res.item.updatedAt })
       },
       rollback(error) {
+        // A lost response may still have committed.
+        settledRef.current++
         // Tokens are server truth: an earlier op may have saved since the snapshot.
         commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
         commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
@@ -408,6 +443,7 @@ export default function CourseBuilder(props: Props) {
           `/courses/${course.id}/builder/bulk/${action}`,
           { ...body, items: sent }
         )
+        settledRef.current++
         commit(
           mergeBulkResult(
             { sections: sectionsRef.current, contents: contentsRef.current },
@@ -424,6 +460,7 @@ export default function CourseBuilder(props: Props) {
         }
       },
       rollback() {
+        settledRef.current++
         // Tokens are server truth: an earlier op may have saved since the snapshot.
         commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
         commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
@@ -500,10 +537,12 @@ export default function CourseBuilder(props: Props) {
   // preserveState keeps this component mounted, so expansion and the save queue survive.
   const submitModule = (e: React.FormEvent) => {
     e.preventDefault()
+    const track = trackVisit()
     moduleForm.post(`/courses/${course.id}/modules`, {
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
+        track()
         setIsModuleDialogOpen(false)
         moduleForm.reset()
       },
@@ -512,10 +551,12 @@ export default function CourseBuilder(props: Props) {
 
   const submitContent = (e: React.FormEvent) => {
     e.preventDefault()
+    const track = trackVisit()
     contentForm.post(`/modules/${selectedModuleId}/contents`, {
       preserveScroll: true,
       preserveState: true,
       onSuccess: () => {
+        track()
         setIsContentDialogOpen(false)
         contentForm.reset()
       },
