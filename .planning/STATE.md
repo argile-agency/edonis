@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v0.1
-milestone_name: MVP (2026-12-20)
-status: executing
-stopped_at: Phase 5 complete
-last_updated: "2026-11-03T14:53:22.803Z"
+milestone_name: milestone
+status: planning
+stopped_at: Phase 5.1 UI-SPEC approved
+last_updated: "2026-11-03T15:21:46.046Z"
 last_activity: 2026-11-03 -- Phase 5 complete (walkthrough approved, review fixed)
 progress:
-  total_phases: 18
+  total_phases: 19
   completed_phases: 4
   total_plans: 38
   completed_plans: 32
-  percent: 22
+  percent: 21
 ---
 
 # Project State
@@ -263,11 +263,11 @@ Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
 
 ## Session Continuity
 
-Last session: 2026-10-28T20:49:18.373Z
-Stopped at: Phase 5 context gathered
+Last session: 2026-11-03T15:21:46.040Z
+Stopped at: Phase 5.1 UI-SPEC approved
 restructure committed; lint baseline brought to zero errors (`af99ea1`).
 Working tree is clean. Ready to plan Phase 1.
-Resume file: .planning/phases/05-builder-ui/05-CONTEXT.md
+Resume file: .planning/phases/05.1-admin-platform-settings/05.1-UI-SPEC.md
 
 **To resume, in order:**
 
