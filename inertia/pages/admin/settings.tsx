@@ -7,6 +7,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
+import { Switch } from '~/components/ui/switch'
 import { Textarea } from '~/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 
@@ -48,8 +49,8 @@ function idFor(key: string) {
 }
 
 /** aria attributes tying a control to its help and error paragraphs. */
-function describedBy(id: string, hasHelp: boolean, error?: string) {
-  const ids = [hasHelp && `${id}-help`, error && `${id}-error`].filter(Boolean).join(' ')
+function describedBy(id: string, hasHelp: boolean, error?: string, helpId = `${id}-help`) {
+  const ids = [hasHelp && helpId, error && `${id}-error`].filter(Boolean).join(' ')
   return { 'aria-invalid': !!error, 'aria-describedby': ids || undefined }
 }
 
@@ -113,7 +114,29 @@ const HELP = {
     "Image affichée sous les boutons de la page d'accueil. Chemin commençant par / (ex. /uploads/accueil.jpg) ou adresse de ce site uniquement. Laissez vide pour ne pas afficher d'image.",
   announcementText:
     "Texte court affiché en haut de la page d'accueil, sans mise en forme. Si l'adresse de contact y figure, elle devient un lien cliquable. Laissez vide pour masquer le bandeau.",
+  allowRegistration:
+    "Lorsque cette option est désactivée, les liens « Inscription » sont masqués et la page d'inscription renvoie vers la connexion. Les comptes existants ne sont pas affectés ; les administrateurs peuvent toujours créer des comptes.",
+  contactEmail: 'Affichée dans le pied de page.',
+  supportUrl:
+    'Lien « Aide et support » du pied de page. Adresse complète commençant par https:// ou http://, ou chemin commençant par /.',
 }
+
+const SOCIAL_FIELDS = [
+  {
+    key: 'facebook',
+    id: 'social-facebook',
+    label: 'Facebook',
+    placeholder: 'https://facebook.com/…',
+  },
+  { key: 'twitter', id: 'social-twitter', label: 'X (Twitter)', placeholder: 'https://x.com/…' },
+  {
+    key: 'linkedin',
+    id: 'social-linkedin',
+    label: 'LinkedIn',
+    placeholder: 'https://linkedin.com/company/…',
+  },
+  { key: 'github', id: 'social-github', label: 'GitHub', placeholder: 'https://github.com/…' },
+] as const
 
 export default function AdminSettings({ settings, activeTab, auth, appSettings, menus }: Props) {
   const [tab, setTabState] = useState<Tab>(activeTab)
@@ -158,11 +181,7 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
   }
 
   const submit =
-    (
-      form: { put: (url: string, options: object) => void },
-      target: Tab,
-      fieldOrder: string[]
-    ) =>
+    (form: { put: (url: string, options: object) => void }, target: Tab, fieldOrder: string[]) =>
     (e: FormEvent) => {
       e.preventDefault()
       form.put(`/admin/settings/${target}`, {
@@ -180,7 +199,8 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
 
   const ae = appearanceForm.errors
   const he = homeForm.errors
-
+  // Nested keys (socialLinks.facebook, …) come back flat from VineJS.
+  const ce = contactForm.errors as Record<string, string | undefined>
   return (
     <>
       <Head title="Réglages de la plateforme" />
@@ -438,6 +458,135 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
                 </CardContent>
               </Card>
               <SubmitRow processing={homeForm.processing} label="Enregistrer la page d'accueil" />
+            </form>
+          </TabsContent>
+
+          {/* Accès */}
+          <TabsContent value="access">
+            <form noValidate onSubmit={submit(accessForm, 'access', ['allowRegistration'])}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Accès</CardTitle>
+                  <CardDescription>Qui peut créer un compte sur la plateforme.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="allowRegistration"
+                        checked={accessForm.data.allowRegistration}
+                        onCheckedChange={(checked) =>
+                          accessForm.setData('allowRegistration', checked)
+                        }
+                        aria-invalid={!!accessForm.errors.allowRegistration}
+                        aria-describedby={
+                          accessForm.errors.allowRegistration
+                            ? 'allowRegistration-help allowRegistration-error'
+                            : 'allowRegistration-help'
+                        }
+                      />
+                      <Label htmlFor="allowRegistration">Autoriser les inscriptions</Label>
+                    </div>
+                    <p id="allowRegistration-help" className="text-sm text-muted-foreground">
+                      {HELP.allowRegistration}
+                    </p>
+                    {accessForm.errors.allowRegistration && (
+                      <p id="allowRegistration-error" className="text-sm text-destructive">
+                        {accessForm.errors.allowRegistration}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              <SubmitRow
+                processing={accessForm.processing}
+                label="Enregistrer les règles d'accès"
+              />
+            </form>
+          </TabsContent>
+
+          {/* Contact et support */}
+          <TabsContent value="contact">
+            <form
+              noValidate
+              onSubmit={submit(contactForm, 'contact', [
+                'contactEmail',
+                'supportUrl',
+                ...SOCIAL_FIELDS.map((s) => `socialLinks.${s.key}`),
+              ])}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact et support</CardTitle>
+                  <CardDescription>Coordonnées et liens affichés en pied de page.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <Field
+                    id="contactEmail"
+                    label="Adresse de contact"
+                    help={HELP.contactEmail}
+                    errorText={ce.contactEmail}
+                  >
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      placeholder="contact@exemple.org"
+                      value={contactForm.data.contactEmail}
+                      onChange={(e) => contactForm.setData('contactEmail', e.target.value)}
+                      maxLength={254}
+                      {...describedBy('contactEmail', true, ce.contactEmail)}
+                    />
+                  </Field>
+
+                  <Field
+                    id="supportUrl"
+                    label="Page d'aide ou de support"
+                    help={HELP.supportUrl}
+                    errorText={ce.supportUrl}
+                  >
+                    <Input
+                      id="supportUrl"
+                      type="url"
+                      placeholder="https://aide.exemple.org"
+                      value={contactForm.data.supportUrl}
+                      onChange={(e) => contactForm.setData('supportUrl', e.target.value)}
+                      maxLength={255}
+                      {...describedBy('supportUrl', true, ce.supportUrl)}
+                    />
+                  </Field>
+
+                  <div className="space-y-4">
+                    <p id="social-help" className="text-sm text-muted-foreground">
+                      Réseaux sociaux : adresse complète commençant par https://. Laissez vide pour
+                      masquer l'icône.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {SOCIAL_FIELDS.map(({ key, id, label, placeholder }) => {
+                        const error = ce[`socialLinks.${key}`]
+                        return (
+                          <Field key={key} id={id} label={label} errorText={error}>
+                            <Input
+                              id={id}
+                              type="url"
+                              placeholder={placeholder}
+                              value={contactForm.data.socialLinks[key]}
+                              onChange={(e) =>
+                                contactForm.setData('socialLinks', {
+                                  ...contactForm.data.socialLinks,
+                                  [key]: e.target.value,
+                                })
+                              }
+                              maxLength={255}
+                              {...describedBy(id, true, error, 'social-help')}
+                            />
+                          </Field>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <SubmitRow processing={contactForm.processing} label="Enregistrer les coordonnées" />
             </form>
           </TabsContent>
         </Tabs>
