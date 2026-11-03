@@ -26,6 +26,7 @@ import CourseStructureService, {
   sameSecond,
 } from '#services/course_structure_service'
 import { depthOf } from '../helpers/category_tree.js'
+import { loadBuilderStructure } from '../helpers/builder_props.js'
 
 const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
 const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
@@ -69,28 +70,14 @@ export default class CourseContentsController {
    * Display course content builder for instructors
    */
   async builder({ inertia, params, bouncer }: HttpContext) {
-    const course = await Course.query()
-      .where('id', params.id)
-      .preload('modules', (moduleQuery) => {
-        moduleQuery
-          .whereNull('parent_id')
-          .orderBy('order', 'asc')
-          .preload('children', (childQuery) => {
-            childQuery.orderBy('order', 'asc').preload('contents', (contentQuery) => {
-              contentQuery.orderBy('order', 'asc')
-            })
-          })
-          .preload('contents', (contentQuery) => {
-            contentQuery.orderBy('order', 'asc')
-          })
-      })
-      .firstOrFail()
-
+    const course = await Course.findOrFail(params.id)
     await bouncer.with('CoursePolicy').authorize('edit', course)
 
+    const { sections, contents } = await loadBuilderStructure(course.id)
     return inertia.render('courses/builder', {
-      course: course.serialize(),
-      modules: course.modules.map((m) => m.serialize()),
+      course: { id: course.id, title: course.title, code: course.code },
+      sections,
+      contents,
     })
   }
 
