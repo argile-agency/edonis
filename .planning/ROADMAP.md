@@ -346,7 +346,7 @@ Plans:
 - [ ] 05.1-03-PLAN.md — Public effects: announcement banner, hero image, footer contact/support/social with render guards, favicon, header « Inscription » and admin menu entry [SETTINGS-01, SETTINGS-06, SETTINGS-07, SETTINGS-08]
 - [ ] 05.1-04-PLAN.md — `/admin/settings` page: four tabs, four independent forms, accessible fields and errors [SETTINGS-01, SETTINGS-03, SETTINGS-09]
 
-**Wave 2** *(blocked on 05.1-01)*
+**Wave 2** *(blocked on 05.1-01 and 05.1-04)*
 
 - [ ] 05.1-05-PLAN.md — `PlatformSettingsPolicy`, controller (show, update with changed-keys audit in one transaction), routes, functional tests [SETTINGS-01, SETTINGS-02, SETTINGS-03, SETTINGS-04, SETTINGS-05]
 
