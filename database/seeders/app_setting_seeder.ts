@@ -3,7 +3,7 @@ import AppSetting from '#models/app_setting'
 
 export default class extends BaseSeeder {
   async run() {
-    // firstOrCreate: never overwrite an admin's edits made on /admin/settings
+    // Create-only: never overwrite an admin's edits made on /admin/settings
     await AppSetting.firstOrCreate(
       { isActive: true },
       {

@@ -3,7 +3,7 @@ import type { FieldContext } from '@vinejs/vine/types'
 
 /**
  * Admin platform settings (/admin/settings): one validator per tab (D-11).
- * Fields not listed here (headerHtml, isActive, ...) are dropped by VineJS (D-10).
+ * Fields absent from these schemas are dropped by VineJS (D-10).
  * Every validator needs `{ meta: { appHost: request.host() ?? '' } }`.
  */
 export const SETTINGS_TABS = ['appearance', 'home', 'access', 'contact'] as const

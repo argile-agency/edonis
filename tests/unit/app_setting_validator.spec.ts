@@ -115,8 +115,13 @@ test.group('app_setting validators', () => {
   })
 
   test('home: announcement limited to 280 characters, title required', async ({ assert }) => {
-    assert.isNotNull(
-      await errorOn('home', { ...validHome, announcementText: 'a'.repeat(281) }, 'announcementText')
+    assert.equal(
+      await errorOn(
+        'home',
+        { ...validHome, announcementText: 'a'.repeat(281) },
+        'announcementText'
+      ),
+      'Ce champ ne doit pas dépasser 280 caractères.'
     )
     assert.isNull(
       await errorOn('home', { ...validHome, announcementText: 'a'.repeat(280) }, 'announcementText')
