@@ -270,7 +270,8 @@ test.group('admin settings save', (group) => {
     }
     const response = await putTab(client, admin, 'home', body, assert)
     response.assertStatus(302)
-    assert.equal((await AppSetting.findOrFail(row.id)).announcementText, 'Maintenance samedi')
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.equal(fresh.announcementText, 'Maintenance samedi')
     const audits = await auditRows()
     assert.lengthOf(audits, 1)
     assert.sameMembers(Object.keys(audits[0].newValues!), ['announcementText'])
@@ -286,7 +287,8 @@ test.group('admin settings save', (group) => {
     const response = await putTab(client, admin, 'access', { allowRegistration: false }, assert)
     response.assertStatus(302)
     response.assertHeader('location', '/admin/settings?tab=access')
-    assert.strictEqual((await AppSetting.findOrFail(row.id)).allowRegistration, false)
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.strictEqual(fresh.allowRegistration, false)
 
     const page = await client.get('/admin/settings').withInertia().loginAs(admin)
     const settings = (page.inertiaProps as { settings: Record<string, unknown> }).settings
@@ -303,10 +305,7 @@ test.group('admin settings save', (group) => {
     assert.lengthOf(await auditRows(), 0)
   })
 
-  test('contact save audits only socialLinks when one link changes', async ({
-    client,
-    assert,
-  }) => {
+  test('contact save audits only socialLinks when one link changes', async ({ client, assert }) => {
     const admin = await createUser({ roles: ['admin'] })
     const row = await AppSetting.create({ ...AppSetting.DEFAULTS })
 
@@ -365,7 +364,7 @@ test.group('admin settings save', (group) => {
     test(`invalid input is refused: ${invalid.name}`, async ({ client, assert }) => {
       const admin = await createUser({ roles: ['admin'] })
       const row = await AppSetting.create({ ...AppSetting.DEFAULTS })
-      const before = JSON.stringify((await AppSetting.findOrFail(row.id)).toJSON())
+      const before = JSON.stringify(await AppSetting.findOrFail(row.id))
 
       const response = await putTab(client, admin, invalid.tab, invalid.body, assert)
       response.assertStatus(302)
@@ -374,7 +373,7 @@ test.group('admin settings save', (group) => {
       assert.isDefined(errors?.[invalid.field], invalid.field)
       if (invalid.message) assert.deepEqual(errors[invalid.field], [invalid.message])
 
-      const after = JSON.stringify((await AppSetting.findOrFail(row.id)).toJSON())
+      const after = JSON.stringify(await AppSetting.findOrFail(row.id))
       assert.equal(after, before)
       assert.lengthOf(await auditRows(), 0)
     })

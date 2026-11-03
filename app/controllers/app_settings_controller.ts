@@ -1,6 +1,9 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import type { VineValidator } from '@vinejs/vine'
+import db from '@adonisjs/lucid/services/db'
 import AppSetting from '#models/app_setting'
-import { SETTINGS_TABS, type SettingsTab } from '#validators/app_setting'
+import AuditService from '#services/audit_service'
+import { SETTINGS_TABS, appSettingValidators, type SettingsTab } from '#validators/app_setting'
 
 /**
  * Admin platform settings (/admin/settings).
@@ -19,6 +22,16 @@ function normalizeSocialLinks(value: Record<string, string | null> | null | unde
   const links = {} as SocialLinks
   for (const key of SOCIAL_KEYS) links[key] = value?.[key] || null
   return links
+}
+
+/**
+ * Comparable form for the manual diff (Lucid dirty tracking is unreliable on JSON columns):
+ * '' / undefined → null, 0/1 → boolean, socialLinks → the four-key object.
+ */
+function normalize(key: string, value: unknown) {
+  if (key === 'socialLinks') return normalizeSocialLinks(value as Record<string, string | null>)
+  if (key === 'allowRegistration') return Boolean(value)
+  return value === '' || value === undefined ? null : value
 }
 
 /** Explicit contract mapping: never serialize() (headerHtml, isActive… stay server-side). */
@@ -55,7 +68,58 @@ export default class AppSettingsController {
    * PUT /admin/settings/:tab
    */
   async update(ctx: HttpContext) {
-    await ctx.bouncer.with('PlatformSettingsPolicy').authorize('manage')
-    return ctx.response.notImplemented()
+    const { bouncer, params, request, response, session } = ctx
+    await bouncer.with('PlatformSettingsPolicy').authorize('manage')
+    const tab = params.tab as SettingsTab
+    // Widened: TS cannot call validateUsing on a union of four validators
+    const validator: VineValidator<any, { appHost: string }> = appSettingValidators[tab]
+    const data: Record<string, unknown> = await request.validateUsing(validator, {
+      meta: { appHost: request.host() ?? '' },
+    })
+
+    const outcome = await db.transaction(async (trx) => {
+      const row = await AppSetting.getOrCreateActive(trx)
+      const oldValues: Record<string, unknown> = {}
+      const newValues: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(data)) {
+        if (value === undefined) continue
+        const before = normalize(key, row[key as keyof AppSetting])
+        const after = normalize(key, value)
+        if (JSON.stringify(before) === JSON.stringify(after)) continue
+        oldValues[key] = before
+        newValues[key] = after
+      }
+
+      const changedKeys = Object.keys(newValues)
+      if (changedKeys.length === 0) return 'unchanged'
+
+      const links = newValues.socialLinks as SocialLinks | undefined
+      row.merge({
+        ...newValues,
+        ...(links && { socialLinks: Object.values(links).some(Boolean) ? links : null }),
+      })
+      row.useTransaction(trx)
+      await row.save()
+      // In the transaction: committed ⇔ audited (D-13)
+      await AuditService.logFromContext(
+        ctx,
+        {
+          action: 'admin.settings.update',
+          resourceType: 'AppSetting',
+          resourceId: row.id,
+          oldValues,
+          newValues,
+          metadata: { tab, changedKeys },
+        },
+        trx
+      )
+      return 'saved'
+    })
+
+    session.flash(
+      'success',
+      outcome === 'saved' ? 'Réglages enregistrés.' : 'Aucune modification à enregistrer.'
+    )
+    return response.redirect().toPath(`/admin/settings?tab=${tab}`)
   }
 }
