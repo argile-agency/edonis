@@ -1,6 +1,6 @@
 ---
 phase: 05-builder-ui
-fixed_at: 2026-11-03T14:40:00Z
+fixed_at: 2026-11-03T14:51:00Z
 review_path: .planning/phases/05-builder-ui/05-REVIEW.md
 iteration: 1
 fix_scope: critical_warning
@@ -12,7 +12,7 @@ status: all_fixed
 
 # Phase 05: Code Review Fix Report
 
-**Fixed at:** 2026-11-03T14:40:00Z
+**Fixed at:** 2026-11-03T14:51:00Z
 **Source review:** .planning/phases/05-builder-ui/05-REVIEW.md
 **Iteration:** 1
 **Scope:** CR-01, CR-02, WR-01 to WR-05. The user chose this on 2026-11-03 (« Corriger critiques + avert. »). IN-01 to IN-04 are left open on purpose.
@@ -23,6 +23,7 @@ status: all_fixed
 - Skipped: 0.
 - Gate: `node ace test unit functional` passed 349 of 349 (SQLite). `bun run typecheck`, `bun run lint` and `bun run check:debt` all returned 0.
 - Browser specs were not run, because the Playwright headless shell is missing locally.
+- Based on main at 9e0839a. Main has since gained fc73d82 (docs only). It was not merged here.
 
 ## Fixed Issues
 
@@ -35,12 +36,14 @@ status: all_fixed
 - `tests/unit/builder_tree.spec.ts`
 - `tests/functional/builder_moves.spec.ts`
 
-**Commit:** 99e13c7
+**Commits:** 99e13c7, plus the follow-up 700c2a5
 
 **Applied fix:**
 - The panel now sends only the date bounds that changed since the last send or seed. This is the new `datePatch()` in `builder_tree.ts`.
 - A bound held back by the order check is sent once the order is fixed.
-- Fields the teacher has not typed in are re-seeded from `values` whenever the props change. A typed field keeps its local value (D-09).
+- Fields are re-seeded from `values` whenever the props change, except a typed field that is unsaved, held back, or showing a save error: that one keeps its local value (D-09).
+- Follow-up 700c2a5: once its save succeeded, a typed field follows `values` again. Before this, a colleague's later change to that field stayed hidden while the panel was open.
+- Known limit: a field the teacher edits is sent with the token of the moment. If a colleague changed that same field and the token was refreshed meanwhile (reload, re-sync), the teacher's edit wins. This is ordinary last-write for a field edited on purpose.
 - The "Publié" switch is now controlled by `values.isPublished`, so a rollback shows on screen.
 - The server already merged a partial PUT with the stored bound.
 
@@ -72,7 +75,8 @@ status: all_fixed
 - `isAvailable()` on `course_module` and `course_content` is the only learner-side reader. It needs no change, because stored values are now inclusive.
 - The builder props serialise with `toISO()`. The panel shows `slice(0, 10)`, which is still the same day.
 - Bulk shift keeps the wall-clock time, so `23:59:59` stays `23:59:59`.
-- Behaviour is the same on PostgreSQL, MySQL and SQLite: whole-second values, and no SQL date functions.
+- Behaviour should be the same on PostgreSQL, MySQL and SQLite by construction: whole-second values, and no SQL date functions. Only SQLite was run locally; the CI matrix covers PostgreSQL and MySQL.
+- No Luxon `Settings.defaultZone` override exists in `app`, `config` or `start`, so VineJS and Luxon agree on the local midnight.
 
 **Tests:**
 - Unit: `inclusiveEnd`, for a date-only value and for a value with a time.
@@ -190,6 +194,6 @@ IN-01, IN-02, IN-03, IN-04.
 
 ---
 
-_Fixed: 2026-11-03T14:40:00Z_
+_Fixed: 2026-11-03T14:51:00Z_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
