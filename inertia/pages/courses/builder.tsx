@@ -67,6 +67,17 @@ const urlOf = (ref: ItemRef) =>
   ref.kind === 'section' ? `/modules/${ref.id}` : `/contents/${ref.id}`
 const refOf = (row: Row): ItemRef => ({ kind: row.kind, id: row.id })
 
+/** Snapshot rows with the current `updatedAt` of every item still present. */
+function withCurrentTokens<T extends { id: number; updatedAt: string | null }>(
+  snapshot: T[],
+  current: T[]
+): T[] {
+  const tokens = new Map(current.map((item) => [item.id, item.updatedAt]))
+  return snapshot.map((item) =>
+    tokens.has(item.id) ? { ...item, updatedAt: tokens.get(item.id) ?? null } : item
+  )
+}
+
 export default function CourseBuilder(props: Props) {
   const { course, auth, appSettings, menus } = props
 
@@ -118,12 +129,18 @@ export default function CourseBuilder(props: Props) {
     }
   }, [props.sections, props.contents, queue.pending])
 
+  // The ref is kept: Radix asks onCloseFocusTarget later (setTimeout on unmount), which consumes it.
   useEffect(() => {
     if (!pendingFocusId) return
     document.getElementById(pendingFocusId)?.focus()
-    pendingFocusRef.current = null
     setPendingFocusId(null)
   }, [pendingFocusId])
+
+  const takeFocusTarget = () => {
+    const id = pendingFocusRef.current
+    pendingFocusRef.current = null
+    return id ? document.getElementById(id) : null
+  }
 
   const focusLater = (id: string | null) => {
     pendingFocusRef.current = id
@@ -179,8 +196,9 @@ export default function CourseBuilder(props: Props) {
         if (res.item.updatedAt !== undefined) patchItem(ref, { updatedAt: res.item.updatedAt })
       },
       rollback(error) {
-        commitSections(snapshot.sections)
-        commitContents(snapshot.contents)
+        // Tokens are server truth: an earlier op may have saved since the snapshot.
+        commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
+        commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
         onError?.(error)
       },
     })
@@ -382,8 +400,7 @@ export default function CourseBuilder(props: Props) {
       onMoveTo: (parentId) => moveTo(row, parentId),
       canDelete: row.kind === 'content' || canDeleteSection(sections, contents, row.id),
       onDelete: () => remove(row, rows),
-      onCloseFocusTarget: () =>
-        pendingFocusRef.current ? document.getElementById(pendingFocusRef.current) : null,
+      onCloseFocusTarget: () => takeFocusTarget(),
       onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
       onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
     }

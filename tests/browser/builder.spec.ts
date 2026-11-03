@@ -131,6 +131,8 @@ test.group('Course builder', (group) => {
     await page.getByRole('menuitem', { name: 'Déplacer vers…' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'S2', exact: true }).click()
     await waitSaved(page)
+    // The modal layer holds pointer-events until its exit animation unmounts it.
+    await page.getByRole('dialog').waitFor({ state: 'detached' })
     assert.notEqual(await bodyPointerEvents(page), 'none')
 
     await page.reload()
