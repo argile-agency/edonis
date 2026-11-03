@@ -11,6 +11,7 @@ import {
   Calendar,
   Bell,
   Award,
+  ClipboardCheck,
   FileText,
   LayoutDashboard,
   PlusCircle,
@@ -132,6 +133,18 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
         {/* Header avec menu dynamique */}
         <AppHeader user={user} appSettings={appSettings} menus={menus} />
 
+        <div className="border-b bg-primary/10">
+          <p className="container mx-auto px-4 py-2 text-center text-sm">
+            Environnement de démonstration — un projet pilote ?{' '}
+            <a
+              href="mailto:contact@edonis.org"
+              className="font-medium underline underline-offset-4"
+            >
+              contact@edonis.org
+            </a>
+          </p>
+        </div>
+
         {/* Contenu principal basé sur le rôle */}
         {!user && <PublicHomePage settings={settings} />}
         {user && isStudent && <StudentHomePage user={user} data={dashboardData} />}
@@ -154,7 +167,7 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
                 ))}
               </div>
               <p className="text-sm text-muted-foreground">
-                © 2024 {settings.appName}. Tous droits réservés.
+                © {new Date().getFullYear()} {settings.appName}. Tous droits réservés.
               </p>
             </div>
           </div>
@@ -198,23 +211,19 @@ function PublicHomePage({ settings }: { settings: any }) {
               <CardTitle>Cours de qualité</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Accédez à des cours créés par des experts dans leur domaine
-              </p>
+              <p className="text-muted-foreground">Constructeur de cours par glisser-déposer</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <Award className="h-6 w-6 text-primary" />
+                <ClipboardCheck className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Certificats</CardTitle>
+              <CardTitle>Évaluations</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Obtenez des certificats reconnus après avoir complété vos cours
-              </p>
+              <p className="text-muted-foreground">Devoirs, rubriques et carnet de notes pondéré</p>
             </CardContent>
           </Card>
 
