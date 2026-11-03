@@ -21,7 +21,7 @@ Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10
 | Milestone | Date | Repo phases | 🟡 H days | 🟡 A days | Capacity |
 |---|---|---|---|---|---|
 | Course editor | 2026-11-30 | 5 | 13-15 | 2-3 | part of the Nov-Dec days |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 ✓, 5.1 (inserted 2026-11-03, not sized), 6, then 3 | 13-15 + 10-20 + 3-4 = **26-39** | 2-3 + 1.5-2.5 + 0.6-0.8, plus 0.5-1 human-only = **≈ 5-6.5** | ~10 days announced; option (iii) chosen on the H figure, **to be reconsidered against the A figure** (RECONCILIATION §8-9); fallback option (i) |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 ✓, 5.1 settings and 5.2 trash (inserted 2026-11-03, not sized), 6, then 3 | 13-15 + 10-20 + 3-4 = **26-39** | 2-3 + 1.5-2.5 + 0.6-0.8, plus 0.5-1 human-only = **≈ 5-6.5** | ~10 days announced; option (iii) chosen on the H figure, **to be reconsidered against the A figure** (RECONCILIATION §8-9); fallback option (i) |
 | v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ **30** | 2.5-3.5 content + 6.75-9 governance + 0.75-1 human-only = **≈ 10-13.5** | ~7 days: still short by 3-6.5 A (not 23); budget raise to size on the A figure |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
 | v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — | — |
@@ -45,7 +45,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
 - [x] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A) (completed 2026-11-03)
-- [ ] **Phase 5.1: Trash and soft delete** - Recoverable deletes for sections and contents, 30-day configurable retention — *inserted 2026-11-03 by the owner, right after Phase 5; estimate at planning*
+- [ ] **Phase 5.1: Admin platform settings** - `/admin/settings` page (admin only) to edit `AppSetting` in tabs: Apparence, Page d'accueil, Accès, Contact et support — *inserted 2026-11-03 by the owner before the trash phase, because the public demo needs it now; estimate at planning*
+- [ ] **Phase 5.2: Trash and soft delete** - Recoverable deletes for sections and contents, 30-day configurable retention — *inserted 2026-11-03 by the owner, right after Phase 5; estimate at planning*
 - [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 H / 1.5-2.5 A*
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip; 🟡 3-4 H / 0.6-0.8 A*
 
@@ -315,7 +316,28 @@ Plans:
 
 - [x] 05-08-PLAN.md — axe coverage of the builder (incl. selection state), full gate incl. build, validation sign-off (Nyquist only if browser rows ran), French walkthrough incl. add flows and bulk actions (checkpoint, not autonomous) [BUILD-01..BUILD-16]
 
-### Phase 05.1: Trash and soft delete (INSERTED)
+### Phase 05.1: Admin platform settings (INSERTED)
+
+**Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-03 by the owner (« Immédiatement, avant 5.1 »), ahead of the trash phase, because the public demo (demo.edonis.org) can only be changed by SQL today. Not in the v0.1 capacity figures yet: size it at planning.
+**Goal:** An administrator changes the platform settings from the UI, without a database edit or a deploy, and every exposed setting has a visible effect
+**Requirements**: TBD at planning (SETTINGS-xx in REQUIREMENTS.md)
+**Depends on:** Phase 5
+**Plans:** 0 plans
+**Brief:** `.planning/todos/completed/2026-11-03-admin-platform-settings-page.md` (acceptance criteria and out of scope)
+
+**Owner decisions (2026-11-03):**
+- `headerHtml` / `footerHtml` are not exposed in v1 (raw HTML on every page is an XSS vector)
+- New plain-text `announcementText` field (cross-engine, reversible migration), shown on the home page; it replaces the demo banner hard-coded in `home.tsx` (`2fc5399`) and the seeder fills it
+- Logo and favicon as URL fields; upload later
+- Settings that are stored but have no effect: wire the ones that matter (contact email, support URL and social links in the footer, favicon as `<link rel="icon">`, hero image in the hero, `allowRegistration` enforced on the register page and route); remove the rest from the form (secondary and accent colours, `showStats`, `showPublicCourses`, `welcomeMessage` if it duplicates the hero)
+- Single-instance in v1: `app_settings` keeps the `is_active` singleton without `tenant_id`, stated explicitly
+- Conventions: controller + VineJS validator in `app/`, authorization in the controller as well as the route middleware (admin only), one audit row per save, French labels, an axe test, columns valid on the three engines
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 05.1 to break down)
+
+### Phase 05.2: Trash and soft delete (INSERTED)
 
 **Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-03 by the owner (« Juste après la phase 5 ») from the Phase 5 deferred idea D-06 (`05-CONTEXT.md`, Deferred Ideas). Not in the v0.1 capacity figures of the milestone table yet: size it at planning.
 **Goal:** Deleting a section or a content moves it to a trash instead of removing it, so nothing (structure, files, learner progress) is lost by mistake
@@ -334,7 +356,7 @@ Plans:
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 05.1 to break down)
+- [ ] TBD (run /gsd:plan-phase 05.2 to break down)
 
 ### Phase 6: Page Content
 
@@ -490,7 +512,7 @@ Plans:
 ## Progress
 
 **Execution Order (realigned 2026-10-31):**
-v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
+v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -499,7 +521,8 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 6 -> 3 · v1.0 (option (a), own
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
-| 5.1. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
+| 5.1. Admin platform settings | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
+| 5.2. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |

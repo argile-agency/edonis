@@ -39,7 +39,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-11-03 -- Phase 5 complete (walkthrough approved, review fixed)
 
-Next recommended run: `/gsd-discuss-phase 5.1` (trash and soft delete, inserted 2026-11-03 right after Phase 5; not sized yet), then `/gsd-plan-phase 5.1`. Phase 5 closed 2026-11-03 with `05-VERIFICATION.md` status human_needed: the builder/bulk/axe browser specs and the PostgreSQL/MySQL matrix have never run (no CI run, Playwright headless shell missing locally). 4 review fixes (CR-01, WR-01, WR-02, WR-05) need a manual check (`05-REVIEW-FIX.md`). Phase 3 runs after Phases 5.1 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
+Next recommended run: `/gsd-plan-phase 5.1` (admin platform settings, inserted 2026-11-03 ahead of the trash phase; the owner's five decisions are recorded in ROADMAP.md, so discuss-phase can be skipped). Then Phase 5.2 (trash and soft delete, needs `/gsd-discuss-phase 5.2`). Phase 5 closed 2026-11-03 with `05-VERIFICATION.md` status human_needed: the builder/bulk/axe browser specs and the PostgreSQL/MySQL matrix have never run (no CI run, Playwright headless shell missing locally). 4 review fixes (CR-01, WR-01, WR-02, WR-05) need a manual check (`05-REVIEW-FIX.md`). Phase 3 runs after Phases 5.1 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
