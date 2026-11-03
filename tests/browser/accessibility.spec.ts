@@ -275,4 +275,49 @@ test.group('Accessibility', () => {
       await course.delete()
     }
   })
+
+  test('admin settings page has no critical a11y violations', async ({ visit, assert }) => {
+    const page = await visit('/login')
+    await page.locator('input[type="email"]').fill('admin@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
+    await Promise.all([
+      page.waitForURL('**/dashboard', { timeout: 5000 }),
+      page.locator('button[type="submit"]').click(),
+    ])
+    // Read-only: nothing is saved, so seeded allowRegistration stays true for other specs.
+    await page.goto('/admin/settings')
+    await page.waitForLoadState('networkidle')
+
+    const wcag = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+    const check = (state: string, results: Awaited<ReturnType<AxeBuilder['analyze']>>) => {
+      const critical = results.violations.filter(
+        (v) => v.impact === 'critical' || v.impact === 'serious'
+      )
+      if (critical.length > 0) {
+        console.log(
+          `Settings (${state}) a11y violations:`,
+          critical.map((v) => `${v.id}: ${v.description} (${v.impact})`)
+        )
+      }
+      assert.equal(
+        critical.length,
+        0,
+        `Settings (${state}): ${critical.length} critical/serious a11y violations`
+      )
+    }
+
+    check('Apparence', await new AxeBuilder({ page }).withTags(wcag).analyze())
+
+    await page.getByRole('tab', { name: "Page d'accueil" }).click()
+    await page.getByRole('tab', { name: "Page d'accueil", selected: true }).waitFor()
+    check("Page d'accueil", await new AxeBuilder({ page }).withTags(wcag).analyze())
+
+    await page.getByRole('tab', { name: 'Accès' }).click()
+    await page.getByRole('tab', { name: 'Accès', selected: true }).waitFor()
+    check('Accès', await new AxeBuilder({ page }).withTags(wcag).analyze())
+
+    await page.getByRole('tab', { name: 'Contact et support' }).click()
+    await page.getByRole('tab', { name: 'Contact et support', selected: true }).waitFor()
+    check('Contact et support', await new AxeBuilder({ page }).withTags(wcag).analyze())
+  })
 })
