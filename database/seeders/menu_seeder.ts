@@ -186,5 +186,19 @@ export default class extends BaseSeeder {
         target: '_self',
       }
     )
+
+    await MenuItem.updateOrCreate(
+      { menuId: userMenu.id, url: '/admin/settings' },
+      {
+        menuId: userMenu.id,
+        label: 'Réglages de la plateforme',
+        url: '/admin/settings',
+        icon: 'SlidersHorizontal',
+        order: 4,
+        visibility: 'admin',
+        isActive: true,
+        target: '_self',
+      }
+    )
   }
 }
