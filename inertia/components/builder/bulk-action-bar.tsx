@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { MoveTargetList } from '~/components/builder/move-target-list'
+import { LearnerImpact } from '~/components/builder/learner-impact'
 import {
   BULK_DELETE_BLOCKED_MESSAGE,
   type ContentType,
@@ -138,6 +139,7 @@ export function BulkActionBar({
   onMove,
   onDuplicate,
   onDelete,
+  loadLearnerImpact,
   onClear,
 }: {
   count: number
@@ -150,6 +152,7 @@ export function BulkActionBar({
   onMove(parentId: number | null): void
   onDuplicate(): void
   onDelete(): void
+  loadLearnerImpact(): Promise<number>
   onClear(): void
 }) {
   const [open, setOpen] = useState<Open>(null)
@@ -200,8 +203,7 @@ export function BulkActionBar({
     setOpen(null)
   }
 
-  const errorProps = (id: string) =>
-    error ? { 'aria-invalid': true, 'aria-describedby': id } : {}
+  const errorProps = (id: string) => (error ? { 'aria-invalid': true, 'aria-describedby': id } : {})
 
   return (
     <>
@@ -402,8 +404,7 @@ export function BulkActionBar({
           <DialogHeader>
             <DialogTitle>Déplacer {elements(count)}</DialogTitle>
             <DialogDescription>
-              Choisissez la destination. Les éléments seront placés à la fin, dans l'ordre du
-              plan.
+              Choisissez la destination. Les éléments seront placés à la fin, dans l'ordre du plan.
             </DialogDescription>
           </DialogHeader>
           <MoveTargetList
@@ -431,9 +432,13 @@ export function BulkActionBar({
             <AlertDialogTitle>Supprimer {elements(count)}</AlertDialogTitle>
             <AlertDialogDescription>
               Supprimer les éléments sélectionnés ? Une section supprimée emporte son contenu, qui
-              est sélectionné lui aussi. La progression des apprenants sur les contenus supprimés
-              sera aussi supprimée. Cette action est irréversible.
+              est sélectionné lui aussi. Cette action est irréversible.
             </AlertDialogDescription>
+            <LearnerImpact
+              open={open === 'delete'}
+              load={loadLearnerImpact}
+              subject="les contenus supprimés"
+            />
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>

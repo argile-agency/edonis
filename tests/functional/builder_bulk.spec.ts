@@ -6,6 +6,7 @@ import type Course from '#models/course'
 import type User from '#models/user'
 import { createHash } from 'node:crypto'
 import AuditLog from '#models/audit_log'
+import ContentProgress from '#models/content_progress'
 import Assignment from '#models/assignment'
 import ContentFile from '#models/content_file'
 import CourseModule from '#models/course_module'
@@ -700,5 +701,50 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
     })
     assert.isNotNull(await ContentFile.find(file.id))
     assert.isNotNull(await CourseModule.find(f.s2.id))
+  })
+})
+
+test.group('Builder - delete impact', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('counts distinct learners with progress on the course contents only', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const other = await fixture()
+    const [l1, l2, l3] = await Promise.all([
+      createUser({ roles: ['student'] }),
+      createUser({ roles: ['student'] }),
+      createUser({ roles: ['student'] }),
+    ])
+    await ContentProgress.createMany([
+      { userId: l1.id, contentId: f.c1.id, status: 'completed' },
+      { userId: l1.id, contentId: f.c2.id, status: 'in_progress' },
+      { userId: l2.id, contentId: f.c2.id, status: 'in_progress' },
+      { userId: l3.id, contentId: f.c3.id, status: 'completed' },
+      { userId: l3.id, contentId: other.c1.id, status: 'completed' },
+    ])
+    const url = route('courses.builder.deleteImpact', { id: f.course.id })
+    const count = async (contentIds: number[]) => {
+      const response = await postBulk(client, url, f.owner, { contentIds })
+      response.assertStatus(200)
+      return response.body().learners
+    }
+
+    assert.equal(await count([f.c1.id, f.c2.id]), 2)
+    assert.equal(await count([f.c3.id]), 1)
+    assert.equal(await count([]), 0)
+    // another course's content is ignored, not counted
+    assert.equal(await count([other.c1.id]), 0)
+  })
+
+  test('an outsider teacher gets 403', async ({ client, route }) => {
+    const f = await fixture()
+    const outsider = await createUser({ roles: ['teacher'] })
+    const url = route('courses.builder.deleteImpact', { id: f.course.id })
+    const response = await postBulk(client, url, outsider, { contentIds: [f.c1.id] })
+    response.assertStatus(403)
   })
 })

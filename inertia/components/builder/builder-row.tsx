@@ -51,6 +51,7 @@ export interface BuilderRowProps {
   onMoveTo(parentId: number | null): void
   canDelete: boolean
   onDelete(): void
+  loadLearnerImpact?: () => Promise<number>
   onCloseFocusTarget?: () => HTMLElement | null
   onAddContent?(): void
   onAddSubSection?(): void
@@ -204,6 +205,7 @@ export function BuilderRow(props: BuilderRowProps) {
             onMoveTo={props.onMoveTo}
             canDelete={props.canDelete}
             onDelete={props.onDelete}
+            loadLearnerImpact={props.loadLearnerImpact}
             onCloseFocusTarget={props.onCloseFocusTarget}
           />
         </div>

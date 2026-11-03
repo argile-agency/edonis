@@ -404,6 +404,9 @@ router
     router
       .post('/courses/:id/builder/bulk/delete', [CourseBulkActionsController, 'destroy'])
       .as('courses.bulk.delete')
+    router
+      .post('/courses/:id/builder/delete-impact', [CourseBulkActionsController, 'deleteImpact'])
+      .as('courses.builder.deleteImpact')
   })
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))

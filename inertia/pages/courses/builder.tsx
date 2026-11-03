@@ -422,9 +422,8 @@ export default function CourseBuilder(props: Props) {
     })
   }
 
-  const patchSelection =
-    (patch: Parameters<typeof applyBulkPatch>[3]) => (items: ItemRef[]) =>
-      commit(applyBulkPatch(sectionsRef.current, contentsRef.current, items, patch))
+  const patchSelection = (patch: Parameters<typeof applyBulkPatch>[3]) => (items: ItemRef[]) =>
+    commit(applyBulkPatch(sectionsRef.current, contentsRef.current, items, patch))
 
   const bulk = {
     publish: (isPublished: boolean) =>
@@ -672,6 +671,7 @@ export default function CourseBuilder(props: Props) {
       onMoveTo: (parentId) => moveTo(row, parentId),
       canDelete: row.kind === 'content' || canDeleteSection(sections, contents, row.id),
       onDelete: () => remove(row, rows),
+      loadLearnerImpact: row.kind === 'content' ? () => learnerImpact([row.id]) : undefined,
       onCloseFocusTarget: () => takeFocusTarget(),
       onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
       onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
@@ -686,6 +686,11 @@ export default function CourseBuilder(props: Props) {
         }),
     }
   }
+
+  const learnerImpact = (contentIds: number[]) =>
+    sendJson<{ learners: number }>('POST', `/courses/${course.id}/builder/delete-impact`, {
+      contentIds,
+    }).then((r) => r.learners)
 
   const selection = selected.size > 0 ? selectedItems(sections, contents, selected) : []
 
@@ -742,67 +747,70 @@ export default function CourseBuilder(props: Props) {
           </Card>
         ) : (
           <>
-          <SelectionControls
-            total={sections.length + contents.length}
-            selectedCount={selected.size}
-            onSelectAll={() => setSelected(quickSelect(sections, contents, 'all'))}
-            onClear={() => setSelected(new Set())}
-            onQuickSelect={(q) => setSelected(quickSelect(sections, contents, q))}
-          />
-          {selected.size > 0 && (
-            <BulkActionBar
-              count={selected.size}
-              deleteBlocked={bulkDeleteBlockers(sections, contents, selected).length > 0}
-              moveTargets={bulkMoveTargets(sections, contents, selection)}
-              onPublish={() => bulk.publish(true)}
-              onUnpublish={() => bulk.publish(false)}
-              onAvailability={bulk.availability}
-              onShift={bulk.shift}
-              onMove={bulk.move}
-              onDuplicate={bulk.duplicate}
-              onDelete={bulk.remove}
+            <SelectionControls
+              total={sections.length + contents.length}
+              selectedCount={selected.size}
+              onSelectAll={() => setSelected(quickSelect(sections, contents, 'all'))}
               onClear={() => setSelected(new Set())}
+              onQuickSelect={(q) => setSelected(quickSelect(sections, contents, q))}
             />
-          )}
-          <DndContext
-            id="course-builder"
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            accessibility={{
-              announcements,
-              screenReaderInstructions: { draggable: DRAG_INSTRUCTIONS },
-            }}
-            onDragStart={onDragStart}
-            onDragMove={onDragMove}
-            onDragOver={onDragOver}
-            onDragEnd={onDragEnd}
-            onDragCancel={endDrag}
-          >
-            <SortableContext
-              items={dragRows.map((r) => r.key)}
-              strategy={verticalListSortingStrategy}
+            {selected.size > 0 && (
+              <BulkActionBar
+                count={selected.size}
+                deleteBlocked={bulkDeleteBlockers(sections, contents, selected).length > 0}
+                moveTargets={bulkMoveTargets(sections, contents, selection)}
+                onPublish={() => bulk.publish(true)}
+                onUnpublish={() => bulk.publish(false)}
+                onAvailability={bulk.availability}
+                onShift={bulk.shift}
+                onMove={bulk.move}
+                onDuplicate={bulk.duplicate}
+                onDelete={bulk.remove}
+                loadLearnerImpact={() =>
+                  learnerImpact(selection.filter((i) => i.kind === 'content').map((i) => i.id))
+                }
+                onClear={() => setSelected(new Set())}
+              />
+            )}
+            <DndContext
+              id="course-builder"
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+              accessibility={{
+                announcements,
+                screenReaderInstructions: { draggable: DRAG_INSTRUCTIONS },
+              }}
+              onDragStart={onDragStart}
+              onDragMove={onDragMove}
+              onDragOver={onDragOver}
+              onDragEnd={onDragEnd}
+              onDragCancel={endDrag}
             >
-              <ul aria-label="Plan du cours">
-                {dragRows.map((row) => (
-                  <BuilderRow key={row.key} {...rowProps(row)} />
-                ))}
-              </ul>
-            </SortableContext>
-            {mounted &&
-              createPortal(
-                <DragOverlay>
-                  {activeRow && (
-                    <div className="rounded-lg border bg-card p-3 font-medium shadow-lg">
-                      {activeRow.kind === 'section'
-                        ? activeRow.section.title
-                        : activeRow.content.title}
-                    </div>
-                  )}
-                </DragOverlay>,
-                document.body
-              )}
-          </DndContext>
+              <SortableContext
+                items={dragRows.map((r) => r.key)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul aria-label="Plan du cours">
+                  {dragRows.map((row) => (
+                    <BuilderRow key={row.key} {...rowProps(row)} />
+                  ))}
+                </ul>
+              </SortableContext>
+              {mounted &&
+                createPortal(
+                  <DragOverlay>
+                    {activeRow && (
+                      <div className="rounded-lg border bg-card p-3 font-medium shadow-lg">
+                        {activeRow.kind === 'section'
+                          ? activeRow.section.title
+                          : activeRow.content.title}
+                      </div>
+                    )}
+                  </DragOverlay>,
+                  document.body
+                )}
+            </DndContext>
           </>
         )}
       </div>

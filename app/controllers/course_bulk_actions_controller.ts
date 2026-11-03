@@ -22,6 +22,7 @@ import {
   bulkMoveValidator,
   bulkPublishValidator,
   bulkShiftValidator,
+  deleteImpactValidator,
 } from '#validators/course_bulk'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
 import { shiftDate, shiftDays } from '../helpers/date_shift.js'
@@ -552,6 +553,35 @@ export default class CourseBulkActionsController {
         deleted: idsOf(scope.items),
       }
     })
+  }
+
+  /**
+   * Read-only: how many learners have progress on the given contents of this
+   * course. The delete dialogs show it before the teacher confirms.
+   */
+  async deleteImpact({ params, request, response, bouncer }: HttpContext) {
+    const course = await Course.findOrFail(params.id)
+    await bouncer.with('CoursePolicy').authorize('edit', course)
+    const { contentIds } = await request.validateUsing(deleteImpactValidator)
+    if (contentIds.length === 0) return response.json({ learners: 0 })
+
+    const row = await db
+      .from('content_progresses')
+      .whereIn(
+        'content_id',
+        db
+          .from('course_contents')
+          .select('id')
+          .whereIn('id', contentIds)
+          .whereIn(
+            'module_id',
+            db.from('course_modules').select('id').where('course_id', course.id)
+          )
+      )
+      .countDistinct('user_id as learners')
+      .first()
+    // PostgreSQL returns counts as strings
+    return response.json({ learners: Number(row?.learners ?? 0) })
   }
 
   /**

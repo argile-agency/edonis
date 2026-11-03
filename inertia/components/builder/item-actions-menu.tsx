@@ -27,6 +27,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { NOT_EMPTY_MESSAGE, type MoveTarget } from '~/lib/builder_tree'
 import { MoveTargetList } from '~/components/builder/move-target-list'
+import { LearnerImpact } from '~/components/builder/learner-impact'
 
 export interface ItemActionsMenuProps {
   idBase: string
@@ -40,6 +41,8 @@ export interface ItemActionsMenuProps {
   onMoveTo(parentId: number | null): void
   canDelete: boolean
   onDelete(): void
+  /** Contents only: learners whose progress the delete removes. */
+  loadLearnerImpact?: () => Promise<number>
   onCloseFocusTarget?: () => HTMLElement | null
 }
 
@@ -60,6 +63,7 @@ export function ItemActionsMenu({
   onMoveTo,
   canDelete,
   onDelete,
+  loadLearnerImpact,
   onCloseFocusTarget,
 }: ItemActionsMenuProps) {
   const [moveOpen, setMoveOpen] = useState(false)
@@ -178,8 +182,11 @@ export function ItemActionsMenu({
             <AlertDialogDescription>
               {kind === 'section'
                 ? `Supprimer la section « ${title} » ? Cette action est irréversible.`
-                : `Supprimer « ${title} » ? La progression des apprenants sur ce contenu sera aussi supprimée. Cette action est irréversible.`}
+                : `Supprimer « ${title} » ? Cette action est irréversible.`}
             </AlertDialogDescription>
+            {kind === 'content' && loadLearnerImpact && (
+              <LearnerImpact open={deleteOpen} load={loadLearnerImpact} subject="ce contenu" />
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>

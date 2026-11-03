@@ -46,3 +46,10 @@ export const bulkMoveValidator = vine.compile(
 export const bulkDuplicateValidator = vine.compile(vine.object({ items: bulkItemsSchema.clone() }))
 
 export const bulkDeleteValidator = vine.compile(vine.object({ items: bulkItemsSchema.clone() }))
+
+/** Contents a delete would remove, to count the learners whose progress goes with them. */
+export const deleteImpactValidator = vine.compile(
+  vine.object({
+    contentIds: vine.array(vine.number().positive().withoutDecimals()).maxLength(1000),
+  })
+)
