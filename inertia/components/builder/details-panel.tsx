@@ -47,15 +47,24 @@ export function DetailsPanel({ idBase, values, errorMessage, onSave }: DetailsPa
     until: toDateInput(values.availableUntil),
   })
 
-  const reseed = (field: Field, value: string, set: (value: string) => void) => {
-    if (touched.current.has(field)) return
+  // A typed field is kept while unsaved (or held back) and while a save error shows;
+  // once saved it follows `values` again, so a colleague's later change is shown.
+  const reseed = (field: Field, local: string, value: string, set: (value: string) => void) => {
+    if (touched.current.has(field) && (local !== sent.current[field] || errorMessage)) return
+    touched.current.delete(field)
     sent.current[field] = value
     set(value)
   }
-  useEffect(() => reseed('description', values.description ?? '', setDescription), [values.description])
-  useEffect(() => reseed('from', toDateInput(values.availableFrom), setFrom), [values.availableFrom])
   useEffect(
-    () => reseed('until', toDateInput(values.availableUntil), setUntil),
+    () => reseed('description', description, values.description ?? '', setDescription),
+    [values.description]
+  )
+  useEffect(
+    () => reseed('from', from, toDateInput(values.availableFrom), setFrom),
+    [values.availableFrom]
+  )
+  useEffect(
+    () => reseed('until', until, toDateInput(values.availableUntil), setUntil),
     [values.availableUntil]
   )
 
