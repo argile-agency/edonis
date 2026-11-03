@@ -138,9 +138,10 @@ export function ItemActionsMenu({
               aria-disabled="true"
               aria-describedby={deleteReasonId}
               onSelect={(e) => e.preventDefault()}
-              className="flex-col items-start gap-0 opacity-60"
+              // No accent highlight on focus/hover, so it never looks clickable; a thin ring keeps keyboard focus visible
+              className="flex-col items-start gap-0 cursor-not-allowed text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus:ring-1 focus:ring-border"
             >
-              <span>Supprimer</span>
+              <span className="line-through decoration-muted-foreground/60">Supprimer</span>
               <span id={deleteReasonId} className="text-xs text-muted-foreground">
                 {NOT_EMPTY_MESSAGE}
               </span>
