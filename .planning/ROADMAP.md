@@ -322,7 +322,7 @@ Plans:
 **Goal:** An administrator changes the platform settings from the UI, without a database edit or a deploy, and every exposed setting has a visible effect
 **Requirements**: SETTINGS-01, SETTINGS-02, SETTINGS-03, SETTINGS-04, SETTINGS-05, SETTINGS-06, SETTINGS-07, SETTINGS-08, SETTINGS-09
 **Depends on:** Phase 5
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 **Brief:** `.planning/todos/completed/2026-11-03-admin-platform-settings-page.md` (acceptance criteria and out of scope)
 
 **Owner decisions (2026-11-03):**
@@ -349,7 +349,7 @@ Plans:
 
 **Wave 2** *(blocked on 05.1-01 and 05.1-04)*
 
-- [ ] 05.1-05-PLAN.md — `PlatformSettingsPolicy`, controller (show, update with changed-keys audit in one transaction), routes, functional tests [SETTINGS-01, SETTINGS-02, SETTINGS-03, SETTINGS-04, SETTINGS-05]
+- [x] 05.1-05-PLAN.md — `PlatformSettingsPolicy`, controller (show, update with changed-keys audit in one transaction), routes, functional tests [SETTINGS-01, SETTINGS-02, SETTINGS-03, SETTINGS-04, SETTINGS-05]
 
 **Wave 3** *(blocked on Waves 1-2)*
 
@@ -539,7 +539,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
-| 5.1. Admin platform settings | 4/6 | In Progress|  |
+| 5.1. Admin platform settings | 5/6 | In Progress|  |
 | 5.2. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
