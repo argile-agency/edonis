@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Security and Correctness Hardening** - Policy layer, validators, transactions (completed 2026-10-20)
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
 - [x] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A) (completed 2026-11-03)
-- [ ] **Phase 5.1: Admin platform settings** - `/admin/settings` page (admin only) to edit `AppSetting` in tabs: Apparence, Page d'accueil, Accès, Contact et support — *inserted 2026-11-03 by the owner before the trash phase, because the public demo needs it now; 6 plans in 3 waves (SETTINGS-01..09)*
+- [x] **Phase 5.1: Admin platform settings** - `/admin/settings` page (admin only) to edit `AppSetting` in tabs: Apparence, Page d'accueil, Accès, Contact et support — *inserted 2026-11-03 by the owner before the trash phase, because the public demo needs it now; 6 plans in 3 waves (SETTINGS-01..09)* (completed 2026-11-04)
 - [ ] **Phase 5.2: Trash and soft delete** - Recoverable deletes for sections and contents, 30-day configurable retention — *inserted 2026-11-03 by the owner, right after Phase 5; estimate at planning*
 - [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 H / 1.5-2.5 A*
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip; 🟡 3-4 H / 0.6-0.8 A*
@@ -322,7 +322,7 @@ Plans:
 **Goal:** An administrator changes the platform settings from the UI, without a database edit or a deploy, and every exposed setting has a visible effect
 **Requirements**: SETTINGS-01, SETTINGS-02, SETTINGS-03, SETTINGS-04, SETTINGS-05, SETTINGS-06, SETTINGS-07, SETTINGS-08, SETTINGS-09
 **Depends on:** Phase 5
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 **Brief:** `.planning/todos/completed/2026-11-03-admin-platform-settings-page.md` (acceptance criteria and out of scope)
 
 **Owner decisions (2026-11-03):**
@@ -353,7 +353,7 @@ Plans:
 
 **Wave 3** *(blocked on Waves 1-2)*
 
-- [ ] 05.1-06-PLAN.md — axe test on the four tabs, full gate, French walkthrough and demo post-deploy step (checkpoint, not autonomous) [SETTINGS-01..SETTINGS-09]
+- [x] 05.1-06-PLAN.md — axe test on the four tabs, full gate, French walkthrough and demo post-deploy step (checkpoint, not autonomous) [SETTINGS-01..SETTINGS-09]
 
 ### Phase 05.2: Trash and soft delete (INSERTED)
 
@@ -539,7 +539,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
-| 5.1. Admin platform settings | 5/6 | In Progress|  |
+| 5.1. Admin platform settings | 6/6 | Complete   | 2026-11-04 |
 | 5.2. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
