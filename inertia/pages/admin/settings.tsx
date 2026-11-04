@@ -142,6 +142,8 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
   const [tab, setTabState] = useState<Tab>(activeTab)
 
   // Declared at page level: Radix unmounts inactive TabsContent, so edits survive a tab switch.
+  // They do not survive a save: a successful save of any tab remounts the page and re-initialises
+  // all four forms from server props, dropping unsaved edits in the other tabs (accepted, WR-03).
   const appearanceForm = useForm({
     appName: settings.appName ?? '',
     appLogoUrl: settings.appLogoUrl ?? '',
@@ -186,7 +188,8 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
       e.preventDefault()
       form.put(`/admin/settings/${target}`, {
         // 'errors': keep state (tab, input) on validation failure; remount on success so
-        // forms re-initialise from fresh props and the flash toast fires again.
+        // all four forms re-initialise from fresh props (other tabs' unsaved edits are lost)
+        // and the flash toast fires again.
         preserveState: 'errors',
         preserveScroll: true,
         onError: (errors: Record<string, string>) => {
