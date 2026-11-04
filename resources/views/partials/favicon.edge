@@ -1,3 +1,4 @@
-@if(page.props.appSettings && page.props.appSettings.appFaviconUrl)
+{{-- Same image rule as the React side (inertia/lib/safe_url.ts), registered in start/view.ts --}}
+@if(page.props.appSettings && isSafeImageSrc(page.props.appSettings.appFaviconUrl))
   <link rel="icon" href="{{ page.props.appSettings.appFaviconUrl }}" />
 @end

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { ThemeToggle } from '~/components/theme-toggle'
 import { TermsConsentBanner } from '~/components/terms-consent-banner'
+import { isSafeImageSrc } from '~/lib/safe_url'
 
 interface Role {
   id: number
@@ -122,7 +123,7 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2">
-            {settings.appLogoUrl ? (
+            {isSafeImageSrc(settings.appLogoUrl) ? (
               <img src={settings.appLogoUrl} alt={settings.appName} className="h-8" />
             ) : (
               <GraduationCap className="h-8 w-8" style={{ color: settings.primaryColor }} />

@@ -53,6 +53,10 @@ test.group('app_setting validators', () => {
       await errorOn('appearance', { ...validAppearance, appName: null }, 'appName'),
       REQUIRED
     )
+    assert.equal(
+      await errorOn('appearance', { ...validAppearance, appName: '   ' }, 'appName'),
+      REQUIRED
+    )
   })
 
   test('image URLs: same host passes', async ({ assert }) => {
@@ -127,6 +131,7 @@ test.group('app_setting validators', () => {
       await errorOn('home', { ...validHome, announcementText: 'a'.repeat(280) }, 'announcementText')
     )
     assert.equal(await errorOn('home', { heroTitle: null }, 'heroTitle'), REQUIRED)
+    assert.equal(await errorOn('home', { heroTitle: '   ' }, 'heroTitle'), REQUIRED)
   })
 
   test('access: allowRegistration false is kept', async ({ assert }) => {
