@@ -16,6 +16,12 @@ test.group('favicon partial', () => {
     assert.notInclude(await render(null), 'rel="icon"')
   })
 
+  test('emits nothing for an unsafe favicon URL: {$self}')
+    .with(['javascript:alert(1)', '//evil.example/x.png', '/\\evil.example/x.png'])
+    .run(async ({ assert }, appFaviconUrl) => {
+      assert.notInclude(await render({ appFaviconUrl }), 'rel="icon"')
+    })
+
   test('escapes the URL', async ({ assert }) => {
     const html = await render({ appFaviconUrl: '/x"><script>alert(1)</script>' })
     assert.include(html, '&quot;')
