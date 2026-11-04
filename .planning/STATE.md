@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP (2026-12-20)
-status: executing
-stopped_at: Phase 5.1 UI-SPEC approved
-last_updated: "2026-11-04T11:32:21.675Z"
+status: Ready to discuss
+stopped_at: Phase 5.2 context gathered
+last_updated: "2026-11-04T15:32:11.758Z"
 last_activity: 2026-11-04
 progress:
   total_phases: 19
@@ -39,7 +39,7 @@ Plan: Not started
 Status: Ready to discuss
 Last activity: 2026-11-04
 
-Next recommended run: `/gsd-discuss-phase 5.2` (trash and soft delete, inserted 2026-11-03; not sized yet), then `/gsd-plan-phase 5.2`. Phase 5.1 (admin platform settings) closed 2026-11-04, `05.1-VERIFICATION.md` human_needed: axe test, PostgreSQL/MySQL and the OAuth first-login block only run in CI. Post-deploy on demo.edonis.org: run the migration, review the four tabs of /admin/settings (old `support@edonis.local` contact shows in the public footer), then set the announcement banner. Phase 5 also closed human_needed (browser specs never ran). Phase 3 runs after Phases 5.2 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
+Next recommended run: `/gsd-plan-phase 5.2` (trash and soft delete; context gathered 2026-11-04, 19 decisions; not sized yet). Phase 5.1 (admin platform settings) closed 2026-11-04, `05.1-VERIFICATION.md` human_needed: axe test, PostgreSQL/MySQL and the OAuth first-login block only run in CI. Post-deploy on demo.edonis.org: run the migration, review the four tabs of /admin/settings (old `support@edonis.local` contact shows in the public footer), then set the announcement banner. Phase 5 also closed human_needed (browser specs never ran). Phase 3 runs after Phases 5.2 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
@@ -264,11 +264,11 @@ Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
 
 ## Session Continuity
 
-Last session: 2026-11-03T15:21:46.040Z
-Stopped at: Phase 5.1 UI-SPEC approved
+Last session: 2026-11-04T15:32:11.754Z
+Stopped at: Phase 5.2 context gathered
 restructure committed; lint baseline brought to zero errors (`af99ea1`).
 Working tree is clean. Ready to plan Phase 1.
-Resume file: .planning/phases/05.1-admin-platform-settings/05.1-UI-SPEC.md
+Resume file: .planning/phases/05.2-trash-and-soft-delete/05.2-CONTEXT.md
 
 **To resume, in order:**
 
