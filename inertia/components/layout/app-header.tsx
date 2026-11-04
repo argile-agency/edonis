@@ -159,7 +159,7 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  <button className="flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                     <Avatar size="sm">
                       {user.avatarUrl && (
                         <AvatarImage src={user.avatarUrl} alt={getDisplayName(user)} />
