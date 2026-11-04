@@ -226,24 +226,19 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
                       </a>
                     </span>
                   )}
-                  {supportUrl &&
-                    (isExternalUrl(supportUrl) ? (
-                      <a
-                        href={supportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-muted-foreground hover:text-foreground transition"
-                      >
-                        Aide et support
-                      </a>
-                    ) : (
-                      <Link
-                        href={supportUrl}
-                        className="text-sm text-muted-foreground hover:text-foreground transition"
-                      >
-                        Aide et support
-                      </Link>
-                    ))}
+                  {/* Plain anchor: a path may be a static file, which an Inertia visit cannot open. */}
+                  {supportUrl && (
+                    <a
+                      href={supportUrl}
+                      {...(isExternalUrl(supportUrl) && {
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                      })}
+                      className="text-sm text-muted-foreground hover:text-foreground transition"
+                    >
+                      Aide et support
+                    </a>
+                  )}
                   {socials.map(({ key, label, Icon, url }) => (
                     <a
                       key={key}
