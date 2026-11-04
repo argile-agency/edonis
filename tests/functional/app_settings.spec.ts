@@ -216,6 +216,20 @@ const INVALID_CASES: Array<{
     field: 'appName',
   },
   {
+    name: 'whitespace-only name',
+    tab: 'appearance',
+    body: { ...VALID_APPEARANCE, appName: '   ' },
+    field: 'appName',
+    message: 'Ce champ est obligatoire.',
+  },
+  {
+    name: 'whitespace-only hero title',
+    tab: 'home',
+    body: { heroTitle: '   ' },
+    field: 'heroTitle',
+    message: 'Ce champ est obligatoire.',
+  },
+  {
     name: '281-character announcement',
     tab: 'home',
     body: { heroTitle: 'Titre', announcementText: 'a'.repeat(281) },

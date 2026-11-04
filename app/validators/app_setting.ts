@@ -49,6 +49,8 @@ const linkUrl = vine.createRule(
 
 const messagesProvider = new SimpleMessagesProvider({
   'required': 'Ce champ est obligatoire.',
+  // minLength(1) after trim(): whitespace-only required text counts as empty.
+  'minLength': 'Ce champ est obligatoire.',
   'maxLength': 'Ce champ ne doit pas dépasser {{ max }} caractères.',
   'primaryColor.regex': COLOR_MESSAGE,
   'email': 'Saisissez une adresse e-mail valide (ex. contact@exemple.org).',
@@ -72,7 +74,7 @@ const optionalSocial = () =>
 
 const appearance = compile(
   vine.object({
-    appName: vine.string().trim().maxLength(100),
+    appName: vine.string().trim().minLength(1).maxLength(100),
     appLogoUrl: optionalImage(),
     appFaviconUrl: optionalImage(),
     primaryColor: vine
@@ -85,7 +87,7 @@ const appearance = compile(
 
 const home = compile(
   vine.object({
-    heroTitle: vine.string().trim().maxLength(150),
+    heroTitle: vine.string().trim().minLength(1).maxLength(150),
     heroSubtitle: vine.string().trim().maxLength(300).optional().nullable(),
     heroImageUrl: optionalImage(),
     announcementText: vine.string().trim().maxLength(280).optional().nullable(),
