@@ -4,14 +4,14 @@ milestone: v0.1
 milestone_name: MVP (2026-12-20)
 status: executing
 stopped_at: Phase 5.1 UI-SPEC approved
-last_updated: "2026-11-03T16:03:55.293Z"
-last_activity: 2026-11-03 -- Phase 05.1 planning complete
+last_updated: "2026-11-04T11:32:21.675Z"
+last_activity: 2026-11-04
 progress:
   total_phases: 19
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 44
-  completed_plans: 32
-  percent: 21
+  completed_plans: 38
+  percent: 26
 ---
 
 # Project State
@@ -34,12 +34,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 05.1
+Phase: 05.2
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-03 -- Phase 05.1 planning complete
+Status: Ready to discuss
+Last activity: 2026-11-04
 
-Next recommended run: `/gsd-execute-phase 5.1` (admin platform settings: 6 plans in 3 waves, plan check passed 2026-11-03; 05.1-06 ends with a French walkthrough). After deploy, set `announcementText` on /admin/settings (the hard-coded demo banner is removed). Then Phase 5.2 (trash and soft delete, needs `/gsd-discuss-phase 5.2`). Phase 5 closed 2026-11-03 with `05-VERIFICATION.md` status human_needed: the builder/bulk/axe browser specs and the PostgreSQL/MySQL matrix have never run (no CI run, Playwright headless shell missing locally). 4 review fixes (CR-01, WR-01, WR-02, WR-05) need a manual check (`05-REVIEW-FIX.md`). Phase 3 runs after Phases 5.1 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
+Next recommended run: `/gsd-discuss-phase 5.2` (trash and soft delete, inserted 2026-11-03; not sized yet), then `/gsd-plan-phase 5.2`. Phase 5.1 (admin platform settings) closed 2026-11-04, `05.1-VERIFICATION.md` human_needed: axe test, PostgreSQL/MySQL and the OAuth first-login block only run in CI. Post-deploy on demo.edonis.org: run the migration, review the four tabs of /admin/settings (old `support@edonis.local` contact shows in the public footer), then set the announcement banner. Phase 5 also closed human_needed (browser specs never ran). Phase 3 runs after Phases 5.2 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
@@ -147,7 +147,7 @@ completion triggers.
 
 **Velocity:**
 
-- Total plans completed: 32
+- Total plans completed: 38
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -159,6 +159,7 @@ completion triggers.
 | 04 | 1 | - | - |
 | 2 | 16 | - | - |
 | 5 | 10 | - | - |
+| 05.1 | 6 | - | - |
 
 **Recent Trend:**
 

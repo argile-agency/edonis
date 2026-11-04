@@ -539,7 +539,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 3. Complete Stubbed Features | 0/6 | Planned (v0.1, after 5-6) | - |
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
-| 5.1. Admin platform settings | 6/6 | Complete   | 2026-11-04 |
+| 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
 | 5.2. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
