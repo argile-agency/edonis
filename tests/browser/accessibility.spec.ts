@@ -319,5 +319,9 @@ test.group('Accessibility', () => {
     await page.getByRole('tab', { name: 'Contact et support' }).click()
     await page.getByRole('tab', { name: 'Contact et support', selected: true }).waitFor()
     check('Contact et support', await new AxeBuilder({ page }).withTags(wcag).analyze())
+
+    await page.getByRole('tab', { name: 'Corbeille' }).click()
+    await page.getByRole('tab', { name: 'Corbeille', selected: true }).waitFor()
+    check('Corbeille', await new AxeBuilder({ page }).withTags(wcag).analyze())
   })
 })
