@@ -1,6 +1,15 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
+import {
+  BaseModel,
+  column,
+  belongsTo,
+  hasMany,
+  beforeFind,
+  beforeFetch,
+  beforePaginate,
+} from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
 import Course from '#models/course'
 import CourseContent from '#models/course_content'
 
@@ -46,6 +55,36 @@ export default class CourseModule extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  @column.dateTime()
+  declare deletedAt: DateTime | null
+
+  @column()
+  declare deletedBatch: string | null
+
+  @column()
+  declare deletedById: number | null
+
+  // Trashed rows (Phase 5.2) are invisible to every model query, preloads included.
+  // Read them with trx.from(); group any orWhere on these models.
+  @beforeFind()
+  static hideTrashedOnFind(query: ModelQueryBuilderContract<typeof CourseModule>) {
+    query.whereNull(`${CourseModule.table}.deleted_at`)
+  }
+
+  @beforeFetch()
+  static hideTrashedOnFetch(query: ModelQueryBuilderContract<typeof CourseModule>) {
+    query.whereNull(`${CourseModule.table}.deleted_at`)
+  }
+
+  @beforePaginate()
+  static hideTrashedOnPaginate([countQuery, query]: [
+    ModelQueryBuilderContract<typeof CourseModule>,
+    ModelQueryBuilderContract<typeof CourseModule>,
+  ]) {
+    countQuery.whereNull(`${CourseModule.table}.deleted_at`)
+    query.whereNull(`${CourseModule.table}.deleted_at`)
+  }
 
   // Relationships
   @belongsTo(() => Course, {

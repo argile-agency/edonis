@@ -71,7 +71,9 @@ async function fixture() {
     checksum: createHash('sha256').update(uniqueSuffix()).digest('hex'),
   })
   for (const c of [c3, c4]) {
-    await c.related('files').attach({ [file.id]: { filename: 'Notes.txt', mime_type: 'text/plain' } })
+    await c
+      .related('files')
+      .attach({ [file.id]: { filename: 'Notes.txt', mime_type: 'text/plain' } })
   }
 
   const batch = randomUUID()
