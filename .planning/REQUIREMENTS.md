@@ -81,6 +81,21 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SETTINGS-08**: When registration is off, `GET /register`, `POST /register` and a first Google/GitHub login (account creation) are refused with « Les inscriptions sont fermées sur cette plateforme. Contactez un administrateur pour obtenir un compte. » on `/login`, and every « Inscription » / « Créer un compte » link is hidden; existing accounts still sign in, including through OAuth
 - [x] **SETTINGS-09**: The settings page is accessible: every control labelled, help and errors tied with `aria-describedby`, `aria-invalid` on errors, keyboard-navigable tabs, a `#main-content` landmark, and an axe-core browser test (critical/serious) on the four tabs
 
+### Trash and Soft Delete (Phase 5.2 — milestone v0.1; added 2026-11-05)
+
+Owner decisions D-01..D-19 in `.planning/phases/05.2-trash-and-soft-delete/05.2-CONTEXT.md`.
+
+- [ ] **TRASH-01**: `course_modules` and `course_contents` gain `deleted_at`, `deleted_batch` and `deleted_by_id` through a reversible migration valid on PostgreSQL, MySQL/MariaDB and SQLite; no row is lost on `up` or `down` (seeded SQLite count check)
+- [ ] **TRASH-02**: Deleting a section or a content in the builder (single or bulk) moves it and its whole subtree to the trash in one batch, under the course lock, with one ids-only audit row; learner progress, file links and assignments are kept; a non-empty section can be deleted (`E_NOT_EMPTY` is gone)
+- [ ] **TRASH-03**: Trashed rows are invisible in every read path (builder, course page, learn, outline, progress percentage, file download, gradebook assignments of a trashed section, moves, duplicate, create-into); the progress percentage counts each live content once
+- [ ] **TRASH-04**: `/courses/:id/trash` lists the batch roots, most recent first, with title, type, original section, deleted by, deleted at and days left (warning at 3 days or fewer); it is linked from a « Corbeille (N) » button in the builder header and from the course page « Contenu » tab
+- [ ] **TRASH-05**: Restore puts an item back at its original parent and position with the rows of its delete batch below it (other batches stay trashed); a section whose parent is gone or too deep returns at the end of the root sections; a content whose section is trashed offers « Restaurer aussi la section » or « Restaurer dans une autre section… » (409 `E_PARENT_TRASHED` as race guard)
+- [ ] **TRASH-06**: After a builder delete, a toast « « X » déplacé dans la corbeille. » (bulk: « N éléments déplacés dans la corbeille. ») offers « Annuler » for 10 seconds, which restores the whole batch
+- [ ] **TRASH-07**: Viewing the trash and restoring are open to course editors (owner, edit/manage collaborators, admins); permanent delete and « Vider la corbeille » are limited to the owner and admins, enforced server-side
+- [ ] **TRASH-08**: `node ace trash:purge` (nightly cron, optional) and a lazy purge when a course trash page opens share one service that removes expired items, detaches linked assignments (submissions and grades kept), deletes a stored file only when no content references it any more, is idempotent and writes one audit row per course
+- [ ] **TRASH-09**: The trash retention is set in a « Corbeille » tab of `/admin/settings`: integer days from 1 to 365, default 30, audited; lowering it applies to items already in the trash at the next purge
+- [ ] **TRASH-10**: The delete confirmations (single, bulk) and the permanent-delete confirmations show the learner count over every affected content, descendants included, with the trash wording and the retention in days
+
 ### Page Content Type
 
 - [ ] **PAGE-01**: Teacher can create Page content with WYSIWYG editor
@@ -306,6 +321,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETTINGS-07 | Phase 5.1 | Complete |
 | SETTINGS-08 | Phase 5.1 | Complete |
 | SETTINGS-09 | Phase 5.1 | Complete |
+| TRASH-01 | Phase 5.2 | Pending |
+| TRASH-02 | Phase 5.2 | Pending |
+| TRASH-03 | Phase 5.2 | Pending |
+| TRASH-04 | Phase 5.2 | Pending |
+| TRASH-05 | Phase 5.2 | Pending |
+| TRASH-06 | Phase 5.2 | Pending |
+| TRASH-07 | Phase 5.2 | Pending |
+| TRASH-08 | Phase 5.2 | Pending |
+| TRASH-09 | Phase 5.2 | Pending |
+| TRASH-10 | Phase 5.2 | Pending |
 | PAGE-01 | Phase 6 | Pending |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |
@@ -381,8 +406,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Mapped to phases: 56
 - Backlog (not yet mapped to a phase): 1 (DEBT-10)
 - Platform settings requirements (Phase 5.1, milestone v0.1, added 2026-11-03): 9 total (SETTINGS-01..09), all mapped
+- Trash requirements (Phase 5.2, milestone v0.1, added 2026-11-05): 10 total (TRASH-01..10), all mapped
 
 ---
 *Requirements defined: 2026-02-03*
 *Last updated: 2026-10-09 — technical debt requirements added, traceability renumbered for the 12-phase roadmap*
 *Last updated: 2026-11-03 — SETTINGS-01..09 added for Phase 5.1 (admin platform settings)*
+*Last updated: 2026-11-05 — TRASH-01..10 added for Phase 5.2 (trash and soft delete)*

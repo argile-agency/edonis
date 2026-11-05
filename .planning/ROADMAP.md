@@ -46,7 +46,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Content Foundation** - Database models and file storage service (completed 2026-10-19)
 - [x] **Phase 5: Builder UI** - Drag-and-drop upgrade of the existing builder, incl. bulk actions (10 plans; 🟡 13-15 H / 2-3 A) (completed 2026-11-03)
 - [x] **Phase 5.1: Admin platform settings** - `/admin/settings` page (admin only) to edit `AppSetting` in tabs: Apparence, Page d'accueil, Accès, Contact et support — *inserted 2026-11-03 by the owner before the trash phase, because the public demo needs it now; 6 plans in 3 waves (SETTINGS-01..09)* (completed 2026-11-04)
-- [ ] **Phase 5.2: Trash and soft delete** - Recoverable deletes for sections and contents, 30-day configurable retention — *inserted 2026-11-03 by the owner, right after Phase 5; estimate at planning*
+- [ ] **Phase 5.2: Trash and soft delete** - Recoverable deletes for sections and contents, 30-day configurable retention — *inserted 2026-11-03 by the owner, right after Phase 5; 10 plans in 5 waves (planned 2026-11-05)*
 - [ ] **Phase 6: Page Content** - Page content type — *decided 2026-10-31: Tiptap-class WYSIWYG with a sanitized HTML/code source mode (PAGE-08); 🟡 10-20 H / 1.5-2.5 A*
 - [ ] **Phase 3: Complete Stubbed Features** - Evaluations module and contact form — *not on the MVP critical path: runs after 5-6, first to drop to v1.0 if they slip; 🟡 3-4 H / 0.6-0.8 A*
 
@@ -359,9 +359,9 @@ Plans:
 
 **Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-03 by the owner (« Juste après la phase 5 ») from the Phase 5 deferred idea D-06 (`05-CONTEXT.md`, Deferred Ideas). Not in the v0.1 capacity figures of the milestone table yet: size it at planning.
 **Goal:** Deleting a section or a content moves it to a trash instead of removing it, so nothing (structure, files, learner progress) is lost by mistake
-**Requirements**: TBD at planning (TRASH-xx in REQUIREMENTS.md)
+**Requirements**: TRASH-01, TRASH-02, TRASH-03, TRASH-04, TRASH-05, TRASH-06, TRASH-07, TRASH-08, TRASH-09, TRASH-10
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 10 plans
 
 **Scope from the owner (05-CONTEXT D-06 and 2026-11-03):**
 
@@ -374,7 +374,32 @@ Plans:
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 05.2 to break down)
+> **Planned 2026-11-05** (research, pattern map and approved UI-SPEC; owner decisions D-01..D-19 in `05.2-CONTEXT.md`). Orchestrator defaults, owner may override at the walkthrough: a restored section that would exceed 2 levels goes to the end of the root sections; the `getCourseProgress` double count is fixed here; « Annuler » after the section was trashed by someone else answers 409 `E_PARENT_TRASHED`; existing delete audit names kept, new `course.trash.*` names added. Hooks on `CourseModule`/`CourseContent` hide trashed rows from every model query; blind spots (gradebook, raw reads) handled by hand and gated in `check:debt`. Plans split by file ownership so same-wave plans run in parallel worktrees. 05.2-01..09 autonomous; 05.2-10 not autonomous (French walkthrough).
+
+**Wave 1**
+
+- [ ] 05.2-01-PLAN.md — Soft-delete columns (reversible, seeded up/down count check) and hide-trashed model hooks [TRASH-01, TRASH-03]
+- [ ] 05.2-02-PLAN.md — Retention setting: column, validator, « Corbeille » tab in /admin/settings, axe sweep [TRASH-09]
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 05.2-03-PLAN.md — TrashService write path, single and bulk delete to the trash (non-empty sections allowed), builder `trash` prop, progress double-count fix [TRASH-02, TRASH-03, TRASH-04]
+- [ ] 05.2-04-PLAN.md — Purge service (blob refcount, assignments detached), `node ace trash:purge`, cron note [TRASH-08]
+- [ ] 05.2-05-PLAN.md — Builder UI: delete dialogs with trash wording and subtree learner count, « Annuler » toast, « Corbeille (N) » [TRASH-02, TRASH-04, TRASH-06, TRASH-10]
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 05.2-06-PLAN.md — Restore in place with the batch, D-05 refusals and fallbacks, trash list [TRASH-04, TRASH-05]
+- [ ] 05.2-07-PLAN.md — Read-path guard: gradebook filter, visibility spec over the whole inventory, `check:debt` raw-read gate [TRASH-03]
+- [ ] 05.2-08-PLAN.md — Trash page (restore, D-05 dialog, permanent delete, empty), course page link, browser spec with axe [TRASH-04, TRASH-05, TRASH-07, TRASH-10]
+
+**Wave 4** *(blocked on Waves 1-3)*
+
+- [ ] 05.2-09-PLAN.md — `emptyTrash` policy, validators, TrashController (page with lazy purge, restore, restore-batch, delete, empty), routes, HTTP spec [TRASH-04, TRASH-05, TRASH-07, TRASH-08, TRASH-10]
+
+**Wave 5** *(blocked on Waves 1-4)*
+
+- [ ] 05.2-10-PLAN.md — Full gate, migration check, validation sign-off, French walkthrough (checkpoint, not autonomous) [TRASH-01..TRASH-10]
 
 ### Phase 6: Page Content
 
@@ -540,7 +565,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
 | 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
-| 5.2. Trash and soft delete | 0/0 | Not planned (v0.1, inserted 2026-11-03) | - |
+| 5.2. Trash and soft delete | 0/10 | Planned (v0.1, 2026-11-05) | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
