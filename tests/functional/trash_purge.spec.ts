@@ -114,7 +114,22 @@ async function fixture(basePath: string) {
   await trashRaw('course_contents', c5.id, { daysAgo: 40, batch: randomUUID() })
   await trashRaw('course_contents', c3.id, { daysAgo: 29, batch: randomUUID() })
 
-  return { owner, learner, course, s1, s2, s11, c1, c2, c3, c4, c5, sharedLive, sharedTrashed, orphan }
+  return {
+    owner,
+    learner,
+    course,
+    s1,
+    s2,
+    s11,
+    c1,
+    c2,
+    c3,
+    c4,
+    c5,
+    sharedLive,
+    sharedTrashed,
+    orphan,
+  }
 }
 
 const sorted = (ids: number[]) => [...ids].sort((a, b) => a - b)
@@ -163,9 +178,7 @@ test.group('trash | purge', (group) => {
     assert.equal(await count('content_progresses', 'content_id', [f.c3.id]), 1)
   })
 
-  test('keeps rows at retention-1 days and purges rows at retention+1 days', async ({
-    assert,
-  }) => {
+  test('keeps rows at retention-1 days and purges rows at retention+1 days', async ({ assert }) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner)
     const s = await createModule(course, 'S')
@@ -245,7 +258,12 @@ test.group('trash | purge', (group) => {
 
   test('lowering the retention purges more at the next run', async ({ assert }) => {
     const f = await fixture(storage.basePath)
-    await TrashPurgeService.purgeExpired({ courseId: f.course.id, trigger: 'cli', now: NOW, storage })
+    await TrashPurgeService.purgeExpired({
+      courseId: f.course.id,
+      trigger: 'cli',
+      now: NOW,
+      storage,
+    })
     assert.equal(await count('course_contents', 'id', [f.c3.id]), 1)
 
     await setRetention(10)
@@ -345,9 +363,7 @@ test.group('trash | purge', (group) => {
     assert.equal(await count('course_contents', 'id', [f.c1.id]), 1)
   })
 
-  test('deleteBlob refuses paths outside the storage root without throwing', async ({
-    assert,
-  }) => {
+  test('deleteBlob refuses paths outside the storage root without throwing', async ({ assert }) => {
     const outside = join(root, 'outside.txt')
     await writeFile(outside, 'keep')
 
