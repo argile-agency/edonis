@@ -26,7 +26,7 @@ const nullableNumber = (value: unknown) => (value === null ? null : Number(value
 export default class TrashService {
   /**
    * Moves `roots` and their whole live subtree to the trash under one new batch.
-   * Keeps `order`, progress and file pivots; no `updated_at` bump, no renumbering.
+   * Keeps `order`, progress and file pivots; conflict tokens stay as they are, no renumbering.
    * Rows already trashed are left as they are.
    */
   static async trash(
