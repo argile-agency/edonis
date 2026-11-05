@@ -21,7 +21,7 @@ Source: vault `01-STRATEGIE-ARGILE` §4 and design note 07 §10 (decided 2026-10
 | Milestone | Date | Repo phases | 🟡 H days | 🟡 A days | Capacity |
 |---|---|---|---|---|---|
 | Course editor | 2026-11-30 | 5 | 13-15 | 2-3 | part of the Nov-Dec days |
-| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 ✓, 5.1 settings and 5.2 trash (inserted 2026-11-03, not sized), 6, then 3 | 13-15 + 10-20 + 3-4 = **26-39** | 2-3 + 1.5-2.5 + 0.6-0.8, plus 0.5-1 human-only = **≈ 5-6.5** | ~10 days announced; option (iii) chosen on the H figure, **to be reconsidered against the A figure** (RECONCILIATION §8-9); fallback option (i) |
+| v0.1 MVP — teacher creates a course (sections + pages), learner follows it; internal use | 2026-12-20 | 1 ✓, 2 ✓, 4 ✓, 5 ✓, 5.1 settings and 5.2 trash (inserted 2026-11-03, 10 plans, sizing not re-estimated), 6, then 3 | 13-15 + 10-20 + 3-4 = **26-39** | 2-3 + 1.5-2.5 + 0.6-0.8, plus 0.5-1 human-only = **≈ 5-6.5** | ~10 days announced; option (iii) chosen on the H figure, **to be reconsidered against the A figure** (RECONCILIATION §8-9); fallback option (i) |
 | v1.0 Governance baseline + first pilots | 2027-03-31 | option (a), 2026-10-31: 17 → 15 → 16 → 13 → 14, then 7 → 8 → 10 → 12 → 9 | ~8 content + 22 governance ≈ **30** | 2.5-3.5 content + 6.75-9 governance + 0.75-1 human-only = **≈ 10-13.5** | ~7 days: still short by 3-6.5 A (not 23); budget raise to size on the A figure |
 | Soft launch (50 early adopters) | 2027-05-31 | — | — | — |
 | v1.1 | autumn 2027 | requirements only: EDITOR-V11-01 (typed blocks + revisions; the editor itself moved to Phase 6), ASSESS-V11-01/02, AI-V11-01, THEME-V11-01, ACCOM-V11-01; BUILD-V2-07/08 (vault placement) | — | — | — |
