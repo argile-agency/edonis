@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP (2026-12-20)
-status: Ready to discuss
+status: executing
 stopped_at: Phase 5.2 UI-SPEC approved
-last_updated: "2026-11-05T07:38:11.695Z"
-last_activity: 2026-11-04
+last_updated: "2026-11-05T12:47:04.653Z"
+last_activity: 2026-11-05 -- Phase 05.2 planning complete
 progress:
   total_phases: 19
   completed_phases: 5
-  total_plans: 44
+  total_plans: 54
   completed_plans: 38
   percent: 26
 ---
@@ -36,10 +36,10 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 Phase: 05.2
 Plan: Not started
-Status: Ready to discuss
-Last activity: 2026-11-04
+Status: Ready to execute
+Last activity: 2026-11-05 -- Phase 05.2 planning complete
 
-Next recommended run: `/gsd-plan-phase 5.2` (trash and soft delete; context gathered 2026-11-04, 19 decisions; not sized yet). Phase 5.1 (admin platform settings) closed 2026-11-04, `05.1-VERIFICATION.md` human_needed: axe test, PostgreSQL/MySQL and the OAuth first-login block only run in CI. Post-deploy on demo.edonis.org: run the migration, review the four tabs of /admin/settings (old `support@edonis.local` contact shows in the public footer), then set the announcement banner. Phase 5 also closed human_needed (browser specs never ran). Phase 3 runs after Phases 5.2 and 6 or drops to v1.0. Still open: the 2027 budget raise for lots C+D (~+10 d) and the lot H estimate after the three-engines decision.
+Next recommended run: `/gsd-execute-phase 5.2` (trash and soft delete: 10 plans in 5 waves, plan check passed 2026-11-05 after one revision; 05.2-10 ends with a French walkthrough). Post-deploy: run the migrations, set a nightly cron for `node ace trash:purge` if Infomaniak allows it (lazy purge on trash open covers it otherwise).
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
