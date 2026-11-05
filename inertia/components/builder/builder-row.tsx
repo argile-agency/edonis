@@ -51,7 +51,8 @@ export interface BuilderRowProps {
   onMoveDown(): void
   moveTargets: MoveTarget[]
   onMoveTo(parentId: number | null): void
-  canDelete: boolean
+  hasDescendants?: boolean
+  retentionDays: number
   onDelete(): void
   loadLearnerImpact?: () => Promise<number>
   onCloseFocusTarget?: () => HTMLElement | null
@@ -209,7 +210,8 @@ export function BuilderRow(props: BuilderRowProps) {
             onMoveDown={props.onMoveDown}
             moveTargets={props.moveTargets}
             onMoveTo={props.onMoveTo}
-            canDelete={props.canDelete}
+            hasDescendants={props.hasDescendants}
+            retentionDays={props.retentionDays}
             onDelete={props.onDelete}
             loadLearnerImpact={props.loadLearnerImpact}
             onCloseFocusTarget={props.onCloseFocusTarget}

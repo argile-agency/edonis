@@ -30,13 +30,8 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { MoveTargetList } from '~/components/builder/move-target-list'
-import { LearnerImpact } from '~/components/builder/learner-impact'
-import {
-  BULK_DELETE_BLOCKED_MESSAGE,
-  type ContentType,
-  type MoveTarget,
-  type QuickSelection,
-} from '~/lib/builder_tree'
+import { dayCount, LearnerImpact } from '~/components/builder/learner-impact'
+import type { ContentType, MoveTarget, QuickSelection } from '~/lib/builder_tree'
 
 /** The master checkbox: focus lands here when the bar disappears (delete, "Désélectionner"). */
 export const SELECT_ALL_ID = 'bulk-select-all'
@@ -50,7 +45,7 @@ const TYPE_LABELS: [ContentType, string][] = [
   ['quiz', 'Quiz'],
 ]
 
-const elements = (n: number) => `${n} élément${n > 1 ? 's' : ''}`
+export const elements = (n: number) => `${n} élément${n > 1 ? 's' : ''}`
 
 function countText(n: number) {
   if (n === 0) return 'Aucun élément sélectionné'
@@ -130,7 +125,7 @@ const SHIFT_HELP =
 
 export function BulkActionBar({
   count,
-  deleteBlocked,
+  retentionDays,
   moveTargets,
   onPublish,
   onUnpublish,
@@ -143,7 +138,7 @@ export function BulkActionBar({
   onClear,
 }: {
   count: number
-  deleteBlocked: boolean
+  retentionDays: number
   moveTargets: MoveTarget[]
   onPublish(): void
   onUnpublish(): void
@@ -230,29 +225,10 @@ export function BulkActionBar({
         <Button size="sm" variant="outline" onClick={onDuplicate}>
           Dupliquer
         </Button>
-        {deleteBlocked ? (
-          // Not `disabled`: it stays focusable so the reason is discoverable (D-05).
-          <div className="flex flex-col">
-            <Button
-              size="sm"
-              variant="outline"
-              aria-disabled="true"
-              aria-describedby="bulk-delete-reason"
-              className="cursor-not-allowed opacity-60"
-              onClick={(e) => e.preventDefault()}
-            >
-              Supprimer…
-            </Button>
-            <span id="bulk-delete-reason" className="mt-1 text-xs text-muted-foreground">
-              {BULK_DELETE_BLOCKED_MESSAGE}
-            </span>
-          </div>
-        ) : (
-          // No red text here: the destructive colour fails AA contrast at this size; the dialog warns.
-          <Button size="sm" variant="outline" onClick={() => show('delete')}>
-            Supprimer…
-          </Button>
-        )}
+        {/* No red text here: the destructive colour fails AA contrast at this size; the dialog warns. */}
+        <Button size="sm" variant="outline" onClick={() => show('delete')}>
+          Supprimer…
+        </Button>
         <Button
           size="sm"
           variant="ghost"
@@ -431,13 +407,15 @@ export function BulkActionBar({
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer {elements(count)}</AlertDialogTitle>
             <AlertDialogDescription>
-              Supprimer les éléments sélectionnés ? Une section supprimée emporte son contenu, qui
-              est sélectionné lui aussi. Cette action est irréversible.
+              Les éléments sélectionnés seront déplacés dans la corbeille et supprimés
+              définitivement dans {dayCount(retentionDays)}. Une section emporte ses sous-sections et
+              contenus, sélectionnés ou non.
             </AlertDialogDescription>
             <LearnerImpact
               open={open === 'delete'}
               load={loadLearnerImpact}
-              subject="les contenus supprimés"
+              subject="les contenus concernés"
+              retentionDays={retentionDays}
             />
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -449,7 +427,7 @@ export function BulkActionBar({
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Supprimer
+              Supprimer {elements(count)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

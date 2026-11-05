@@ -8,10 +8,8 @@ import {
   applyContentMove,
   applySectionMove,
   buildRows,
-  bulkDeleteBlockers,
   bulkDeletedIds,
   bulkMoveTargets,
-  canDeleteSection,
   datePatch,
   mergeBulkResult,
   moveTargets,
@@ -346,14 +344,6 @@ test.group('Builder tree | optimistic apply', () => {
   })
 })
 
-test.group('Builder tree | canDeleteSection', () => {
-  test('only an empty section without sub-sections can be deleted', ({ assert }) => {
-    assert.isTrue(canDeleteSection(sections, contents, S2))
-    assert.isFalse(canDeleteSection(sections, contents, S1))
-    assert.isFalse(canDeleteSection(sections, [], S1))
-  })
-})
-
 /**
  * Bulk fixture: S1 published {c1 page published, c2 video draft, S11 published
  * {c4 video published}}, S2 draft {c3 link published}.
@@ -474,13 +464,15 @@ test.group('builder_tree - selection and bulk', () => {
     assert.deepEqual(inS1, [[C2, 1]])
   })
 
-  test('bulkDeleteBlockers lists sections whose sub-tree is not fully selected', ({ assert }) => {
-    assert.deepEqual(bulkDeleteBlockers(bSections, bContents, new Set([s(S1), c(C1)])), [S1])
+  test('bulkDeletedIds gives the learner-impact contents of a whole sub-tree', ({ assert }) => {
+    // A section alone (trash delete, D-03): its sub-sections' contents count too.
+    const subtree = bulkDeletedIds(bSections, bContents, [{ kind: 'section', id: S1 }])
+    assert.includeMembers(subtree.contentIds, [C1, C2, C4])
+    assert.notInclude(subtree.contentIds, C3)
     assert.deepEqual(
-      bulkDeleteBlockers(bSections, bContents, new Set([s(S1), c(C1), c(C2), s(S11), c(C4)])),
-      []
+      bulkDeletedIds(bSections, bContents, [{ kind: 'content', id: C3 }]).contentIds,
+      [C3]
     )
-    assert.deepEqual(bulkDeleteBlockers(bSections, bContents, new Set([c(C2)])), [])
   })
 
   test('bulkDeletedIds covers the selected rows and their sub-trees', ({ assert }) => {

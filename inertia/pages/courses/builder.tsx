@@ -57,14 +57,13 @@ import {
   applyContentMove,
   applySectionMove,
   buildRows,
-  bulkDeleteBlockers,
   bulkDeletedIds,
   bulkMoveTargets,
-  canDeleteSection,
   mergeBulkResult,
   moveTargets,
   pruneSelection,
   quickSelect,
+  rowKey,
   selectedItems,
   type BulkResult,
   projectContentDrop,
@@ -88,6 +87,8 @@ interface Props {
   auth: { user: HeaderProps['user'] }
   appSettings: HeaderProps['appSettings']
   menus: HeaderProps['menus']
+  /** count: trash-list roots of the course; retentionDays: AppSetting.trashRetentionDays. */
+  trash: { count: number; retentionDays: number }
 }
 
 type ItemPatch = Partial<
@@ -136,6 +137,7 @@ function withCurrentTokens<T extends { id: number; updatedAt: string | null }>(
 
 export default function CourseBuilder(props: Props) {
   const { course, auth, appSettings, menus } = props
+  const { retentionDays } = props.trash
 
   // Local optimistic state. The refs are written only by commitSections / commitContents,
   // synchronously, because the queue starts the next op's run() before React re-renders.
@@ -388,12 +390,20 @@ export default function CourseBuilder(props: Props) {
 
   const remove = (row: Row, rows: Row[]) => {
     const ref = refOf(row)
+    // A section goes to the trash with its whole sub-tree (D-03).
+    const gone = bulkDeletedIds(sectionsRef.current, contentsRef.current, [ref])
+    const goneKeys = new Set([
+      ...gone.sectionIds.map((id) => rowKey({ kind: 'section', id })),
+      ...gone.contentIds.map((id) => rowKey({ kind: 'content', id })),
+    ])
     const index = rows.findIndex((r) => r.key === row.key)
-    const neighbour = rows[index + 1] ?? rows[index - 1]
+    const neighbour =
+      rows.slice(index + 1).find((r) => !goneKeys.has(r.key)) ??
+      rows.slice(0, index).findLast((r) => !goneKeys.has(r.key))
     save(
       'Supprimer',
       ref,
-      () => (ref.kind === 'section' ? removeItems([ref.id], []) : removeItems([], [ref.id])),
+      () => removeItems(gone.sectionIds, gone.contentIds),
       () => sendJson('DELETE', urlOf(ref))
     )
     focusLater(neighbour ? `${neighbour.key}-title` : null)
@@ -692,6 +702,16 @@ export default function CourseBuilder(props: Props) {
     const down = siblingPlacement(sections, contents, ref, 'down')
     const isEditing = editing?.key === row.key
     const parentTitle = sections.find((s) => s.id === row.parentId)?.title ?? ''
+    const hasDescendants =
+      row.kind === 'section' &&
+      (sections.some((s) => s.parentId === row.id) || contents.some((c) => c.moduleId === row.id))
+    // Learner impact over every content of the sub-tree (D-19).
+    const impactIds =
+      row.kind === 'content'
+        ? [row.id]
+        : hasDescendants
+          ? bulkDeletedIds(sections, contents, [ref]).contentIds
+          : []
     return {
       row,
       location:
@@ -730,9 +750,10 @@ export default function CourseBuilder(props: Props) {
       onMoveDown: () => down && move(row, down),
       moveTargets: moveTargets(sections, contents, ref),
       onMoveTo: (parentId) => moveTo(row, parentId),
-      canDelete: row.kind === 'content' || canDeleteSection(sections, contents, row.id),
+      hasDescendants,
+      retentionDays,
       onDelete: () => remove(row, rows),
-      loadLearnerImpact: row.kind === 'content' ? () => learnerImpact([row.id]) : undefined,
+      loadLearnerImpact: impactIds.length > 0 ? () => learnerImpact(impactIds) : undefined,
       onCloseFocusTarget: () => takeFocusTarget(),
       onAddContent: row.kind === 'section' ? () => handleCreateContent(row.id) : undefined,
       onAddSubSection: row.kind === 'section' ? () => handleCreateModule(row.id) : undefined,
@@ -818,7 +839,7 @@ export default function CourseBuilder(props: Props) {
             {selected.size > 0 && (
               <BulkActionBar
                 count={selected.size}
-                deleteBlocked={bulkDeleteBlockers(sections, contents, selected).length > 0}
+                retentionDays={retentionDays}
                 moveTargets={bulkMoveTargets(sections, contents, selection)}
                 onPublish={() => bulk.publish(true)}
                 onUnpublish={() => bulk.publish(false)}
@@ -828,7 +849,7 @@ export default function CourseBuilder(props: Props) {
                 onDuplicate={bulk.duplicate}
                 onDelete={bulk.remove}
                 loadLearnerImpact={() =>
-                  learnerImpact(selection.filter((i) => i.kind === 'content').map((i) => i.id))
+                  learnerImpact(bulkDeletedIds(sections, contents, selection).contentIds)
                 }
                 onClear={() => setSelected(new Set())}
               />

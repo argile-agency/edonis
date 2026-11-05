@@ -25,9 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
-import { NOT_EMPTY_MESSAGE, type MoveTarget } from '~/lib/builder_tree'
+import type { MoveTarget } from '~/lib/builder_tree'
 import { MoveTargetList } from '~/components/builder/move-target-list'
-import { LearnerImpact } from '~/components/builder/learner-impact'
+import { dayCount, LearnerImpact } from '~/components/builder/learner-impact'
 
 export interface ItemActionsMenuProps {
   idBase: string
@@ -39,9 +39,11 @@ export interface ItemActionsMenuProps {
   onMoveDown(): void
   moveTargets: MoveTarget[]
   onMoveTo(parentId: number | null): void
-  canDelete: boolean
+  /** Sections: whether sub-sections or contents go to the trash with it (dialog wording). */
+  hasDescendants?: boolean
+  retentionDays: number
   onDelete(): void
-  /** Contents only: learners whose progress the delete removes. */
+  /** Learners with progress on the deleted contents; absent when no content is deleted. */
   loadLearnerImpact?: () => Promise<number>
   onCloseFocusTarget?: () => HTMLElement | null
 }
@@ -61,7 +63,8 @@ export function ItemActionsMenu({
   onMoveDown,
   moveTargets,
   onMoveTo,
-  canDelete,
+  hasDescendants = false,
+  retentionDays,
   onDelete,
   loadLearnerImpact,
   onCloseFocusTarget,
@@ -83,8 +86,6 @@ export function ItemActionsMenu({
       target.focus()
     }
   }
-
-  const deleteReasonId = `${idBase}-delete-reason`
 
   return (
     <>
@@ -126,31 +127,15 @@ export function ItemActionsMenu({
             Déplacer vers…
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {canDelete ? (
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onSelect={() => {
-                openingDialog.current = true
-                setDeleteOpen(true)
-              }}
-            >
-              Supprimer
-            </DropdownMenuItem>
-          ) : (
-            // Not Radix `disabled`: it stays focusable so the reason is discoverable (D-05).
-            <DropdownMenuItem
-              aria-disabled="true"
-              aria-describedby={deleteReasonId}
-              onSelect={(e) => e.preventDefault()}
-              // No accent highlight on focus/hover, so it never looks clickable; a thin ring keeps keyboard focus visible
-              className="flex-col items-start gap-0 cursor-not-allowed text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus:bg-transparent focus:text-muted-foreground focus:ring-1 focus:ring-border"
-            >
-              <span className="line-through decoration-muted-foreground/60">Supprimer</span>
-              <span id={deleteReasonId} className="text-xs text-muted-foreground">
-                {NOT_EMPTY_MESSAGE}
-              </span>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => {
+              openingDialog.current = true
+              setDeleteOpen(true)
+            }}
+          >
+            Supprimer
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -180,12 +165,19 @@ export function ItemActionsMenu({
               {kind === 'section' ? 'Supprimer la section' : 'Supprimer le contenu'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {kind === 'section'
-                ? `Supprimer la section « ${title} » ? Cette action est irréversible.`
-                : `Supprimer « ${title} » ? Cette action est irréversible.`}
+              {kind === 'content'
+                ? `« ${title} » sera déplacé dans la corbeille et supprimé définitivement dans ${dayCount(retentionDays)}.`
+                : hasDescendants
+                  ? `La section « ${title} » sera déplacée dans la corbeille avec ses sous-sections et contenus, et supprimée définitivement dans ${dayCount(retentionDays)}.`
+                  : `La section « ${title} » sera déplacée dans la corbeille et supprimée définitivement dans ${dayCount(retentionDays)}.`}
             </AlertDialogDescription>
-            {kind === 'content' && loadLearnerImpact && (
-              <LearnerImpact open={deleteOpen} load={loadLearnerImpact} subject="ce contenu" />
+            {loadLearnerImpact && (
+              <LearnerImpact
+                open={deleteOpen}
+                load={loadLearnerImpact}
+                subject={kind === 'section' ? 'cette section' : 'ce contenu'}
+                retentionDays={retentionDays}
+              />
             )}
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -194,7 +186,7 @@ export function ItemActionsMenu({
               onClick={onDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Supprimer
+              {kind === 'section' ? 'Supprimer la section' : 'Supprimer le contenu'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
