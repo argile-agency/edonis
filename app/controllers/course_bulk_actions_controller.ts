@@ -25,6 +25,19 @@ import {
   deleteImpactValidator,
 } from '#validators/course_bulk'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
+import {
+  BulkRefusal,
+  emptyIds,
+  idsOf,
+  PIVOT_CHUNK,
+  push,
+  sorted,
+  withRenumbered,
+  type Ids,
+  type Item,
+  type Outcome,
+  type Structure,
+} from '../helpers/builder_ids.js'
 import { inclusiveEnd, shiftDate, shiftDays } from '../helpers/date_shift.js'
 import { depthOf, subtreeHeight } from '../helpers/category_tree.js'
 import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
@@ -36,13 +49,6 @@ const COPIES_START_AS_DRAFT = true
 // OQ-3 (05-09): a bulk delete may remove a section whose whole sub-tree is selected;
 // false = any non-empty section refuses the batch (05-10 mirrors this value)
 const BULK_DELETE_ALLOWS_FULL_SUBTREE = true
-// Pivot rows per INSERT (SQLite compiles multiInsert to a compound SELECT, 500 terms max)
-const PIVOT_CHUNK = 100
-
-type Kind = 'section' | 'content'
-type Item = { kind: Kind; id: number; updatedAt: string | null }
-type Ids = { sectionIds: number[]; contentIds: number[] }
-type Structure = Awaited<ReturnType<typeof loadBuilderStructure>>
 
 /** The selected rows, scoped to the course and token-checked, under the course lock. */
 type Scope = {
@@ -53,45 +59,7 @@ type Scope = {
   structure: Structure
 }
 
-type Outcome = {
-  auditAction: string
-  extraMetadata?: Record<string, unknown>
-  /** Rows this action saved or created. */
-  affected: Ids
-  deleted?: Ids
-  /** Renumbered sibling lists: section lists by parent (null = roots), content lists by section. */
-  touchedParents?: (number | null)[]
-  touchedSections?: number[]
-}
-
-/** A refusal thrown inside the transaction so it rolls back; turned into JSON outside it. */
-class BulkRefusal extends Error {
-  constructor(
-    public status: 409 | 422,
-    public body: Record<string, unknown>
-  ) {
-    super(String(body.code ?? 'E_BULK_REFUSED'))
-  }
-}
-
 const AVAILABILITY_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
-
-const emptyIds = (): Ids => ({ sectionIds: [], contentIds: [] })
-
-function push(ids: Ids, kind: Kind, id: number) {
-  ;(kind === 'section' ? ids.sectionIds : ids.contentIds).push(id)
-}
-
-function sorted(ids: Ids): Ids {
-  const sort = (list: number[]) => [...new Set(list)].sort((a, b) => a - b)
-  return { sectionIds: sort(ids.sectionIds), contentIds: sort(ids.contentIds) }
-}
-
-function idsOf(items: Item[]): Ids {
-  const ids = emptyIds()
-  for (const item of items) push(ids, item.kind, item.id)
-  return sorted(ids)
-}
 
 const sameInstant = (a: DateTime | null, b: DateTime | null) =>
   (a?.toMillis() ?? null) === (b?.toMillis() ?? null)
@@ -268,19 +236,6 @@ async function copySection(
   for (const [i, child] of children.entries()) {
     await copySection(trx, child, copy.id, i + 1, child.title, created, level + 1)
   }
-}
-
-/** `affected` plus every row of the sibling lists the action renumbered (they need their new order). */
-function withRenumbered(outcome: Outcome, structure: Structure): Ids {
-  const ids: Ids = {
-    sectionIds: [...outcome.affected.sectionIds],
-    contentIds: [...outcome.affected.contentIds],
-  }
-  const parents = new Set(outcome.touchedParents ?? [])
-  const lists = new Set(outcome.touchedSections ?? [])
-  for (const s of structure.sections) if (parents.has(s.parentId)) ids.sectionIds.push(s.id)
-  for (const c of structure.contents) if (lists.has(c.moduleId)) ids.contentIds.push(c.id)
-  return sorted(ids)
 }
 
 /**
