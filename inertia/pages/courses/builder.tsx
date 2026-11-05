@@ -22,7 +22,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { Eye, FileText, Plus } from 'lucide-react'
+import { Eye, FileText, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
@@ -48,7 +49,7 @@ import AppHeader from '~/components/layout/app-header'
 import { BuilderRow, type BuilderRowProps } from '~/components/builder/builder-row'
 import type { DetailsValues } from '~/components/builder/details-panel'
 import { SaveStatus } from '~/components/builder/save-status'
-import { BulkActionBar, SelectionControls } from '~/components/builder/bulk-action-bar'
+import { BulkActionBar, elements, SelectionControls } from '~/components/builder/bulk-action-bar'
 import { sendJson, useSaveQueue } from '~/lib/builder_save_queue'
 import type { SaveError } from '~/lib/save_queue'
 import {
@@ -65,6 +66,7 @@ import {
   quickSelect,
   rowKey,
   selectedItems,
+  topLevelItems,
   type BulkResult,
   projectContentDrop,
   projectSectionDrop,
@@ -97,7 +99,7 @@ type ItemPatch = Partial<
     'title' | 'description' | 'isPublished' | 'availableFrom' | 'availableUntil' | 'updatedAt'
   >
 >
-type Saved = { item: { id: number; updatedAt?: string | null } }
+type Saved = { item: { id: number; updatedAt?: string | null }; batch?: string }
 type Snapshot = { sections: BuilderSection[]; contents: BuilderContent[] }
 type Projection = (Placement & { depth?: number }) | null
 
@@ -138,6 +140,8 @@ function withCurrentTokens<T extends { id: number; updatedAt: string | null }>(
 export default function CourseBuilder(props: Props) {
   const { course, auth, appSettings, menus } = props
   const { retentionDays } = props.trash
+  // Trash-list roots: +roots after a delete, -roots after an undo (D-16), no reload.
+  const [trashCount, setTrashCount] = useState(props.trash.count)
 
   // Local optimistic state. The refs are written only by commitSections / commitContents,
   // synchronously, because the queue starts the next op's run() before React re-renders.
@@ -390,6 +394,7 @@ export default function CourseBuilder(props: Props) {
 
   const remove = (row: Row, rows: Row[]) => {
     const ref = refOf(row)
+    const title = row.kind === 'section' ? row.section.title : row.content.title
     // A section goes to the trash with its whole sub-tree (D-03).
     const gone = bulkDeletedIds(sectionsRef.current, contentsRef.current, [ref])
     const goneKeys = new Set([
@@ -404,7 +409,11 @@ export default function CourseBuilder(props: Props) {
       'Supprimer',
       ref,
       () => removeItems(gone.sectionIds, gone.contentIds),
-      () => sendJson('DELETE', urlOf(ref))
+      async () => {
+        const res = await sendJson<Saved>('DELETE', urlOf(ref))
+        offerUndo(`« ${title} » déplacé dans la corbeille.`, res.batch!, 1)
+        return res
+      }
     )
     focusLater(neighbour ? `${neighbour.key}-title` : null)
   }
@@ -425,6 +434,8 @@ export default function CourseBuilder(props: Props) {
   ) => {
     const items = selectedItems(sectionsRef.current, contentsRef.current, selected)
     if (items.length === 0) return
+    // Trash roots of a delete, counted before its rows leave the refs.
+    const roots = topLevelItems(sectionsRef.current, contentsRef.current, items).length
     let snapshot: Snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
     // Optimistically deleted rows are gone from the refs: fall back to their snapshot token.
     const token = (ref: ItemRef) => {
@@ -451,7 +462,7 @@ export default function CourseBuilder(props: Props) {
       async run() {
         const sent = pinned ?? items.map((ref) => ({ ...ref, updatedAt: token(ref) }))
         if (action === 'duplicate' || action === 'shift') pinned = sent
-        const result = await sendJson<BulkResult>(
+        const result = await sendJson<BulkResult & { batch?: string }>(
           'POST',
           `/courses/${course.id}/builder/bulk/${action}`,
           { ...body, items: sent }
@@ -471,6 +482,10 @@ export default function CourseBuilder(props: Props) {
           for (const s of fresh) knownSectionIdsRef.current.add(s.id)
           setExpanded((prev) => new Set([...prev, ...fresh.map((s) => s.id)]))
         }
+        if (action === 'delete') {
+          const text = `${elements(roots)} déplacé${roots > 1 ? 's' : ''} dans la corbeille.`
+          offerUndo(text, result.batch!, roots)
+        }
       },
       rollback() {
         settledRef.current++
@@ -478,6 +493,65 @@ export default function CourseBuilder(props: Props) {
         // Tokens are server truth: an earlier op may have saved since the snapshot.
         commitSections(withCurrentTokens(snapshot.sections, sectionsRef.current))
         commitContents(withCurrentTokens(snapshot.contents, contentsRef.current))
+      },
+    })
+  }
+
+  /** D-18: neutral toast (richColors would make a success toast compete with the action). */
+  const offerUndo = (message: string, batch: string, roots: number) => {
+    setTrashCount((n) => n + roots)
+    toast(message, {
+      duration: 10_000,
+      action: { label: 'Annuler', onClick: () => undo(batch, roots) },
+    })
+  }
+
+  /** A queue op, so it runs after pending writes and shows in the save status. */
+  const undo = (batch: string, roots: number) => {
+    let snapshot: Snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+    queue.enqueue({
+      label: 'Restaurer',
+      apply() {
+        snapshot = { sections: sectionsRef.current, contents: contentsRef.current }
+      },
+      async run() {
+        let result: BulkResult
+        try {
+          result = await sendJson<BulkResult>('POST', `/courses/${course.id}/trash/restore-batch`, {
+            batch,
+          })
+        } catch (e) {
+          // Nothing was restored and a retry cannot help: report it, keep it off the retry list.
+          const code = ((e as SaveError).body as { code?: string } | null)?.code
+          if (code === 'E_PARENT_TRASHED') {
+            toast.error(
+              "Restauration impossible : la section a été supprimée. L'élément reste dans la corbeille."
+            )
+          } else if (code === 'E_NOT_IN_TRASH') {
+            toast.error("Cet élément n'est plus dans la corbeille.")
+          } else throw e
+          settledRef.current++
+          return
+        }
+        settledRef.current++
+        const before = new Set(sectionsRef.current.map((s) => s.id))
+        // Restored rows are absent from the snapshot: they arrive through the "added" branch.
+        commit(
+          mergeBulkResult(
+            { sections: sectionsRef.current, contents: contentsRef.current },
+            result,
+            snapshot,
+            snapshot
+          )
+        )
+        const restored = sectionsRef.current.filter((s) => !before.has(s.id)).map((s) => s.id)
+        if (restored.length > 0) setExpanded((prev) => new Set([...prev, ...restored]))
+        setTrashCount((n) => Math.max(0, n - roots))
+        toast.success('Restauration effectuée.')
+      },
+      rollback() {
+        settledRef.current++
+        resyncRef.current = true // see save()
       },
     })
   }
@@ -800,6 +874,12 @@ export default function CourseBuilder(props: Props) {
             <div id="save-status">
               <SaveStatus state={queue} onRetry={queue.retry} onReload={reload} />
             </div>
+            <Link href={`/courses/${course.id}/trash`}>
+              <Button variant="outline">
+                <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                {trashCount > 0 ? `Corbeille (${trashCount})` : 'Corbeille'}
+              </Button>
+            </Link>
             <Link href={`/courses/${course.id}/learn`}>
               <Button variant="outline">
                 <Eye className="mr-2 h-4 w-4" />
