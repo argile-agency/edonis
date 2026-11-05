@@ -8,6 +8,7 @@ import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import AuditService from '#services/audit_service'
+import TrashService from '#services/trash_service'
 import CourseStructureService, {
   CONFLICT_ERROR,
   DEPTH_ERROR,
@@ -46,9 +47,6 @@ import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
 const SHIFT_ASSIGNMENTS_TABLE = false
 // OQ-2 (05-09): flip to keep the original's publication state
 const COPIES_START_AS_DRAFT = true
-// OQ-3 (05-09): a bulk delete may remove a section whose whole sub-tree is selected;
-// false = any non-empty section refuses the batch (05-10 mirrors this value)
-const BULK_DELETE_ALLOWS_FULL_SUBTREE = true
 
 /** The selected rows, scoped to the course and token-checked, under the course lock. */
 type Scope = {
@@ -460,62 +458,21 @@ export default class CourseBulkActionsController {
   }
 
   /**
-   * Delete the selection. A section goes only if everything in its sub-tree is
-   * selected too (else 409 E_NOT_EMPTY, nothing deleted): nothing unchosen is
-   * cascade-deleted. Remaining siblings are not renumbered (gaps are fine).
+   * Move the selection to the trash under one batch (D-03): a selected section
+   * takes its whole subtree, selected or not. `deleted` lists every row that
+   * left the live tree. Remaining siblings are not renumbered (gaps are fine).
    */
   async destroy(ctx: HttpContext) {
+    const userId = ctx.auth.user!.id
     return this.run(ctx, bulkDeleteValidator, async (trx, scope) => {
-      const childrenOf = new Map<number, number[]>()
-      for (const s of scope.structure.sections) {
-        if (s.parentId !== null)
-          childrenOf.set(s.parentId, [...(childrenOf.get(s.parentId) ?? []), s.id])
-      }
-      const contentsOf = new Map<number, number[]>()
-      for (const c of scope.structure.contents) {
-        contentsOf.set(c.moduleId, [...(contentsOf.get(c.moduleId) ?? []), c.id])
-      }
-
-      const blocking: number[] = []
-      for (const sectionId of scope.sections.keys()) {
-        const nonEmpty =
-          (childrenOf.get(sectionId)?.length ?? 0) + (contentsOf.get(sectionId)?.length ?? 0) > 0
-        let complete = true
-        const seen = new Set<number>()
-        const stack = [sectionId]
-        while (stack.length > 0) {
-          const s = stack.pop()!
-          if (seen.has(s)) continue
-          seen.add(s)
-          if (!scope.sections.has(s)) complete = false
-          if ((contentsOf.get(s) ?? []).some((c) => !scope.contents.has(c))) complete = false
-          stack.push(...(childrenOf.get(s) ?? []))
-        }
-        if (!complete || (!BULK_DELETE_ALLOWS_FULL_SUBTREE && nonEmpty)) blocking.push(sectionId)
-      }
-      if (blocking.length > 0) {
-        throw new BulkRefusal(409, {
-          code: 'E_NOT_EMPTY',
-          message: 'Sélectionnez aussi tout le contenu des sections à supprimer.',
-          ids: blocking.sort((a, b) => a - b),
-        })
-      }
-
-      const contentIds = [...scope.contents.keys()]
-      if (contentIds.length > 0) {
-        await trx.from('course_contents').whereIn('id', contentIds).delete()
-      }
-      // Sub-sections go through the parent_id cascade; they are all selected (checked above)
-      const topSections = topLevelItems(scope)
-        .filter((item) => item.kind === 'section')
-        .map((item) => item.id)
-      if (topSections.length > 0) {
-        await trx.from('course_modules').whereIn('id', topSections).delete()
-      }
+      const roots = idsOf(topLevelItems(scope))
+      const { batch, deleted } = await TrashService.trash(trx, scope.courseId, roots, userId)
       return {
         auditAction: 'course.bulk.delete',
+        extraMetadata: { batch, ...deleted },
         affected: emptyIds(),
-        deleted: idsOf(scope.items),
+        deleted,
+        batch,
       }
     })
   }
@@ -600,6 +557,7 @@ export default class CourseBulkActionsController {
       ...structure,
       affected: withRenumbered(outcome, structure),
       deleted: sorted(outcome.deleted ?? emptyIds()),
+      batch: outcome.batch,
     })
   }
 }

@@ -5,6 +5,7 @@ import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import ContentProgress from '#models/content_progress'
+import AppSetting from '#models/app_setting'
 import {
   createModuleValidator,
   updateModuleValidator,
@@ -18,6 +19,7 @@ import {
   moveModuleValidator,
 } from '#validators/course_content'
 import AuditService from '#services/audit_service'
+import TrashService from '#services/trash_service'
 import CourseStructureService, {
   CONFLICT_ERROR,
   DEPTH_ERROR,
@@ -29,7 +31,6 @@ import { depthOf } from '../helpers/category_tree.js'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
 import { inclusiveEnd } from '../helpers/date_shift.js'
 
-const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
 const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
 const DATE_ORDER_BODY = { errors: [{ field: 'availableUntil', message: DATE_ORDER_ERROR }] }
 
@@ -77,10 +78,15 @@ export default class CourseContentsController {
     await bouncer.with('CoursePolicy').authorize('edit', course)
 
     const { sections, contents } = await loadBuilderStructure(course.id)
+    const settings = await AppSetting.getOrCreateActive()
     return inertia.render('courses/builder', {
       course: { id: course.id, title: course.title, code: course.code },
       sections,
       contents,
+      trash: {
+        count: await TrashService.countRoots(course.id, db.connection()),
+        retentionDays: Number(settings.trashRetentionDays),
+      },
     })
   }
 
@@ -377,10 +383,10 @@ export default class CourseContentsController {
   }
 
   /**
-   * Delete a module
+   * Move a section and its whole subtree to the trash (D-03): one batch, one audit row.
    */
   async deleteModule(ctx: HttpContext) {
-    const { params, request, response, session, bouncer } = ctx
+    const { params, request, response, session, bouncer, auth } = ctx
     const module = await CourseModule.query()
       .where('id', params.moduleId)
       .preload('course')
@@ -388,39 +394,32 @@ export default class CourseContentsController {
 
     await bouncer.with('CoursePolicy').authorize('edit', module.course)
 
-    // Both FKs cascade, so emptiness is checked under the course lock (D-05)
-    const deleted = await db.transaction(async (trx) => {
+    const batch = await db.transaction(async (trx) => {
       await Course.query({ client: trx }).where('id', module.courseId).forUpdate().first()
-      const [children] = await CourseModule.query({ client: trx })
-        .where('parent_id', module.id)
-        .pojo<{ total: number | string }>()
-        .count('* as total')
-      const [contents] = await CourseContent.query({ client: trx })
-        .where('module_id', module.id)
-        .pojo<{ total: number | string }>()
-        .count('* as total')
-      if (Number(children.total) > 0 || Number(contents.total) > 0) return false
-      module.useTransaction(trx)
-      await module.delete()
-      return true
+      // Trashed by another editor meanwhile: 404, nothing written
+      await CourseModule.query({ client: trx }).where('id', module.id).firstOrFail()
+      const result = await TrashService.trash(
+        trx,
+        module.courseId,
+        { sectionIds: [module.id], contentIds: [] },
+        auth.user!.id
+      )
+      // In the transaction: committed ⇔ audited
+      await AuditService.logFromContext(
+        ctx,
+        {
+          action: 'course.module.delete',
+          resourceType: 'CourseModule',
+          resourceId: module.id,
+          metadata: { courseId: module.courseId, batch: result.batch, ...result.deleted },
+        },
+        trx
+      )
+      return result.batch
     })
 
-    const json = wantsJson(request)
-    if (!deleted) {
-      if (json) return response.status(409).json({ code: 'E_NOT_EMPTY', message: NOT_EMPTY_ERROR })
-      session.flash('error', NOT_EMPTY_ERROR)
-      return response.redirect().back()
-    }
-
-    await AuditService.logFromContext(ctx, {
-      action: 'course.module.delete',
-      resourceType: 'CourseModule',
-      resourceId: module.id,
-      metadata: { courseId: module.courseId, parentId: module.parentId },
-    })
-
-    if (json) return response.json({ item: { id: module.id } })
-    session.flash('success', 'Module supprimé avec succès')
+    if (wantsJson(request)) return response.json({ item: { id: module.id }, batch })
+    session.flash('success', `« ${module.title} » déplacé dans la corbeille.`)
     return response.redirect().back()
   }
 
@@ -553,29 +552,49 @@ export default class CourseContentsController {
   }
 
   /**
-   * Delete a content item
+   * Move a content item to the trash: one batch, one audit row. Its progress
+   * and file pivot rows stay for a restore.
    */
   async deleteContent(ctx: HttpContext) {
-    const { params, request, response, session, bouncer } = ctx
+    const { params, request, response, session, bouncer, auth } = ctx
     const content = await CourseContent.query()
       .where('id', params.contentId)
       .preload('module', (query) => query.preload('course'))
       .firstOrFail()
+    const courseId = content.module.course.id
 
     await bouncer.with('CoursePolicy').authorize('edit', content.module.course)
 
-    // Pivot and progress rows cascade; content_files rows and blobs may be shared, so they stay
-    await content.delete()
-
-    await AuditService.logFromContext(ctx, {
-      action: 'course.content.delete',
-      resourceType: 'CourseContent',
-      resourceId: content.id,
-      metadata: { courseId: content.module.course.id, moduleId: content.moduleId },
+    const batch = await db.transaction(async (trx) => {
+      await Course.query({ client: trx }).where('id', courseId).forUpdate().first()
+      // Trashed by another editor meanwhile: 404, nothing written
+      await CourseContent.query({ client: trx }).where('id', content.id).firstOrFail()
+      const result = await TrashService.trash(
+        trx,
+        courseId,
+        { sectionIds: [], contentIds: [content.id] },
+        auth.user!.id
+      )
+      await AuditService.logFromContext(
+        ctx,
+        {
+          action: 'course.content.delete',
+          resourceType: 'CourseContent',
+          resourceId: content.id,
+          metadata: {
+            courseId,
+            moduleId: content.moduleId,
+            batch: result.batch,
+            ...result.deleted,
+          },
+        },
+        trx
+      )
+      return result.batch
     })
 
-    if (wantsJson(request)) return response.json({ item: { id: content.id } })
-    session.flash('success', 'Contenu supprimé avec succès')
+    if (wantsJson(request)) return response.json({ item: { id: content.id }, batch })
+    session.flash('success', `« ${content.title} » déplacé dans la corbeille.`)
     return response.redirect().back()
   }
 
@@ -724,9 +743,13 @@ export default class CourseContentsController {
     const course = await Course.query()
       .where('id', params.id)
       .preload('modules', (moduleQuery) => {
-        moduleQuery.preload('contents').preload('children', (childQuery) => {
-          childQuery.preload('contents')
-        })
+        // Sub-sections are counted through `children`
+        moduleQuery
+          .whereNull('parent_id')
+          .preload('contents')
+          .preload('children', (childQuery) => {
+            childQuery.preload('contents')
+          })
       })
       .firstOrFail()
 
