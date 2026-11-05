@@ -5,6 +5,7 @@ import {
   COLOR_MESSAGE,
   IMAGE_URL_MESSAGE,
   LINK_URL_MESSAGE,
+  RETENTION_MESSAGE,
 } from '../../app/validators/app_setting.js'
 
 const meta = { appHost: 'demo.edonis.org' }
@@ -139,12 +140,29 @@ test.group('app_setting validators', () => {
     assert.strictEqual(out.allowRegistration, false)
   })
 
+  test('trash: retention {$self} is refused')
+    .with([0, 366, 1.5, 'abc', null, undefined])
+    .run(async ({ assert }, days) => {
+      assert.equal(
+        await errorOn('trash', { trashRetentionDays: days }, 'trashRetentionDays'),
+        RETENTION_MESSAGE
+      )
+    })
+
+  test('trash: retention {$self} passes as a number')
+    .with([1, 30, 365])
+    .run(async ({ assert }, days) => {
+      const out = await appSettingValidators.trash.validate({ trashRetentionDays: days }, { meta })
+      assert.strictEqual(out.trashRetentionDays, days)
+    })
+
   test('every tab drops headerHtml and isActive', async ({ assert }) => {
     const valid = {
       appearance: validAppearance,
       home: validHome,
       access: { allowRegistration: true },
       contact: {},
+      trash: { trashRetentionDays: 30 },
     }
     for (const [tab, data] of Object.entries(valid)) {
       const out = await appSettingValidators[tab as keyof typeof valid].validate(

@@ -5,7 +5,12 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import AppSetting from '#models/app_setting'
 import AuditLog from '#models/audit_log'
 import type User from '#models/user'
-import { COLOR_MESSAGE, IMAGE_URL_MESSAGE, LINK_URL_MESSAGE } from '#validators/app_setting'
+import {
+  COLOR_MESSAGE,
+  IMAGE_URL_MESSAGE,
+  LINK_URL_MESSAGE,
+  RETENTION_MESSAGE,
+} from '#validators/app_setting'
 import PlatformSettingsPolicy from '#policies/platform_settings_policy'
 import { assertNotCsrfRejected, createUser } from '#tests/functional/helpers/factories'
 
@@ -22,6 +27,7 @@ const CONTRACT_KEYS = [
   'contactEmail',
   'supportUrl',
   'socialLinks',
+  'trashRetentionDays',
 ]
 
 const VALID_APPEARANCE = {
@@ -80,6 +86,16 @@ test.group('admin settings access', (group) => {
     })
   }
 
+  test('teacher gets 403 on PUT trash', async ({ client, assert }) => {
+    const teacher = await createUser({ roles: ['teacher'] })
+    const row = await AppSetting.create({ ...AppSetting.DEFAULTS })
+    const req = client.put('/admin/settings/trash').withCsrfToken()
+    const put = await req.json({ trashRetentionDays: 14 }).loginAs(teacher).redirects(0)
+    put.assertStatus(403)
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.equal(fresh.trashRetentionDays, 30)
+  })
+
   test('PlatformSettingsPolicy.manage is admin only', async ({ assert }) => {
     const policy = new PlatformSettingsPolicy()
     for (const role of ['admin', 'teacher', 'manager', 'student'] as const) {
@@ -112,6 +128,14 @@ test.group('admin settings access', (group) => {
 
     const contact = await client.get('/admin/settings?tab=contact').withInertia().loginAs(admin)
     assert.equal((contact.inertiaProps as { activeTab: string }).activeTab, 'contact')
+
+    const trash = await client.get('/admin/settings?tab=trash').withInertia().loginAs(admin)
+    const trashProps = trash.inertiaProps as {
+      activeTab: string
+      settings: Record<string, unknown>
+    }
+    assert.equal(trashProps.activeTab, 'trash')
+    assert.strictEqual(trashProps.settings.trashRetentionDays, 30)
 
     const bogus = await client.get('/admin/settings?tab=bogus').withInertia().loginAs(admin)
     assert.equal((bogus.inertiaProps as { activeTab: string }).activeTab, 'appearance')
@@ -228,6 +252,13 @@ const INVALID_CASES: Array<{
     body: { heroTitle: '   ' },
     field: 'heroTitle',
     message: 'Ce champ est obligatoire.',
+  },
+  {
+    name: 'zero-day retention',
+    tab: 'trash',
+    body: { trashRetentionDays: 0 },
+    field: 'trashRetentionDays',
+    message: RETENTION_MESSAGE,
   },
   {
     name: '281-character announcement',
@@ -372,6 +403,28 @@ test.group('admin settings save', (group) => {
     const response = await putTab(client, admin, 'appearance', body, assert)
     assert.equal(response.flashMessage('success'), 'Aucune modification à enregistrer.')
     assert.lengthOf(await auditRows(), 0)
+  })
+
+  test('trash save stores the retention and audits it once', async ({ client, assert }) => {
+    const admin = await createUser({ roles: ['admin'] })
+    const row = await AppSetting.create({ ...AppSetting.DEFAULTS })
+
+    const response = await putTab(client, admin, 'trash', { trashRetentionDays: 14 }, assert)
+    response.assertStatus(302)
+    response.assertHeader('location', '/admin/settings?tab=trash')
+    assert.equal(response.flashMessage('success'), 'Réglages enregistrés.')
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.strictEqual(fresh.trashRetentionDays, 14)
+
+    const audits = await auditRows()
+    assert.lengthOf(audits, 1)
+    assert.equal(audits[0].metadata!.tab, 'trash')
+    assert.deepEqual(audits[0].metadata!.changedKeys, ['trashRetentionDays'])
+    assert.equal(audits[0].oldValues!.trashRetentionDays, 30)
+
+    const again = await putTab(client, admin, 'trash', { trashRetentionDays: 14 }, assert)
+    assert.equal(again.flashMessage('success'), 'Aucune modification à enregistrer.')
+    assert.lengthOf(await auditRows(), 1)
   })
 
   for (const invalid of INVALID_CASES) {

@@ -1,7 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react'
 import { FormEvent, ReactNode, useState } from 'react'
 import { toast } from 'sonner'
-import { House, KeyRound, LifeBuoy, Palette } from 'lucide-react'
+import { House, KeyRound, LifeBuoy, Palette, Trash2 } from 'lucide-react'
 import AppHeader from '~/components/layout/app-header'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -11,7 +11,7 @@ import { Switch } from '~/components/ui/switch'
 import { Textarea } from '~/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 
-type Tab = 'appearance' | 'home' | 'access' | 'contact'
+type Tab = 'appearance' | 'home' | 'access' | 'contact' | 'trash'
 
 interface Settings {
   appName: string
@@ -31,6 +31,7 @@ interface Settings {
     linkedin: string | null
     github: string | null
   }
+  trashRetentionDays: number
 }
 
 interface Props {
@@ -119,6 +120,8 @@ const HELP = {
   contactEmail: 'Affichée dans le pied de page.',
   supportUrl:
     'Lien « Aide et support » du pied de page. Adresse complète commençant par https:// ou http://, ou chemin commençant par /.',
+  trashRetentionDays:
+    "Nombre de jours, entre 1 et 365, pendant lesquels les éléments supprimés restent dans la corbeille de chaque cours avant leur suppression définitive. Une baisse s'applique aussi aux éléments déjà dans la corbeille : ceux qui dépassent la nouvelle durée seront supprimés à la prochaine purge.",
 }
 
 const SOCIAL_FIELDS = [
@@ -143,7 +146,7 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
 
   // Declared at page level: Radix unmounts inactive TabsContent, so edits survive a tab switch.
   // They do not survive a save: a successful save of any tab remounts the page and re-initialises
-  // all four forms from server props, dropping unsaved edits in the other tabs (accepted, WR-03).
+  // all five forms from server props, dropping unsaved edits in the other tabs (accepted, WR-03).
   const appearanceForm = useForm({
     appName: settings.appName ?? '',
     appLogoUrl: settings.appLogoUrl ?? '',
@@ -169,6 +172,9 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
       github: settings.socialLinks?.github ?? '',
     },
   })
+  const trashForm = useForm({
+    trashRetentionDays: settings.trashRetentionDays as number | null,
+  })
 
   const [logoBroken, setLogoBroken] = useState(false)
 
@@ -188,7 +194,7 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
       e.preventDefault()
       form.put(`/admin/settings/${target}`, {
         // 'errors': keep state (tab, input) on validation failure; remount on success so
-        // all four forms re-initialise from fresh props (other tabs' unsaved edits are lost)
+        // all five forms re-initialise from fresh props (other tabs' unsaved edits are lost)
         // and the flash toast fires again.
         preserveState: 'errors',
         preserveScroll: true,
@@ -213,8 +219,8 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Réglages de la plateforme</h1>
           <p className="text-muted-foreground mt-1">
-            Modifiez l'apparence, la page d'accueil, l'accès et les coordonnées de la plateforme.
-            Chaque onglet s'enregistre séparément.
+            Modifiez l'apparence, la page d'accueil, l'accès, les coordonnées et la corbeille de la
+            plateforme. Chaque onglet s'enregistre séparément.
           </p>
         </div>
 
@@ -235,6 +241,10 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
             <TabsTrigger value="contact" className="gap-2">
               <LifeBuoy className="h-4 w-4" aria-hidden="true" />
               Contact et support
+            </TabsTrigger>
+            <TabsTrigger value="trash" className="gap-2">
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Corbeille
             </TabsTrigger>
           </TabsList>
 
@@ -590,6 +600,62 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
                 </CardContent>
               </Card>
               <SubmitRow processing={contactForm.processing} label="Enregistrer les coordonnées" />
+            </form>
+          </TabsContent>
+
+          {/* Corbeille */}
+          <TabsContent value="trash">
+            <form noValidate onSubmit={submit(trashForm, 'trash', ['trashRetentionDays'])}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Corbeille</CardTitle>
+                  <CardDescription>
+                    Durée de conservation des sections et contenus supprimés dans les cours.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Rendered label: « Durée de conservation (obligatoire) » */}
+                  <Field
+                    id="trashRetentionDays"
+                    label="Durée de conservation"
+                    required
+                    help={HELP.trashRetentionDays}
+                    errorText={trashForm.errors.trashRetentionDays}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="trashRetentionDays"
+                        type="number"
+                        inputMode="numeric"
+                        className="w-24"
+                        min={1}
+                        max={365}
+                        step={1}
+                        value={trashForm.data.trashRetentionDays ?? ''}
+                        onChange={(e) =>
+                          trashForm.setData(
+                            'trashRetentionDays',
+                            e.target.value === '' ? null : Number(e.target.value)
+                          )
+                        }
+                        required
+                        aria-required="true"
+                        {...describedBy(
+                          'trashRetentionDays',
+                          true,
+                          trashForm.errors.trashRetentionDays,
+                          'trashRetentionDays-help'
+                        )}
+                      />
+                      <span className="text-sm text-muted-foreground">jours</span>
+                    </div>
+                  </Field>
+                </CardContent>
+              </Card>
+              <SubmitRow
+                processing={trashForm.processing}
+                label="Enregistrer la durée de conservation"
+              />
             </form>
           </TabsContent>
         </Tabs>

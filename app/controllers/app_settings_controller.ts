@@ -49,6 +49,7 @@ function toPageSettings(row: AppSetting) {
     contactEmail: row.contactEmail || null,
     supportUrl: row.supportUrl || null,
     socialLinks: normalizeSocialLinks(row.socialLinks),
+    trashRetentionDays: Number(row.trashRetentionDays),
   }
 }
 
