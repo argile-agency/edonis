@@ -643,7 +643,8 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
                         {...describedBy(
                           'trashRetentionDays',
                           true,
-                          trashForm.errors.trashRetentionDays
+                          trashForm.errors.trashRetentionDays,
+                          'trashRetentionDays-help'
                         )}
                       />
                       <span className="text-sm text-muted-foreground">jours</span>
