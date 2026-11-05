@@ -6,11 +6,12 @@ import type { FieldContext } from '@vinejs/vine/types'
  * Fields absent from these schemas are dropped by VineJS (D-10).
  * Every validator needs `{ meta: { appHost: request.host() ?? '' } }`.
  */
-export const SETTINGS_TABS = ['appearance', 'home', 'access', 'contact'] as const
+export const SETTINGS_TABS = ['appearance', 'home', 'access', 'contact', 'trash'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export const COLOR_MESSAGE = 'Saisissez une couleur au format #RRGGBB (ex. #5046E5).'
 export const LINK_URL_MESSAGE = 'Saisissez une adresse commençant par https:// ou http://.'
+export const RETENTION_MESSAGE = 'Saisissez un nombre entier de jours entre 1 et 365.'
 export const IMAGE_URL_MESSAGE =
   "Saisissez un chemin commençant par / ou une adresse de ce site. Les images d'un autre domaine sont bloquées."
 
@@ -57,6 +58,10 @@ const messagesProvider = new SimpleMessagesProvider({
   'linkUrl': LINK_URL_MESSAGE,
   'imageUrl': IMAGE_URL_MESSAGE,
   'boolean': 'Valeur invalide.',
+  'trashRetentionDays.required': RETENTION_MESSAGE,
+  'trashRetentionDays.number': RETENTION_MESSAGE,
+  'trashRetentionDays.withoutDecimals': RETENTION_MESSAGE,
+  'trashRetentionDays.range': RETENTION_MESSAGE,
 })
 
 const compile = vine.withMetaData<{ appHost: string }>().compile
@@ -122,11 +127,17 @@ const contact = compile(
   })
 )
 
-for (const validator of [appearance, home, access, contact]) {
+const trash = compile(
+  vine.object({
+    trashRetentionDays: vine.number().withoutDecimals().range([1, 365]),
+  })
+)
+
+for (const validator of [appearance, home, access, contact, trash]) {
   validator.messagesProvider = messagesProvider
 }
 
-export const appSettingValidators = { appearance, home, access, contact } satisfies Record<
+export const appSettingValidators = { appearance, home, access, contact, trash } satisfies Record<
   SettingsTab,
   unknown
 >

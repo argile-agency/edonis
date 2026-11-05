@@ -217,7 +217,7 @@ router
 router
   .put('/admin/settings/:tab', [AppSettingsController, 'update'])
   .as('admin.settings.update')
-  .where('tab', /^(appearance|home|access|contact)$/)
+  .where('tab', /^(appearance|home|access|contact|trash)$/)
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin'] }))
 

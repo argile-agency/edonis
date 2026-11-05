@@ -24,6 +24,7 @@ export default class AppSetting extends BaseModel {
     allowRegistration: true,
     showPublicCourses: true,
     showStats: true,
+    trashRetentionDays: 30,
     isActive: true,
   }
 
@@ -92,6 +93,10 @@ export default class AppSetting extends BaseModel {
 
   @column(jsonColumnConfig)
   declare socialLinks: Record<string, string | null> | null
+
+  // Days a trashed course section/content stays restorable before the purge
+  @column()
+  declare trashRetentionDays: number
 
   @column(booleanColumn)
   declare isActive: boolean

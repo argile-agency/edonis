@@ -92,7 +92,8 @@ test.group('admin settings access', (group) => {
     const req = client.put('/admin/settings/trash').withCsrfToken()
     const put = await req.json({ trashRetentionDays: 14 }).loginAs(teacher).redirects(0)
     put.assertStatus(403)
-    assert.equal((await AppSetting.findOrFail(row.id)).trashRetentionDays, 30)
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.equal(fresh.trashRetentionDays, 30)
   })
 
   test('PlatformSettingsPolicy.manage is admin only', async ({ assert }) => {
@@ -412,7 +413,8 @@ test.group('admin settings save', (group) => {
     response.assertStatus(302)
     response.assertHeader('location', '/admin/settings?tab=trash')
     assert.equal(response.flashMessage('success'), 'Réglages enregistrés.')
-    assert.strictEqual((await AppSetting.findOrFail(row.id)).trashRetentionDays, 14)
+    const fresh = await AppSetting.findOrFail(row.id)
+    assert.strictEqual(fresh.trashRetentionDays, 14)
 
     const audits = await auditRows()
     assert.lengthOf(audits, 1)
