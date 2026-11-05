@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP (2026-12-20)
 status: Ready to discuss
-stopped_at: Phase 5.2 context gathered
-last_updated: "2026-11-04T15:32:11.758Z"
+stopped_at: Phase 5.2 UI-SPEC approved
+last_updated: "2026-11-05T07:38:11.695Z"
 last_activity: 2026-11-04
 progress:
   total_phases: 19
@@ -264,11 +264,11 @@ Full inventory in `.planning/codebase/CONCERNS.md`. Highest-signal items:
 
 ## Session Continuity
 
-Last session: 2026-11-04T15:32:11.754Z
-Stopped at: Phase 5.2 context gathered
+Last session: 2026-11-05T07:38:11.691Z
+Stopped at: Phase 5.2 UI-SPEC approved
 restructure committed; lint baseline brought to zero errors (`af99ea1`).
 Working tree is clean. Ready to plan Phase 1.
-Resume file: .planning/phases/05.2-trash-and-soft-delete/05.2-CONTEXT.md
+Resume file: .planning/phases/05.2-trash-and-soft-delete/05.2-UI-SPEC.md
 
 **To resume, in order:**
 
