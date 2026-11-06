@@ -12,11 +12,14 @@ import ContentProgress from '#models/content_progress'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import TrashService from '#services/trash_service'
+import TrashPurgeService from '#services/trash_purge_service'
+import CoursePolicy from '#policies/course_policy'
 import {
   assertNotCsrfRejected,
   createCourse,
   createUser,
   enrollUser,
+  grantPermission,
   uniqueSuffix,
 } from '#tests/functional/helpers/factories'
 
@@ -356,5 +359,135 @@ test.group('trash | write path', (group) => {
       completedCount: 1,
       progressPercentage: 100,
     })
+  })
+})
+
+/** Backdates every trashed row of `batch` (dialect format: SQLite compares text). */
+async function age(batch: string, daysAgo: number) {
+  const stamp = DateTime.now()
+    .minus({ days: daysAgo })
+    .toFormat(db.connection().dialect.dateTimeFormat)
+  for (const table of ['course_modules', 'course_contents']) {
+    await db.from(table).where('deleted_batch', batch).update({ deleted_at: stamp })
+  }
+}
+
+type TrashPageProps = {
+  course: { id: number; title: string }
+  rows: { kind: string; id: number; title: string }[]
+  retentionDays: number
+  moveTargets: { parentId: number | null; label: string }[]
+  permissions: { canPurge: boolean }
+}
+
+const openTrash = (client: ApiClient, url: string, user: User) =>
+  client.get(url).withInertia().loginAs(user)
+
+test.group('trash | page', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('the owner gets the trash roots, retention, live move targets and canPurge', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const first = await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await age(first.batch, 2)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+
+    const response = await openTrash(client, route('courses.trash', { id: f.course.id }), f.owner)
+    response.assertStatus(200)
+    response.assertInertiaComponent('courses/trash')
+    const props = response.inertiaProps as TrashPageProps
+    assert.deepEqual(props.course, { id: f.course.id, title: f.course.title })
+    assert.deepEqual(
+      props.rows.map((r) => `${r.kind}:${r.title}`),
+      ['section:S1', 'content:c4']
+    )
+    assert.equal(props.retentionDays, 30)
+    assert.deepEqual(
+      props.moveTargets.map((t) => t.parentId),
+      [f.s2.id]
+    )
+    assert.deepEqual(props.permissions, { canPurge: true })
+  })
+
+  test('collaborators and admins open it; only admins may purge', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const url = route('courses.trash', { id: f.course.id })
+    const editor = await createUser({ roles: ['teacher'] })
+    const manager = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    await grantPermission(f.course, editor, 'edit')
+    await grantPermission(f.course, manager, 'manage')
+
+    for (const [user, canPurge] of [
+      [editor, false],
+      [manager, false],
+      [admin, true],
+    ] as const) {
+      const response = await openTrash(client, url, user)
+      response.assertStatus(200)
+      assert.equal((response.inertiaProps as TrashPageProps).permissions.canPurge, canPurge)
+    }
+  })
+
+  test('outsiders get 403 and anonymous users go to login', async ({ client, route }) => {
+    const f = await fixture()
+    const url = route('courses.trash', { id: f.course.id })
+    const outsider = await createUser({ roles: ['teacher'] })
+    ;(await openTrash(client, url, outsider)).assertStatus(403)
+    ;(await openTrash(client, url, f.student)).assertStatus(403)
+    const anonymous = await client.get(url).redirects(0)
+    anonymous.assertStatus(302)
+    anonymous.assertHeader('location', '/login')
+  })
+
+  test('opening the page purges expired rows of the course and audits the user', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const old = await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await age(old.batch, 31)
+
+    const response = await openTrash(client, route('courses.trash', { id: f.course.id }), f.owner)
+    response.assertStatus(200)
+    assert.lengthOf((response.inertiaProps as TrashPageProps).rows, 0)
+    assert.isNull(await db.from('course_contents').where('id', f.c4.id).first())
+    const rows = await audits('course.trash.purge').where('resource_id', String(f.course.id))
+    assert.lengthOf(rows, 1)
+    assert.equal(rows[0].metadata?.trigger, 'page')
+    assert.equal(rows[0].userId, f.owner.id)
+  })
+
+  test('a failing lazy purge does not break the page', async ({ client, route }) => {
+    const f = await fixture()
+    const original = TrashPurgeService.purgeExpired
+    TrashPurgeService.purgeExpired = async () => {
+      throw new Error('boom')
+    }
+    try {
+      const url = route('courses.trash', { id: f.course.id })
+      ;(await openTrash(client, url, f.owner)).assertStatus(200)
+    } finally {
+      TrashPurgeService.purgeExpired = original
+    }
+  })
+
+  test('emptyTrash: owner only, admins through before', async ({ assert }) => {
+    const f = await fixture()
+    const editor = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    const policy = new CoursePolicy()
+    assert.isTrue(policy.emptyTrash(f.owner, f.course))
+    assert.isFalse(policy.emptyTrash(editor, f.course))
+    assert.isTrue(await policy.before(admin, 'emptyTrash'))
   })
 })
