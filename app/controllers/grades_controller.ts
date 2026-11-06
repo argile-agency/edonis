@@ -5,6 +5,21 @@ import Assignment from '#models/assignment'
 import Submission from '#models/submission'
 import GradeCategory from '#models/grade_category'
 import db from '@adonisjs/lucid/services/db'
+import type { ModelQueryBuilderContract } from '@adonisjs/lucid/types/model'
+
+/**
+ * Hides assignments of a trashed section (D-08: nothing is written, restoring the
+ * section brings them back). Grouped because a bare NOT IN drops module_id IS NULL.
+ */
+const hideTrashedSections =
+  (courseId: number) => (query: ModelQueryBuilderContract<typeof Assignment>) => {
+    const trashed = db
+      .from('course_modules') // trash-ok: lists trashed sections on purpose
+      .where('course_id', courseId)
+      .whereNotNull('deleted_at')
+      .select('id')
+    return query.whereNull('module_id').orWhereNotIn('module_id', trashed)
+  }
 
 export default class GradesController {
   /**
@@ -30,6 +45,7 @@ export default class GradesController {
         const assignments = await Assignment.query()
           .where('course_id', courseId)
           .where('is_published', true)
+          .where(hideTrashedSections(courseId))
           .preload('gradeCategory')
 
         // Get all submissions for this student
@@ -99,6 +115,7 @@ export default class GradesController {
     const assignments = await Assignment.query()
       .where('course_id', courseId)
       .where('is_published', true)
+      .where(hideTrashedSections(courseId))
       .preload('gradeCategory')
       .preload('module')
       .orderBy('position', 'asc')

@@ -13,7 +13,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "check": "bun run lint && bun run typecheck",
-    "check:debt": "! grep -rn \"hasPermission(\\|hasRole(\\|hasAnyRole(\\|instructorId ===\\|isInstructor(\\|\\.roles\\.some(\" app/controllers && ! grep -rn \"request\\.\\(only\\|input\\|all\\)(\" app/controllers"
+    "check:debt": "! grep -rn \"hasPermission(\\|hasRole(\\|hasAnyRole(\\|instructorId ===\\|isInstructor(\\|\\.roles\\.some(\" app/controllers && ! grep -rn \"request\\.\\(only\\|input\\|all\\)(\" app/controllers && ! grep -rnE \"(from|join|leftJoin)\\('course_(modules|contents)'|\\.pojo<\" app --include='*.ts' | grep -v \"app/services/trash_service.ts\\|app/services/trash_purge_service.ts\\|trash-ok\""
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",

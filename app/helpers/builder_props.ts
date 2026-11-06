@@ -32,7 +32,7 @@ export async function loadBuilderStructure(
   const items = await CourseContent.query(options)
     .whereIn(
       'module_id',
-      (client ?? db).from('course_modules').select('id').where('course_id', courseId)
+      (client ?? db).from('course_modules').select('id').where('course_id', courseId) // trash-ok: ids only, the hooked outer query hides trashed contents
     )
     .select(
       'id',

@@ -66,7 +66,7 @@ export default class AccountController {
 
     // Submissions & grades
     const { default: Submission } = await import('#models/submission')
-    const submissions = await Submission.query().where('user_id', user.id)
+    const submissions = await Submission.query().where('student_id', user.id)
     const submissionData = submissions.map((s) => s.serialize())
 
     // Content progress

@@ -86,7 +86,7 @@ async function loadScope(
   const contents = contentIds.length
     ? await CourseContent.query({ client: trx })
         .whereIn('id', contentIds)
-        .whereIn('module_id', trx.from('course_modules').select('id').where('course_id', courseId))
+        .whereIn('module_id', trx.from('course_modules').select('id').where('course_id', courseId)) // trash-ok: ids only, the hooked outer query hides trashed contents
     : []
   const sectionMap = new Map(sections.map((s) => [s.id, s]))
   const contentMap = new Map(contents.map((c) => [c.id, c]))
@@ -492,12 +492,12 @@ export default class CourseBulkActionsController {
       .whereIn(
         'content_id',
         db
-          .from('course_contents')
+          .from('course_contents') // trash-ok: counts trashed ids on purpose (permanent-delete confirmation)
           .select('id')
           .whereIn('id', contentIds)
           .whereIn(
             'module_id',
-            db.from('course_modules').select('id').where('course_id', course.id)
+            db.from('course_modules').select('id').where('course_id', course.id) // trash-ok: same course scope, trashed included
           )
       )
       .countDistinct('user_id as learners')
