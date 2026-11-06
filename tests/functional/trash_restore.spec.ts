@@ -299,3 +299,104 @@ test.group('trash | restore', (group) => {
     assert.isAbove(await year('course_contents', f.c1.id), 2020)
   })
 })
+
+/** Moves a trashed row's `deleted_at` back in time (dialect format). */
+const trashedAgo = (table: 'course_modules' | 'course_contents', id: number, days: number) =>
+  db
+    .from(table)
+    .where('id', id)
+    .update({
+      deleted_at: TrashService.toDbDateTime(DateTime.now().minus({ days }), db.connection()),
+    })
+
+const list = (courseId: number, retentionDays = 30) =>
+  TrashService.list(courseId, retentionDays, db.connection())
+
+test.group('trash | list', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('lists batch roots, most recent first, with their section and descendants', async ({
+    assert,
+  }) => {
+    const f = await fixture()
+    await trash(f, [], [f.c2.id])
+    await trashedAgo('course_contents', f.c2.id, 2)
+    await trash(f, [f.s1.id], [])
+
+    const rows = await list(f.course.id)
+    assert.deepEqual(
+      rows.map((r) => `${r.kind}:${r.id}`),
+      [`section:${f.s1.id}`, `content:${f.c2.id}`]
+    )
+    const [s1, c2] = rows
+    assert.equal(s1.title, 'S1')
+    assert.isNull(s1.type)
+    assert.isNull(s1.originalSection)
+    assert.isNull(s1.sectionTrashed)
+    assert.equal(s1.descendantCount, 5)
+    assert.deepEqual(s1.contentIds, byId([f.c1.id, f.c2.id, f.c3.id, f.c4.id]))
+    assert.equal(s1.deletedBy, 'Test User')
+    assert.equal(c2.type, 'page')
+    assert.deepEqual(c2.originalSection, { id: f.s1.id, title: 'S1' })
+    assert.deepEqual(c2.sectionTrashed, { id: f.s1.id, title: 'S1' })
+    assert.deepEqual(c2.contentIds, [f.c2.id])
+    assert.equal(c2.descendantCount, 0)
+    assert.notEqual(s1.batch, c2.batch)
+  })
+
+  test('days left follow the current retention', async ({ assert }) => {
+    const f = await fixture()
+    await trash(f, [f.r1.id], [])
+    await trash(f, [f.r2.id], [])
+    await trashedAgo('course_modules', f.r2.id, 28)
+    await trash(f, [], [f.c1.id])
+    await trashedAgo('course_contents', f.c1.id, 31)
+
+    const rows = await list(f.course.id)
+    const days = new Map(rows.map((r) => [`${r.kind}:${r.id}`, r.daysLeft]))
+    assert.equal(days.get(`section:${f.r1.id}`), 30)
+    assert.equal(days.get(`section:${f.r2.id}`), 2)
+    assert.isAtMost(days.get(`content:${f.c1.id}`)!, 0)
+    const [shorter] = await list(f.course.id, 7)
+    assert.equal(shorter.daysLeft, 7)
+  })
+
+  test('deleted by: full name, nameless user, missing user', async ({ assert }) => {
+    const f = await fixture()
+    const editor = await createUser()
+    await db.from('users').where('id', editor.id).update({ full_name: null })
+    await trash(f, [f.r1.id], [], editor.id)
+
+    const [named] = await list(f.course.id)
+    assert.equal(named.deletedBy, 'Utilisateur sans nom')
+    await db.from('users').where('id', editor.id).delete()
+    const [missing] = await list(f.course.id)
+    assert.isNull(missing.deletedBy)
+  })
+
+  test('deletedAt is ISO and matches the stored instant', async ({ assert }) => {
+    const f = await fixture()
+    await trash(f, [f.r1.id], [])
+    const [row] = await list(f.course.id)
+    const stored = await db.from('course_modules').where('id', f.r1.id).firstOrFail()
+    const parsed = DateTime.fromISO(row.deletedAt)
+    assert.isTrue(parsed.isValid)
+    assert.equal(
+      parsed.toUnixInteger(),
+      TrashService.fromDbDateTime(stored.deleted_at).toUnixInteger()
+    )
+  })
+
+  test('live rows and other courses never appear', async ({ assert }) => {
+    const f = await fixture()
+    const other = await fixture()
+    await trash(other, [other.s1.id], [])
+    assert.deepEqual(await list(f.course.id), [])
+    await trash(f, [], [f.c3.id])
+    const rows = await list(f.course.id)
+    assert.deepEqual(
+      rows.map((r) => r.id),
+      [f.c3.id]
+    )
+  })
+})
