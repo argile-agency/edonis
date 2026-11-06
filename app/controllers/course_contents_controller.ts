@@ -436,9 +436,11 @@ export default class CourseContentsController {
     // Ids outside this course match no row and are ignored
     await db.transaction(async (trx) => {
       for (const item of payload.modules) {
+        // update() bypasses the hide-trashed hooks: keep a trashed row's restore position
         await CourseModule.query({ client: trx })
           .where('id', item.id)
           .where('course_id', course.id)
+          .whereNull('course_modules.deleted_at')
           .update({ order: item.order })
       }
     })
@@ -672,9 +674,11 @@ export default class CourseContentsController {
     // Ids outside this module match no row and are ignored
     await db.transaction(async (trx) => {
       for (const item of payload.contents) {
+        // update() bypasses the hide-trashed hooks: keep a trashed row's restore position
         await CourseContent.query({ client: trx })
           .where('id', item.id)
           .where('module_id', module.id)
+          .whereNull('course_contents.deleted_at')
           .update({ order: item.order })
       }
     })
