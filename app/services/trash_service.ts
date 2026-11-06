@@ -36,6 +36,27 @@ export type RestoreResult = {
   fallback: boolean
 }
 
+export type TrashListRow = {
+  kind: 'section' | 'content'
+  id: number
+  title: string
+  /** Content type, null for a section. */
+  type: string | null
+  /** Parent section, null = course root. */
+  originalSection: { id: number; title: string } | null
+  /** The parent section when it is itself trashed (content rows only). */
+  sectionTrashed: { id: number; title: string } | null
+  /** Null only when the user row is gone. */
+  deletedBy: string | null
+  deletedAt: string
+  daysLeft: number
+  batch: string
+  /** Trashed rows under a section, any batch. */
+  descendantCount: number
+  /** The content itself, or every trashed content under the section (any batch). */
+  contentIds: number[]
+}
+
 const nullableNumber = (value: unknown) => (value === null ? null : Number(value))
 
 const notInTrash = () =>
@@ -327,6 +348,89 @@ export default class TrashService {
 
   private static async inChunks(ids: number[], run: (chunk: number[]) => Promise<unknown>) {
     for (let i = 0; i < ids.length; i += PIVOT_CHUNK) await run(ids.slice(i, i + PIVOT_CHUNK))
+  }
+
+  /**
+   * The trash page rows (D-15, D-17): batch roots, most recent first.
+   * `client`: `db.connection()` outside a transaction, `trx` inside.
+   *
+   * shortcut: no pagination, a course trash is small; paginate past about 200 roots
+   */
+  static async list(
+    courseId: number,
+    retentionDays: number,
+    client: QueryClientContract,
+    now = DateTime.now()
+  ): Promise<TrashListRow[]> {
+    const rows = await this.trashedRows(client, courseId)
+    const roots = this.rootsOf(rows).sort(
+      (a, b) => b.deletedAt.toMillis() - a.deletedAt.toMillis() || b.id - a.id
+    )
+    // Any state: a trashed parent's title is still shown
+    const sectionRows = await client
+      .from('course_modules')
+      .where('course_id', courseId)
+      .select('id', 'title', 'deleted_at')
+    const sections = new Map(
+      sectionRows.map((s) => [
+        Number(s.id),
+        { id: Number(s.id), title: s.title as string, trashed: s.deleted_at !== null },
+      ])
+    )
+    const userIds = [...new Set(roots.map((r) => r.deletedById).filter((id) => id !== null))]
+    const userRows =
+      userIds.length > 0
+        ? await client.from('users').whereIn('id', userIds).select('id', 'full_name')
+        : []
+    const names = new Map<number, string>(
+      userRows.map((u) => [
+        Number(u.id),
+        (u.full_name as string | null)?.trim() || 'Utilisateur sans nom',
+      ])
+    )
+
+    const childrenOf = new Map<number, TrashedRow[]>()
+    for (const r of rows) {
+      if (r.parentId !== null)
+        childrenOf.set(r.parentId, [...(childrenOf.get(r.parentId) ?? []), r])
+    }
+    const under = (sectionId: number) => {
+      const found: TrashedRow[] = []
+      const stack = [sectionId]
+      while (stack.length > 0) {
+        for (const child of childrenOf.get(stack.pop()!) ?? []) {
+          found.push(child)
+          if (child.kind === 'section') stack.push(child.id)
+        }
+      }
+      return found
+    }
+
+    return roots.map((r) => {
+      const parent = r.parentId === null ? undefined : sections.get(r.parentId)
+      const descendants = r.kind === 'section' ? under(r.id) : []
+      return {
+        kind: r.kind,
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        originalSection: parent ? { id: parent.id, title: parent.title } : null,
+        sectionTrashed:
+          r.kind === 'content' && parent?.trashed ? { id: parent.id, title: parent.title } : null,
+        deletedBy: r.deletedById === null ? null : (names.get(r.deletedById) ?? null),
+        deletedAt: r.deletedAt.toISO()!,
+        daysLeft: Math.ceil(r.deletedAt.plus({ days: retentionDays }).diff(now, 'days').days),
+        batch: r.batch,
+        descendantCount: descendants.length,
+        contentIds:
+          r.kind === 'content'
+            ? [r.id]
+            : descendants
+                .filter((d) => d.kind === 'content')
+                .map((d) => d.id)
+                .sort((a, b) => a - b),
+      }
+    })
   }
 
   /** Every trashed section and content of the course, any batch. */
