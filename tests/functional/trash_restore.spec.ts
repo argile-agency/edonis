@@ -96,8 +96,10 @@ const liveContents = async (moduleId: number) =>
       .orderBy('id', 'asc')
   )
 
-const isTrashed = async (table: 'course_modules' | 'course_contents', id: number) =>
-  (await db.from(table).where('id', id).firstOrFail()).deleted_at !== null
+const isTrashed = async (table: 'course_modules' | 'course_contents', id: number) => {
+  const row = await db.from(table).where('id', id).firstOrFail()
+  return row.deleted_at !== null
+}
 
 const byId = (list: number[]) => [...list].sort((a, b) => a - b)
 
@@ -208,9 +210,7 @@ test.group('trash | restore', (group) => {
     assert.isNull(result.destination)
   })
 
-  test('a content whose section is trashed can go to another live section', async ({
-    assert,
-  }) => {
+  test('a content whose section is trashed can go to another live section', async ({ assert }) => {
     const f = await fixture()
     const d1 = await createContent(f.r2, { order: 1, title: 'd1' })
     await trash(f, [], [f.c4.id])
@@ -290,9 +290,10 @@ test.group('trash | restore', (group) => {
     await trash(f, [f.s1.id], [])
     await restore(f.course.id, { kind: 'section', id: f.s1.id })
 
-    const year = async (table: string, id: number) =>
-      TrashService.fromDbDateTime((await db.from(table).where('id', id).firstOrFail()).updated_at)
-        .year
+    const year = async (table: string, id: number) => {
+      const row = await db.from(table).where('id', id).firstOrFail()
+      return TrashService.fromDbDateTime(row.updated_at).year
+    }
     assert.isAbove(await year('course_modules', f.s1.id), 2020)
     assert.isAbove(await year('course_modules', f.s11.id), 2020)
     assert.isAbove(await year('course_contents', f.c1.id), 2020)
