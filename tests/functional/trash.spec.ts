@@ -441,8 +441,10 @@ test.group('trash | page', (group) => {
     const f = await fixture()
     const url = route('courses.trash', { id: f.course.id })
     const outsider = await createUser({ roles: ['teacher'] })
-    ;(await openTrash(client, url, outsider)).assertStatus(403)
-    ;(await openTrash(client, url, f.student)).assertStatus(403)
+    for (const user of [outsider, f.student]) {
+      const response = await openTrash(client, url, user)
+      response.assertStatus(403)
+    }
     const anonymous = await client.get(url).redirects(0)
     anonymous.assertStatus(302)
     anonymous.assertHeader('location', '/login')
@@ -475,7 +477,8 @@ test.group('trash | page', (group) => {
     }
     try {
       const url = route('courses.trash', { id: f.course.id })
-      ;(await openTrash(client, url, f.owner)).assertStatus(200)
+      const response = await openTrash(client, url, f.owner)
+      response.assertStatus(200)
     } finally {
       TrashPurgeService.purgeExpired = original
     }
