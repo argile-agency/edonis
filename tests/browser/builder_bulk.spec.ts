@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 import { AxeBuilder } from '@axe-core/playwright'
 import { DateTime } from 'luxon'
 import type { Page } from 'playwright'
+import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import AuditLog from '#models/audit_log'
 import type Course from '#models/course'
@@ -156,6 +157,12 @@ async function isoDate(id: number, field: 'availableFrom' | 'availableUntil') {
 async function publishedNow(model: typeof CourseContent | typeof CourseModule, id: number) {
   const item = await model.findOrFail(id)
   return item.isPublished
+}
+
+/** Raw read: the model hooks hide trashed rows (Phase 5.2). */
+async function inTrash(table: 'course_modules' | 'course_contents', id: number) {
+  const item = await db.from(table).where('id', id).select('deleted_at').first()
+  return item !== null && item.deleted_at !== null
 }
 
 async function countText(page: Page) {
@@ -346,39 +353,38 @@ test.group('Course builder - bulk actions', (group) => {
     assert.isTrue(await copyRow.getByText('Brouillon').isVisible())
   })
 
-  test('delete is blocked until the sub-tree is selected, then confirmed (BUILD-14)', async ({
+  test('a selected section goes to the trash with its whole sub-tree (BUILD-14, TRASH-10)', async ({
     visit,
     assert,
   }) => {
     const f = (fixture = await createFixture())
     const page = await openBuilder(visit, f)
 
-    await tick(page, 'S1', 'Contenu A')
-    const blocked = barButton(page, 'Supprimer…')
-    assert.equal(await blocked.getAttribute('aria-disabled'), 'true')
-    assert.equal(await blocked.getAttribute('aria-describedby'), 'bulk-delete-reason')
-    assert.isTrue(
-      await bar(page)
-        .getByText('Sélectionnez aussi tout le contenu des sections à supprimer.')
-        .isVisible()
-    )
-    await blocked.click()
-    assert.equal(await page.getByRole('alertdialog').count(), 0)
-
-    await tick(page, 'Contenu B', 'S11', 'Contenu D')
-    await barButton(page, 'Supprimer…').click()
+    // Its children are not selected: never blocked any more (D-03).
+    await tick(page, 'S1')
+    const button = barButton(page, 'Supprimer…')
+    assert.isNull(await button.getAttribute('aria-disabled'))
+    await button.click()
     const dialog = page.getByRole('alertdialog')
-    assert.include((await dialog.textContent()) ?? '', 'progression des apprenants')
-    await dialog.getByRole('button', { name: 'Supprimer', exact: true }).click()
+    const text = (await dialog.textContent()) ?? ''
+    assert.include(text, 'Une section emporte ses sous-sections et contenus')
+    assert.include(text, 'progression')
+    await dialog.getByRole('button', { name: 'Supprimer 1 élément', exact: true }).click()
     await waitSaved(page)
+    await page
+      .locator('[data-sonner-toaster]')
+      .getByText('1 élément déplacé dans la corbeille.')
+      .waitFor()
 
     const keys = await rowKeys(page)
     for (const key of [f.s1, f.s11].map((s) => `s-${s.id}`)) assert.notInclude(keys, key)
     for (const key of [f.c1, f.c2, f.c4].map((c) => `c-${c.id}`)) assert.notInclude(keys, key)
+    assert.include(keys, `c-${f.c3.id}`)
     assert.isNull(await CourseModule.find(f.s1.id))
-    assert.isNull(await CourseModule.find(f.s11.id))
-    assert.isNull(await CourseContent.find(f.c4.id))
-    assert.isNotNull(await CourseContent.find(f.c3.id))
+    assert.isTrue(await inTrash('course_modules', f.s1.id))
+    assert.isTrue(await inTrash('course_modules', f.s11.id))
+    assert.isTrue(await inTrash('course_contents', f.c4.id))
+    assert.isFalse(await inTrash('course_contents', f.c3.id))
     assert.isTrue(await until(async () => (await activeId(page)) === 'bulk-select-all', 2000))
   })
 

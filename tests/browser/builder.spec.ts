@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import type { Page } from 'playwright'
+import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import type Course from '#models/course'
 import CourseModule from '#models/course_module'
@@ -141,6 +142,15 @@ async function contentModule(id: number) {
   return content.moduleId
 }
 
+/** Raw read: the model hooks hide trashed rows (Phase 5.2). */
+async function inTrash(table: 'course_modules' | 'course_contents', id: number) {
+  const item = await db.from(table).where('id', id).select('deleted_at').first()
+  return item !== null && item.deleted_at !== null
+}
+
+const toaster = (page: Page) => page.locator('[data-sonner-toaster]')
+const trashButton = (page: Page, name: string) => page.getByRole('button', { name, exact: true })
+
 async function contentOrder(moduleId: number): Promise<number[]> {
   const items = await CourseContent.query()
     .where('module_id', moduleId)
@@ -273,40 +283,60 @@ test.group('Course builder', (group) => {
     )
   })
 
-  test('deletes: non-empty section refused, content and empty section deleted (BUILD-06, BUILD-09)', async ({
+  test('deletes go to the trash and « Annuler » restores them in place (BUILD-06, BUILD-09, TRASH-10)', async ({
     visit,
     assert,
   }) => {
     const f = (fixture = await createFixture())
     const page = await openBuilder(visit, f)
+    const before = await rowKeys(page)
+    await trashButton(page, 'Corbeille').waitFor()
 
+    // A non-empty section is deletable (D-03): the dialog speaks of the trash and its delay.
     await openActions(page, 'S1')
-    const refused = page.getByRole('menuitem', { name: /^Supprimer/ })
-    assert.equal(await refused.getAttribute('aria-disabled'), 'true')
-    assert.include(await refused.textContent(), "Déplacez ou supprimez d'abord son contenu")
-    await page.keyboard.press('Escape')
+    const item = page.getByRole('menuitem', { name: 'Supprimer', exact: true })
+    assert.isNull(await item.getAttribute('aria-disabled'))
+    await item.click()
+    const dialog = page.getByRole('alertdialog')
+    const text = (await dialog.textContent()) ?? ''
+    assert.include(text, 'déplacée dans la corbeille')
+    assert.include(text, 'jour')
+    await dialog.getByRole('button', { name: 'Supprimer la section', exact: true }).click()
+    await row(page, `s-${f.s1.id}`).waitFor({ state: 'detached' })
+    for (const key of [`s-${f.s11.id}`, `c-${f.c1.id}`, `c-${f.c2.id}`]) {
+      assert.equal(await row(page, key).count(), 0)
+    }
+    await toaster(page).getByText('« S1 » déplacé dans la corbeille.').waitFor()
+    await trashButton(page, 'Corbeille (1)').waitFor()
+    assert.isTrue(await until(() => inTrash('course_modules', f.s1.id)))
+    assert.isTrue(await inTrash('course_contents', f.c1.id))
 
+    // Undo restores the batch at the same place.
+    await toaster(page).getByRole('button', { name: 'Annuler' }).click()
+    await toaster(page).getByText('Restauration effectuée.').waitFor()
+    await waitSaved(page)
+    assert.deepEqual(await rowKeys(page), before)
+    assert.isTrue(await until(async () => !(await inTrash('course_modules', f.s1.id)), 5000))
+    assert.isFalse(await inTrash('course_modules', f.s11.id))
+    assert.isFalse(await inTrash('course_contents', f.c2.id))
+    await trashButton(page, 'Corbeille').waitFor()
+
+    // A content: the dialog closes cleanly and focus lands on a neighbour.
     await openActions(page, 'Contenu B')
     await page.getByRole('menuitem', { name: 'Supprimer', exact: true }).click()
     await page
       .getByRole('alertdialog')
-      .getByRole('button', { name: 'Supprimer', exact: true })
+      .getByRole('button', { name: 'Supprimer le contenu', exact: true })
       .click()
     await waitSaved(page)
     await row(page, `c-${f.c2.id}`).waitFor({ state: 'detached' })
     assert.notEqual(await bodyPointerEvents(page), 'none')
     const focusedId = String(await page.evaluate("document.activeElement?.id ?? ''"))
     assert.match(focusedId, /^[sc]-\d+-title$/)
-
-    await openActions(page, 'S2')
-    await page.getByRole('menuitem', { name: 'Supprimer', exact: true }).click()
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: 'Supprimer', exact: true })
-      .click()
-    await row(page, `s-${f.s2.id}`).waitFor({ state: 'detached' })
-    assert.isTrue(await until(async () => (await CourseModule.find(f.s2.id)) === null))
+    await toaster(page).getByText('« Contenu B » déplacé dans la corbeille.').waitFor()
+    await trashButton(page, 'Corbeille (1)').waitFor()
     assert.isNull(await CourseContent.find(f.c2.id))
+    assert.isTrue(await until(() => inTrash('course_contents', f.c2.id)))
   })
 
   test('only root sections offer a sub-section (D-02)', async ({ visit, assert }) => {

@@ -69,7 +69,6 @@ export type MoveTarget = {
 /** 0-based: root = 0, sub-section = 1 (D-02: 2 levels). */
 export const MAX_SECTION_DEPTH = 1
 export const DEPTH_MESSAGE = 'Profondeur maximale : 2 niveaux.'
-export const NOT_EMPTY_MESSAGE = "Déplacez ou supprimez d'abord son contenu."
 
 const CURRENT_MESSAGE = 'Emplacement actuel'
 const SELF_MESSAGE =
@@ -437,14 +436,6 @@ export function applySectionMove(
   )
 }
 
-export function canDeleteSection(
-  sections: ReadonlyArray<BuilderSection>,
-  contents: ReadonlyArray<BuilderContent>,
-  id: number
-): boolean {
-  return !sections.some((s) => s.parentId === id) && !contents.some((c) => c.moduleId === id)
-}
-
 // --- Selection and bulk actions (05-10). Same tree order and normalisation as the 05-09 server. ---
 
 export type QuickSelection =
@@ -461,9 +452,6 @@ export interface BulkResult {
 }
 
 export const BULK_CONTENT_ROOT_MESSAGE = 'Un contenu doit être placé dans une section.'
-/** Same text as the server's E_NOT_EMPTY message. */
-export const BULK_DELETE_BLOCKED_MESSAGE =
-  'Sélectionnez aussi tout le contenu des sections à supprimer.'
 
 const keyOf = (kind: ItemRef['kind'], id: number) => rowKey({ kind, id })
 
@@ -645,25 +633,7 @@ export function datePatch(
   return patch
 }
 
-/** Selected sections whose sub-tree (sections and contents) is not fully selected, ascending. */
-export function bulkDeleteBlockers(
-  sections: ReadonlyArray<BuilderSection>,
-  contents: ReadonlyArray<BuilderContent>,
-  selected: ReadonlySet<string>
-): number[] {
-  return sections
-    .filter((s) => selected.has(keyOf('section', s.id)))
-    .filter((s) => {
-      const subtree = withDescendants(sections, [s.id])
-      return (
-        [...subtree].some((id) => !selected.has(keyOf('section', id))) ||
-        contents.some((c) => subtree.has(c.moduleId) && !selected.has(keyOf('content', c.id)))
-      )
-    })
-    .map((s) => s.id)
-    .sort((a, b) => a - b)
-}
-
+/** Every section and content id that leaves the live tree with these items (sub-trees included). */
 export function bulkDeletedIds(
   sections: ReadonlyArray<BuilderSection>,
   contents: ReadonlyArray<BuilderContent>,
