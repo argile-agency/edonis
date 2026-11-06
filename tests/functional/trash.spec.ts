@@ -507,8 +507,15 @@ async function postHtml(client: ApiClient, url: string, user: User, body: Record
   return req.json(body).loginAs(user).redirects(0)
 }
 
-const trashedCount = async (courseId: number) =>
-  (await TrashService.trashedRows(db.connection(), courseId)).length
+async function trashedCount(courseId: number) {
+  const rows = await TrashService.trashedRows(db.connection(), courseId)
+  return rows.length
+}
+
+async function field(table: 'course_modules' | 'course_contents', id: number, column: string) {
+  const row = await db.from(table).where('id', id).firstOrFail()
+  return row[column]
+}
 
 test.group('trash | actions', (group) => {
   let storageRoot: string
@@ -575,12 +582,12 @@ test.group('trash | actions', (group) => {
     json.assertStatus(409)
     assert.equal(json.body().code, 'E_PARENT_TRASHED')
     assert.deepEqual(json.body().section, { id: f.s2.id, title: 'S2' })
-    assert.isNotNull((await rawContent(f.c4.id)).deleted_at)
+    assert.isNotNull(await field('course_contents', f.c4.id, 'deleted_at'))
     assert.lengthOf(await audits('course.trash.restore'), 0)
 
     const into = await postHtml(client, url, f.owner, { ...item, moduleId: f.s1.id })
     assert.equal(into.flashMessage('success'), '« c4 » a été restauré dans « S1 ».')
-    assert.equal(Number((await rawContent(f.c4.id)).module_id), f.s1.id)
+    assert.equal(Number(await field('course_contents', f.c4.id, 'module_id')), f.s1.id)
   })
 
   test('withSection restores the section too', async ({ client, route, assert }) => {
@@ -610,7 +617,7 @@ test.group('trash | actions', (group) => {
       response.flashMessage('success'),
       "« S11 » a été restauré à la fin du cours : sa section d'origine n'existe plus ou n'accepte plus de sous-section."
     )
-    assert.isNull((await rawSection(f.s11.id)).parent_id)
+    assert.isNull(await field('course_modules', f.s11.id, 'parent_id'))
   })
 
   test('restoring twice answers « no longer in the trash »', async ({ client, route, assert }) => {
@@ -670,7 +677,7 @@ test.group('trash | actions', (group) => {
     }
     const invalid = await postJson(client, url, f.owner, { batch: 'nope' })
     invalid.assertStatus(422)
-    assert.isNotNull((await rawSection(other.s1.id)).deleted_at)
+    assert.isNotNull(await field('course_modules', other.s1.id, 'deleted_at'))
   })
 
   test('the owner deletes a section for good with earlier-trashed children and orphan blobs', async ({
@@ -697,7 +704,7 @@ test.group('trash | actions', (group) => {
     }
     assert.isNull(await db.from('content_files').where('id', f.file.id).first())
     await assert.rejects(() => access(blob))
-    assert.isNull((await rawContent(f.c4.id)).deleted_at)
+    assert.isNull(await field('course_contents', f.c4.id, 'deleted_at'))
 
     const rows = await audits('course.trash.delete').where('resource_id', String(f.course.id))
     assert.lengthOf(rows, 1)
@@ -720,13 +727,10 @@ test.group('trash | actions', (group) => {
     response.assertStatus(302)
     assert.equal(response.flashMessage('success'), 'Corbeille vidée.')
     assert.equal(await trashedCount(f.course.id), 0)
-    assert.isNull((await rawSection(f.s2.id)).deleted_at)
+    assert.isNull(await field('course_modules', f.s2.id, 'deleted_at'))
     const rows = await audits('course.trash.empty').where('resource_id', String(f.course.id))
     assert.lengthOf(rows, 1)
-    assert.deepEqual(
-      rows[0].metadata?.contentIds,
-      [f.c1.id, f.c2.id, f.c3.id, f.c4.id].sort(byId)
-    )
+    assert.deepEqual(rows[0].metadata?.contentIds, [f.c1.id, f.c2.id, f.c3.id, f.c4.id].sort(byId))
   })
 
   test('collaborators restore but cannot delete or empty; admins can', async ({
@@ -781,7 +785,11 @@ test.group('trash | actions', (group) => {
     assert.equal(restored.flashMessage('error'), GONE)
 
     await postHtml(client, deleteUrl, f.owner, { kind: 'content', id: f.c1.id })
-    for (const item of [foreign, { kind: 'section', id: f.s2.id }, { kind: 'content', id: 999999 }]) {
+    for (const item of [
+      foreign,
+      { kind: 'section', id: f.s2.id },
+      { kind: 'content', id: 999999 },
+    ]) {
       const response = await postHtml(client, deleteUrl, f.owner, item)
       assert.equal(response.flashMessage('error'), GONE)
     }
@@ -789,8 +797,8 @@ test.group('trash | actions', (group) => {
     json.assertStatus(404)
     assert.equal(json.body().code, 'E_NOT_IN_TRASH')
 
-    assert.isNotNull((await rawSection(other.s1.id)).deleted_at)
-    assert.isNull((await rawSection(f.s2.id)).deleted_at)
+    assert.isNotNull(await field('course_modules', other.s1.id, 'deleted_at'))
+    assert.isNull(await field('course_modules', f.s2.id, 'deleted_at'))
     assert.lengthOf(await audits('course.trash.delete'), 1)
   })
 
