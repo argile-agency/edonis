@@ -33,6 +33,7 @@ import {
   Settings,
   Info,
   Send,
+  Trash2,
 } from 'lucide-react'
 import AppHeader from '~/components/layout/app-header'
 
@@ -448,6 +449,12 @@ export default function ShowCourse({
                   <p className="text-sm text-muted-foreground">Aperçu de la structure du cours</p>
                 </div>
                 <div className="flex gap-2">
+                  <Link href={`/courses/${course.id}/trash`}>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Corbeille
+                    </Button>
+                  </Link>
                   <Link href={`/courses/${course.id}/learn`}>
                     <Button variant="outline" size="sm">
                       <Play className="mr-2 h-4 w-4" />
