@@ -361,7 +361,7 @@ Plans:
 **Goal:** Deleting a section or a content moves it to a trash instead of removing it, so nothing (structure, files, learner progress) is lost by mistake
 **Requirements**: TRASH-01, TRASH-02, TRASH-03, TRASH-04, TRASH-05, TRASH-06, TRASH-07, TRASH-08, TRASH-09, TRASH-10
 **Depends on:** Phase 5
-**Plans:** 5/10 plans executed
+**Plans:** 8/10 plans executed
 
 **Scope from the owner (05-CONTEXT D-06 and 2026-11-03):**
 
@@ -389,9 +389,9 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 05.2-06-PLAN.md — Restore in place with the batch, D-05 refusals and fallbacks, trash list [TRASH-04, TRASH-05]
-- [ ] 05.2-07-PLAN.md — Read-path guard: gradebook filter, visibility spec over the whole inventory, `check:debt` raw-read gate [TRASH-03]
-- [ ] 05.2-08-PLAN.md — Trash page (restore, D-05 dialog, permanent delete, empty), course page link, browser spec with axe [TRASH-04, TRASH-05, TRASH-07, TRASH-10]
+- [x] 05.2-06-PLAN.md — Restore in place with the batch, D-05 refusals and fallbacks, trash list [TRASH-04, TRASH-05]
+- [x] 05.2-07-PLAN.md — Read-path guard: gradebook filter, visibility spec over the whole inventory, `check:debt` raw-read gate [TRASH-03]
+- [x] 05.2-08-PLAN.md — Trash page (restore, D-05 dialog, permanent delete, empty), course page link, browser spec with axe [TRASH-04, TRASH-05, TRASH-07, TRASH-10]
 
 **Wave 4** *(blocked on Waves 1-3)*
 
@@ -565,7 +565,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 4. Content Foundation | 1/1 | Complete   | 2026-10-19 |
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
 | 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
-| 5.2. Trash and soft delete | 5/10 | In Progress|  |
+| 5.2. Trash and soft delete | 8/10 | In Progress|  |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
