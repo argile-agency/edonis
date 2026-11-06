@@ -737,7 +737,10 @@ async function contentTitle(id: number) {
   return row.title
 }
 
-const NOT_EMPTY_ERROR = "Déplacez ou supprimez d'abord son contenu."
+async function trashedBatch(table: 'course_modules' | 'course_contents', id: number) {
+  const row = await db.from(table).where('id', id).whereNotNull('deleted_at').first()
+  return row?.deleted_batch ?? null
+}
 
 async function deleteJson(client: ApiClient, url: string, user: User) {
   const req = client.delete(url).withCsrfToken()
@@ -1045,14 +1048,21 @@ test.group('Builder - edits and deletes', (group) => {
     const response = await deleteJson(client, route('modules.delete', { moduleId: s.id }), owner)
 
     response.assertStatus(200)
-    assert.deepEqual(response.body(), { item: { id: s.id } })
+    const { batch } = response.body()
+    assert.deepEqual(response.body(), { item: { id: s.id }, batch })
     assert.isNull(await CourseModule.find(s.id))
+    assert.equal(await trashedBatch('course_modules', s.id), batch)
     const audits = await auditRows('course.module.delete', s.id)
     assert.lengthOf(audits, 1)
-    assert.deepEqual(audits[0].metadata, { courseId: course.id, parentId: null })
+    assert.deepEqual(audits[0].metadata, {
+      courseId: course.id,
+      batch,
+      sectionIds: [s.id],
+      contentIds: [],
+    })
   })
 
-  test('a section with contents or sub-sections is refused with 409 and kept', async ({
+  test('a section with contents or sub-sections is trashed with them', async ({
     client,
     route,
     assert,
@@ -1064,44 +1074,47 @@ test.group('Builder - edits and deletes', (group) => {
     const withChild = await createModule(course, { order: 2 })
     const child = await createModule(course, { parentId: withChild.id })
 
-    for (const s of [withContent, withChild]) {
-      const response = await deleteJson(client, route('modules.delete', { moduleId: s.id }), owner)
-      response.assertStatus(409)
-      assert.deepEqual(response.body(), { code: 'E_NOT_EMPTY', message: NOT_EMPTY_ERROR })
-      assert.lengthOf(await auditRows('course.module.delete', s.id), 0)
-    }
+    const first = await deleteJson(
+      client,
+      route('modules.delete', { moduleId: withContent.id }),
+      owner
+    )
+    first.assertStatus(200)
+    assert.deepEqual(first.body(), { item: { id: withContent.id }, batch: first.body().batch })
+    assert.equal(await trashedBatch('course_contents', c.id), first.body().batch)
 
-    assert.isNotNull(await CourseModule.find(withContent.id))
-    assert.isNotNull(await CourseContent.find(c.id))
-    assert.isNotNull(await CourseModule.find(withChild.id))
-    assert.isNotNull(await CourseModule.find(child.id))
+    const second = await deleteJson(
+      client,
+      route('modules.delete', { moduleId: withChild.id }),
+      owner
+    )
+    second.assertStatus(200)
+    assert.equal(await trashedBatch('course_modules', child.id), second.body().batch)
+
+    for (const s of [withContent, withChild, child]) assert.isNull(await CourseModule.find(s.id))
+    assert.isNull(await CourseContent.find(c.id))
+    assert.lengthOf(await auditRows('course.module.delete', withContent.id), 1)
+    assert.lengthOf(await auditRows('course.module.delete', withChild.id), 1)
   })
 
-  test('HTML callers: a non-empty section gets the flash error, an empty one is deleted', async ({
+  test('HTML callers: a non-empty section is trashed with the trash flash', async ({
     client,
     route,
     assert,
   }) => {
     const owner = await createUser({ roles: ['teacher'] })
     const course = await createCourse(owner)
-    const full = await createModule(course, { order: 1 })
-    await createContent(full)
-    const empty = await createModule(course, { order: 2 })
+    const full = await createModule(course, { order: 1, title: 'Pleine' })
+    const c = await createContent(full)
 
-    const refusedReq = client.delete(route('modules.delete', { moduleId: full.id })).withCsrfToken()
-    const refused = await refusedReq.loginAs(owner).redirects(0)
-    refused.assertStatus(302)
-    assertNotCsrfRejected(assert, refused)
-    assert.equal(refused.flashMessage('error'), NOT_EMPTY_ERROR)
-    assert.isNotNull(await CourseModule.find(full.id))
-    assert.lengthOf(await auditRows('course.module.delete', full.id), 0)
-
-    const okReq = client.delete(route('modules.delete', { moduleId: empty.id })).withCsrfToken()
-    const ok = await okReq.loginAs(owner).redirects(0)
-    ok.assertStatus(302)
-    assert.isDefined(ok.flashMessage('success'))
-    assert.isNull(await CourseModule.find(empty.id))
-    assert.lengthOf(await auditRows('course.module.delete', empty.id), 1)
+    const req = client.delete(route('modules.delete', { moduleId: full.id })).withCsrfToken()
+    const response = await req.loginAs(owner).redirects(0)
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    assert.equal(response.flashMessage('success'), '« Pleine » déplacé dans la corbeille.')
+    assert.isNull(await CourseModule.find(full.id))
+    assert.isNotNull(await trashedBatch('course_contents', c.id))
+    assert.lengthOf(await auditRows('course.module.delete', full.id), 1)
   })
 
   test('a content item is deleted through JSON; its file row is kept (BUILD-09)', async ({
@@ -1125,18 +1138,27 @@ test.group('Builder - edits and deletes', (group) => {
 
     const first = await deleteJson(client, route('contents.delete', { contentId: plain.id }), owner)
     first.assertStatus(200)
-    assert.deepEqual(first.body(), { item: { id: plain.id } })
+    const { batch } = first.body()
+    assert.deepEqual(first.body(), { item: { id: plain.id }, batch })
     assert.isNull(await CourseContent.find(plain.id))
+    assert.equal(await trashedBatch('course_contents', plain.id), batch)
     const audits = await auditRows('course.content.delete', plain.id)
     assert.lengthOf(audits, 1)
-    assert.deepEqual(audits[0].metadata, { courseId: course.id, moduleId: s.id })
+    assert.deepEqual(audits[0].metadata, {
+      courseId: course.id,
+      moduleId: s.id,
+      batch,
+      sectionIds: [],
+      contentIds: [plain.id],
+    })
 
     const url = route('contents.delete', { contentId: withFile.id })
     const second = await deleteJson(client, url, owner)
     second.assertStatus(200)
     assert.isNull(await CourseContent.find(withFile.id))
+    // In the trash: the pivot stays for a restore
     const pivot = await db.from('content_content_files').where('course_content_id', withFile.id)
-    assert.lengthOf(pivot, 0)
+    assert.lengthOf(pivot, 1)
     // The content_files row (and its blob) may be shared, so it stays
     assert.isNotNull(await ContentFile.find(file.id))
   })

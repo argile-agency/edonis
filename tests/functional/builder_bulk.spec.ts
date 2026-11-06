@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import type { ApiClient } from '@japa/api-client'
 import { DateTime } from 'luxon'
+import db from '@adonisjs/lucid/services/db'
 import type Course from '#models/course'
 import type User from '#models/user'
 import { createHash } from 'node:crypto'
@@ -80,6 +81,12 @@ async function bulkAudits(courseId: number) {
 }
 
 const fresh = (c: CourseContent) => CourseContent.findOrFail(c.id)
+
+/** Raw read: the model hooks hide trashed rows. */
+async function trashedAt(table: 'course_modules' | 'course_contents', id: number) {
+  const row = await db.from(table).where('id', id).first()
+  return row?.deleted_at ?? null
+}
 const freshModule = (m: CourseModule) => CourseModule.findOrFail(m.id)
 
 /** Every bulk route with a body that is valid for the fixture apart from `items`. */
@@ -697,6 +704,7 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
     const one = await postBulk(client, url, f.owner, { items: [con(f.c2)] })
     one.assertStatus(200)
     assert.isNull(await CourseContent.find(f.c2.id))
+    assert.isNotNull(await trashedAt('course_contents', f.c2.id))
     assert.deepEqual(one.body().deleted, { sectionIds: [], contentIds: [f.c2.id] })
 
     const both = await postBulk(client, url, f.owner, { items: [sec(f.s2), con(f.c3)] })
@@ -710,10 +718,14 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
       .where('resource_id', String(f.course.id))
       .orderBy('id', 'asc')
     assert.lengthOf(audits, 2)
-    assert.deepEqual(audits[1].metadata, { sectionIds: [f.s2.id], contentIds: [f.c3.id] })
+    assert.deepEqual(audits[1].metadata, {
+      sectionIds: [f.s2.id],
+      contentIds: [f.c3.id],
+      batch: both.body().batch,
+    })
   })
 
-  test('a section with unselected content inside refuses the whole batch with 409', async ({
+  test('a partially selected section is trashed with its whole subtree', async ({
     client,
     route,
     assert,
@@ -722,14 +734,18 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
     const url = route('courses.bulk.delete', { id: f.course.id })
     const response = await postBulk(client, url, f.owner, { items: [sec(f.s1), con(f.c1)] })
 
-    response.assertStatus(409)
-    assert.equal(response.body().code, 'E_NOT_EMPTY')
-    assert.include(response.body().ids, f.s1.id)
-    assert.isNotNull(await CourseModule.find(f.s1.id))
-    assert.isNotNull(await CourseModule.find(f.s11.id))
-    assert.isNotNull(await CourseContent.find(f.c1.id))
-    assert.isNotNull(await CourseContent.find(f.c2.id))
-    assert.lengthOf(await bulkAudits(f.course.id), 0)
+    response.assertStatus(200)
+    const { batch } = response.body()
+    assert.deepEqual(response.body().deleted, {
+      sectionIds: [f.s1.id, f.s11.id].sort((a, b) => a - b),
+      contentIds: [f.c1.id, f.c2.id].sort((a, b) => a - b),
+    })
+    for (const id of [f.s1.id, f.s11.id]) assert.isNull(await CourseModule.find(id))
+    for (const id of [f.c1.id, f.c2.id]) assert.isNull(await CourseContent.find(id))
+    const c2 = await db.from('course_contents').where('id', f.c2.id).first()
+    assert.equal(c2.deleted_batch, batch)
+    assert.isNotNull(await CourseModule.find(f.s2.id))
+    assert.lengthOf(await bulkAudits(f.course.id), 1)
   })
 
   test('a fully selected sub-tree is deleted and attachment files are kept', async ({
@@ -746,8 +762,14 @@ test.group('Builder - bulk move, duplicate, delete', (group) => {
     })
 
     response.assertStatus(200)
-    for (const id of [f.c1.id, f.c2.id, c11.id]) assert.isNull(await CourseContent.find(id))
-    for (const id of [f.s1.id, f.s11.id]) assert.isNull(await CourseModule.find(id))
+    for (const id of [f.c1.id, f.c2.id, c11.id]) {
+      assert.isNull(await CourseContent.find(id))
+      assert.isNotNull(await trashedAt('course_contents', id))
+    }
+    for (const id of [f.s1.id, f.s11.id]) {
+      assert.isNull(await CourseModule.find(id))
+      assert.isNotNull(await trashedAt('course_modules', id))
+    }
     assert.deepEqual(response.body().deleted, {
       sectionIds: [f.s1.id, f.s11.id].sort((a, b) => a - b),
       contentIds: [f.c1.id, f.c2.id, c11.id].sort((a, b) => a - b),

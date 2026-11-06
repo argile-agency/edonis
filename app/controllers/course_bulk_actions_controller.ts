@@ -8,6 +8,7 @@ import Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import AuditService from '#services/audit_service'
+import TrashService from '#services/trash_service'
 import CourseStructureService, {
   CONFLICT_ERROR,
   DEPTH_ERROR,
@@ -25,6 +26,19 @@ import {
   deleteImpactValidator,
 } from '#validators/course_bulk'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
+import {
+  BulkRefusal,
+  emptyIds,
+  idsOf,
+  PIVOT_CHUNK,
+  push,
+  sorted,
+  withRenumbered,
+  type Ids,
+  type Item,
+  type Outcome,
+  type Structure,
+} from '../helpers/builder_ids.js'
 import { inclusiveEnd, shiftDate, shiftDays } from '../helpers/date_shift.js'
 import { depthOf, subtreeHeight } from '../helpers/category_tree.js'
 import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
@@ -33,16 +47,6 @@ import { buildRows, rowKey } from '../../inertia/lib/builder_tree.js'
 const SHIFT_ASSIGNMENTS_TABLE = false
 // OQ-2 (05-09): flip to keep the original's publication state
 const COPIES_START_AS_DRAFT = true
-// OQ-3 (05-09): a bulk delete may remove a section whose whole sub-tree is selected;
-// false = any non-empty section refuses the batch (05-10 mirrors this value)
-const BULK_DELETE_ALLOWS_FULL_SUBTREE = true
-// Pivot rows per INSERT (SQLite compiles multiInsert to a compound SELECT, 500 terms max)
-const PIVOT_CHUNK = 100
-
-type Kind = 'section' | 'content'
-type Item = { kind: Kind; id: number; updatedAt: string | null }
-type Ids = { sectionIds: number[]; contentIds: number[] }
-type Structure = Awaited<ReturnType<typeof loadBuilderStructure>>
 
 /** The selected rows, scoped to the course and token-checked, under the course lock. */
 type Scope = {
@@ -53,45 +57,7 @@ type Scope = {
   structure: Structure
 }
 
-type Outcome = {
-  auditAction: string
-  extraMetadata?: Record<string, unknown>
-  /** Rows this action saved or created. */
-  affected: Ids
-  deleted?: Ids
-  /** Renumbered sibling lists: section lists by parent (null = roots), content lists by section. */
-  touchedParents?: (number | null)[]
-  touchedSections?: number[]
-}
-
-/** A refusal thrown inside the transaction so it rolls back; turned into JSON outside it. */
-class BulkRefusal extends Error {
-  constructor(
-    public status: 409 | 422,
-    public body: Record<string, unknown>
-  ) {
-    super(String(body.code ?? 'E_BULK_REFUSED'))
-  }
-}
-
 const AVAILABILITY_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
-
-const emptyIds = (): Ids => ({ sectionIds: [], contentIds: [] })
-
-function push(ids: Ids, kind: Kind, id: number) {
-  ;(kind === 'section' ? ids.sectionIds : ids.contentIds).push(id)
-}
-
-function sorted(ids: Ids): Ids {
-  const sort = (list: number[]) => [...new Set(list)].sort((a, b) => a - b)
-  return { sectionIds: sort(ids.sectionIds), contentIds: sort(ids.contentIds) }
-}
-
-function idsOf(items: Item[]): Ids {
-  const ids = emptyIds()
-  for (const item of items) push(ids, item.kind, item.id)
-  return sorted(ids)
-}
 
 const sameInstant = (a: DateTime | null, b: DateTime | null) =>
   (a?.toMillis() ?? null) === (b?.toMillis() ?? null)
@@ -268,19 +234,6 @@ async function copySection(
   for (const [i, child] of children.entries()) {
     await copySection(trx, child, copy.id, i + 1, child.title, created, level + 1)
   }
-}
-
-/** `affected` plus every row of the sibling lists the action renumbered (they need their new order). */
-function withRenumbered(outcome: Outcome, structure: Structure): Ids {
-  const ids: Ids = {
-    sectionIds: [...outcome.affected.sectionIds],
-    contentIds: [...outcome.affected.contentIds],
-  }
-  const parents = new Set(outcome.touchedParents ?? [])
-  const lists = new Set(outcome.touchedSections ?? [])
-  for (const s of structure.sections) if (parents.has(s.parentId)) ids.sectionIds.push(s.id)
-  for (const c of structure.contents) if (lists.has(c.moduleId)) ids.contentIds.push(c.id)
-  return sorted(ids)
 }
 
 /**
@@ -505,62 +458,21 @@ export default class CourseBulkActionsController {
   }
 
   /**
-   * Delete the selection. A section goes only if everything in its sub-tree is
-   * selected too (else 409 E_NOT_EMPTY, nothing deleted): nothing unchosen is
-   * cascade-deleted. Remaining siblings are not renumbered (gaps are fine).
+   * Move the selection to the trash under one batch (D-03): a selected section
+   * takes its whole subtree, selected or not. `deleted` lists every row that
+   * left the live tree. Remaining siblings are not renumbered (gaps are fine).
    */
   async destroy(ctx: HttpContext) {
+    const userId = ctx.auth.user!.id
     return this.run(ctx, bulkDeleteValidator, async (trx, scope) => {
-      const childrenOf = new Map<number, number[]>()
-      for (const s of scope.structure.sections) {
-        if (s.parentId !== null)
-          childrenOf.set(s.parentId, [...(childrenOf.get(s.parentId) ?? []), s.id])
-      }
-      const contentsOf = new Map<number, number[]>()
-      for (const c of scope.structure.contents) {
-        contentsOf.set(c.moduleId, [...(contentsOf.get(c.moduleId) ?? []), c.id])
-      }
-
-      const blocking: number[] = []
-      for (const sectionId of scope.sections.keys()) {
-        const nonEmpty =
-          (childrenOf.get(sectionId)?.length ?? 0) + (contentsOf.get(sectionId)?.length ?? 0) > 0
-        let complete = true
-        const seen = new Set<number>()
-        const stack = [sectionId]
-        while (stack.length > 0) {
-          const s = stack.pop()!
-          if (seen.has(s)) continue
-          seen.add(s)
-          if (!scope.sections.has(s)) complete = false
-          if ((contentsOf.get(s) ?? []).some((c) => !scope.contents.has(c))) complete = false
-          stack.push(...(childrenOf.get(s) ?? []))
-        }
-        if (!complete || (!BULK_DELETE_ALLOWS_FULL_SUBTREE && nonEmpty)) blocking.push(sectionId)
-      }
-      if (blocking.length > 0) {
-        throw new BulkRefusal(409, {
-          code: 'E_NOT_EMPTY',
-          message: 'Sélectionnez aussi tout le contenu des sections à supprimer.',
-          ids: blocking.sort((a, b) => a - b),
-        })
-      }
-
-      const contentIds = [...scope.contents.keys()]
-      if (contentIds.length > 0) {
-        await trx.from('course_contents').whereIn('id', contentIds).delete()
-      }
-      // Sub-sections go through the parent_id cascade; they are all selected (checked above)
-      const topSections = topLevelItems(scope)
-        .filter((item) => item.kind === 'section')
-        .map((item) => item.id)
-      if (topSections.length > 0) {
-        await trx.from('course_modules').whereIn('id', topSections).delete()
-      }
+      const roots = idsOf(topLevelItems(scope))
+      const { batch, deleted } = await TrashService.trash(trx, scope.courseId, roots, userId)
       return {
         auditAction: 'course.bulk.delete',
+        extraMetadata: { batch, ...deleted },
         affected: emptyIds(),
-        deleted: idsOf(scope.items),
+        deleted,
+        batch,
       }
     })
   }
@@ -645,6 +557,7 @@ export default class CourseBulkActionsController {
       ...structure,
       affected: withRenumbered(outcome, structure),
       deleted: sorted(outcome.deleted ?? emptyIds()),
+      batch: outcome.batch,
     })
   }
 }
