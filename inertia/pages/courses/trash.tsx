@@ -142,19 +142,22 @@ export default function CourseTrash({
   // Focus after rows disappear: the same row if it stayed (error flash), else the next
   // surviving row's « Restaurer », else the previous one, else the heading.
   function focusAfter(index: number, before: TrashListRow[]) {
-    requestAnimationFrame(() => {
-      const find = (r: TrashListRow | undefined) =>
-        r ? document.getElementById(restoreId(r)) : null
-      for (let i = index; i < before.length; i++) {
-        const el = find(before[i])
-        if (el) return el.focus()
-      }
-      for (let i = index - 1; i >= 0; i--) {
-        const el = find(before[i])
-        if (el) return el.focus()
-      }
-      document.getElementById('trash-heading')?.focus()
-    })
+    // Two frames: onSuccess fires before React commits the new rows.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const find = (r: TrashListRow | undefined) =>
+          r ? document.getElementById(restoreId(r)) : null
+        for (let i = index; i < before.length; i++) {
+          const el = find(before[i])
+          if (el) return el.focus()
+        }
+        for (let i = index - 1; i >= 0; i--) {
+          const el = find(before[i])
+          if (el) return el.focus()
+        }
+        document.getElementById('trash-heading')?.focus()
+      })
+    )
   }
 
   function post(
