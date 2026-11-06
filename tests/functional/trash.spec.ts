@@ -2,6 +2,10 @@ import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import { createHash } from 'node:crypto'
+import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import env from '#start/env'
 import type { ApiClient } from '@japa/api-client'
 import { DateTime } from 'luxon'
 import type Course from '#models/course'
@@ -12,11 +16,14 @@ import ContentProgress from '#models/content_progress'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import TrashService from '#services/trash_service'
+import TrashPurgeService from '#services/trash_purge_service'
+import CoursePolicy from '#policies/course_policy'
 import {
   assertNotCsrfRejected,
   createCourse,
   createUser,
   enrollUser,
+  grantPermission,
   uniqueSuffix,
 } from '#tests/functional/helpers/factories'
 
@@ -356,5 +363,451 @@ test.group('trash | write path', (group) => {
       completedCount: 1,
       progressPercentage: 100,
     })
+  })
+})
+
+/** Backdates every trashed row of `batch` (dialect format: SQLite compares text). */
+async function age(batch: string, daysAgo: number) {
+  const stamp = DateTime.now()
+    .minus({ days: daysAgo })
+    .toFormat(db.connection().dialect.dateTimeFormat)
+  for (const table of ['course_modules', 'course_contents']) {
+    await db.from(table).where('deleted_batch', batch).update({ deleted_at: stamp })
+  }
+}
+
+type TrashPageProps = {
+  course: { id: number; title: string }
+  rows: { kind: string; id: number; title: string }[]
+  retentionDays: number
+  moveTargets: { parentId: number | null; label: string }[]
+  permissions: { canPurge: boolean }
+}
+
+const openTrash = (client: ApiClient, url: string, user: User) =>
+  client.get(url).withInertia().loginAs(user)
+
+test.group('trash | page', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  test('the owner gets the trash roots, retention, live move targets and canPurge', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const first = await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await age(first.batch, 2)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+
+    const response = await openTrash(client, route('courses.trash', { id: f.course.id }), f.owner)
+    response.assertStatus(200)
+    response.assertInertiaComponent('courses/trash')
+    const props = response.inertiaProps as TrashPageProps
+    assert.deepEqual(props.course, { id: f.course.id, title: f.course.title })
+    assert.deepEqual(
+      props.rows.map((r) => `${r.kind}:${r.title}`),
+      ['section:S1', 'content:c4']
+    )
+    assert.equal(props.retentionDays, 30)
+    assert.deepEqual(
+      props.moveTargets.map((t) => t.parentId),
+      [f.s2.id]
+    )
+    assert.deepEqual(props.permissions, { canPurge: true })
+  })
+
+  test('collaborators and admins open it; only admins may purge', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const url = route('courses.trash', { id: f.course.id })
+    const editor = await createUser({ roles: ['teacher'] })
+    const manager = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    await grantPermission(f.course, editor, 'edit')
+    await grantPermission(f.course, manager, 'manage')
+
+    for (const [user, canPurge] of [
+      [editor, false],
+      [manager, false],
+      [admin, true],
+    ] as const) {
+      const response = await openTrash(client, url, user)
+      response.assertStatus(200)
+      assert.equal((response.inertiaProps as TrashPageProps).permissions.canPurge, canPurge)
+    }
+  })
+
+  test('outsiders get 403 and anonymous users go to login', async ({ client, route }) => {
+    const f = await fixture()
+    const url = route('courses.trash', { id: f.course.id })
+    const outsider = await createUser({ roles: ['teacher'] })
+    for (const user of [outsider, f.student]) {
+      const response = await openTrash(client, url, user)
+      response.assertStatus(403)
+    }
+    const anonymous = await client.get(url).redirects(0)
+    anonymous.assertStatus(302)
+    anonymous.assertHeader('location', '/login')
+  })
+
+  test('opening the page purges expired rows of the course and audits the user', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const old = await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await age(old.batch, 31)
+
+    const response = await openTrash(client, route('courses.trash', { id: f.course.id }), f.owner)
+    response.assertStatus(200)
+    assert.lengthOf((response.inertiaProps as TrashPageProps).rows, 0)
+    assert.isNull(await db.from('course_contents').where('id', f.c4.id).first())
+    const rows = await audits('course.trash.purge').where('resource_id', String(f.course.id))
+    assert.lengthOf(rows, 1)
+    assert.equal(rows[0].metadata?.trigger, 'page')
+    assert.equal(rows[0].userId, f.owner.id)
+  })
+
+  test('a failing lazy purge does not break the page', async ({ client, route }) => {
+    const f = await fixture()
+    const original = TrashPurgeService.purgeExpired
+    TrashPurgeService.purgeExpired = async () => {
+      throw new Error('boom')
+    }
+    try {
+      const url = route('courses.trash', { id: f.course.id })
+      const response = await openTrash(client, url, f.owner)
+      response.assertStatus(200)
+    } finally {
+      TrashPurgeService.purgeExpired = original
+    }
+  })
+
+  test('emptyTrash: owner only, admins through before', async ({ assert }) => {
+    const f = await fixture()
+    const editor = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    const policy = new CoursePolicy()
+    assert.isTrue(policy.emptyTrash(f.owner, f.course))
+    assert.isFalse(policy.emptyTrash(editor, f.course))
+    assert.isTrue(await policy.before(admin, 'emptyTrash'))
+  })
+})
+
+const GONE = "Cet élément n'est plus dans la corbeille."
+
+/** Inertia-style POST: no Accept header, so the controller answers a redirect with a flash. */
+async function postHtml(client: ApiClient, url: string, user: User, body: Record<string, unknown>) {
+  const req = client.post(url).withCsrfToken()
+  return req.json(body).loginAs(user).redirects(0)
+}
+
+async function trashedCount(courseId: number) {
+  const rows = await TrashService.trashedRows(db.connection(), courseId)
+  return rows.length
+}
+
+async function field(table: 'course_modules' | 'course_contents', id: number, column: string) {
+  const row = await db.from(table).where('id', id).firstOrFail()
+  return row[column]
+}
+
+test.group('trash | actions', (group) => {
+  let storageRoot: string
+
+  group.each.setup(async () => {
+    storageRoot = await mkdtemp(join(tmpdir(), 'edonis-trash-actions-'))
+    const previous = env.get('CONTENT_STORAGE_PATH')
+    env.set('CONTENT_STORAGE_PATH', storageRoot)
+    const rollback = await testUtils.db().withGlobalTransaction()
+    return async () => {
+      await rollback()
+      env.set('CONTENT_STORAGE_PATH', previous ?? '')
+      await rm(storageRoot, { recursive: true, force: true })
+    }
+  })
+
+  test('restore puts a section back in place, flashes and audits once', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const { batch } = await trash(f.course.id, [f.s1.id], [], f.owner.id)
+
+    const url = route('courses.trash.restore', { id: f.course.id })
+    const response = await postHtml(client, url, f.owner, { kind: 'section', id: f.s1.id })
+    response.assertStatus(302)
+    assert.equal(response.flashMessage('success'), '« S1 » a été restauré.')
+    const s1 = await rawSection(f.s1.id)
+    assert.isNull(s1.deleted_at)
+    assert.isNull(s1.parent_id)
+    assert.equal(await trashedCount(f.course.id), 0)
+
+    const rows = await audits('course.trash.restore').where('resource_id', String(f.course.id))
+    assert.lengthOf(rows, 1)
+    assert.deepEqual(rows[0].metadata, {
+      courseId: f.course.id,
+      batch,
+      sectionIds: [f.s1.id, f.s11.id].sort(byId),
+      contentIds: [f.c1.id, f.c2.id, f.c3.id].sort(byId),
+      toParentId: null,
+      fallback: false,
+    })
+  })
+
+  test('a content whose section is trashed is refused, then restored with or into a section', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await trash(f.course.id, [f.s2.id], [], f.owner.id)
+    const url = route('courses.trash.restore', { id: f.course.id })
+    const item = { kind: 'content', id: f.c4.id }
+
+    const refused = await postHtml(client, url, f.owner, item)
+    refused.assertStatus(302)
+    assert.equal(
+      refused.flashMessage('error'),
+      'La section de ce contenu est dans la corbeille. Restaurez-la ou choisissez une autre section.'
+    )
+    const json = await postJson(client, url, f.owner, item)
+    json.assertStatus(409)
+    assert.equal(json.body().code, 'E_PARENT_TRASHED')
+    assert.deepEqual(json.body().section, { id: f.s2.id, title: 'S2' })
+    assert.isNotNull(await field('course_contents', f.c4.id, 'deleted_at'))
+    assert.lengthOf(await audits('course.trash.restore'), 0)
+
+    const into = await postHtml(client, url, f.owner, { ...item, moduleId: f.s1.id })
+    assert.equal(into.flashMessage('success'), '« c4 » a été restauré dans « S1 ».')
+    assert.equal(Number(await field('course_contents', f.c4.id, 'module_id')), f.s1.id)
+  })
+
+  test('withSection restores the section too', async ({ client, route, assert }) => {
+    const f = await fixture()
+    await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await trash(f.course.id, [f.s2.id], [], f.owner.id)
+    const url = route('courses.trash.restore', { id: f.course.id })
+
+    const body = { kind: 'content', id: f.c4.id, withSection: true }
+    const response = await postHtml(client, url, f.owner, body)
+    assert.equal(response.flashMessage('success'), '« c4 » et la section « S2 » ont été restaurés.')
+    assert.equal(await trashedCount(f.course.id), 0)
+  })
+
+  test('a section whose parent is trashed falls back to the end of the course', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    await trash(f.course.id, [f.s11.id], [], f.owner.id)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+    const url = route('courses.trash.restore', { id: f.course.id })
+
+    const response = await postHtml(client, url, f.owner, { kind: 'section', id: f.s11.id })
+    assert.equal(
+      response.flashMessage('success'),
+      "« S11 » a été restauré à la fin du cours : sa section d'origine n'existe plus ou n'accepte plus de sous-section."
+    )
+    assert.isNull(await field('course_modules', f.s11.id, 'parent_id'))
+  })
+
+  test('restoring twice answers « no longer in the trash »', async ({ client, route, assert }) => {
+    const f = await fixture()
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+    const url = route('courses.trash.restore', { id: f.course.id })
+    const item = { kind: 'section', id: f.s1.id }
+
+    await postHtml(client, url, f.owner, item)
+    const again = await postHtml(client, url, f.owner, item)
+    assert.equal(again.flashMessage('error'), GONE)
+    const json = await postJson(client, url, f.owner, item)
+    json.assertStatus(404)
+    assert.equal(json.body().code, 'E_NOT_IN_TRASH')
+    assert.lengthOf(await audits('course.trash.restore'), 1)
+  })
+
+  test('restore-batch undoes a builder bulk delete', async ({ client, route, assert }) => {
+    const f = await fixture()
+    const deleteUrl = route('courses.bulk.delete', { id: f.course.id })
+    const items = [{ kind: 'section', id: f.s1.id, updatedAt: token(f.s1) }]
+    const deleted = await postJson(client, deleteUrl, f.owner, { items })
+    deleted.assertStatus(200)
+
+    const url = route('courses.trash.restoreBatch', { id: f.course.id })
+    const response = await postJson(client, url, f.owner, { batch: deleted.body().batch })
+    response.assertStatus(200)
+    const body = response.body()
+    assert.includeMembers(body.affected.sectionIds, [f.s1.id, f.s11.id])
+    assert.includeMembers(body.affected.contentIds, [f.c1.id, f.c2.id, f.c3.id])
+    assert.deepEqual(body.deleted, { sectionIds: [], contentIds: [] })
+    assert.include(
+      body.sections.map((s: { id: number }) => s.id),
+      f.s1.id
+    )
+    assert.include(
+      body.contents.map((c: { id: number }) => c.id),
+      f.c3.id
+    )
+    assert.lengthOf(await audits('course.trash.restore'), 1)
+  })
+
+  test('restore-batch refuses unknown, foreign and malformed batches', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const other = await fixture()
+    const { batch } = await trash(other.course.id, [other.s1.id], [], other.owner.id)
+    const url = route('courses.trash.restoreBatch', { id: f.course.id })
+
+    for (const candidate of ['00000000-0000-4000-8000-000000000000', batch]) {
+      const response = await postJson(client, url, f.owner, { batch: candidate })
+      response.assertStatus(404)
+      assert.equal(response.body().code, 'E_NOT_IN_TRASH')
+    }
+    const invalid = await postJson(client, url, f.owner, { batch: 'nope' })
+    invalid.assertStatus(422)
+    assert.isNotNull(await field('course_modules', other.s1.id, 'deleted_at'))
+  })
+
+  test('the owner deletes a section for good with earlier-trashed children and orphan blobs', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const blob = join(storageRoot, f.file.storagePath)
+    await mkdir(dirname(blob), { recursive: true })
+    await writeFile(blob, 'blob')
+    await trash(f.course.id, [], [f.c2.id], f.owner.id)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+
+    const url = route('courses.trash.delete', { id: f.course.id })
+    const response = await postHtml(client, url, f.owner, { kind: 'section', id: f.s1.id })
+    response.assertStatus(302)
+    assert.equal(response.flashMessage('success'), '« S1 » a été supprimé définitivement.')
+    for (const id of [f.s1.id, f.s11.id]) {
+      assert.isNull(await db.from('course_modules').where('id', id).first())
+    }
+    for (const id of [f.c1.id, f.c2.id, f.c3.id]) {
+      assert.isNull(await db.from('course_contents').where('id', id).first())
+    }
+    assert.isNull(await db.from('content_files').where('id', f.file.id).first())
+    await assert.rejects(() => access(blob))
+    assert.isNull(await field('course_contents', f.c4.id, 'deleted_at'))
+
+    const rows = await audits('course.trash.delete').where('resource_id', String(f.course.id))
+    assert.lengthOf(rows, 1)
+    assert.deepEqual(rows[0].metadata, {
+      courseId: f.course.id,
+      sectionIds: [f.s1.id, f.s11.id].sort(byId),
+      contentIds: [f.c1.id, f.c2.id, f.c3.id].sort(byId),
+      fileIds: [f.file.id],
+    })
+  })
+
+  test('the owner empties the trash; live rows stay', async ({ client, route, assert }) => {
+    const f = await fixture()
+    await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await trash(f.course.id, [f.s11.id], [], f.owner.id)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+
+    const url = route('courses.trash.empty', { id: f.course.id })
+    const response = await postHtml(client, url, f.owner, {})
+    response.assertStatus(302)
+    assert.equal(response.flashMessage('success'), 'Corbeille vidée.')
+    assert.equal(await trashedCount(f.course.id), 0)
+    assert.isNull(await field('course_modules', f.s2.id, 'deleted_at'))
+    const rows = await audits('course.trash.empty').where('resource_id', String(f.course.id))
+    assert.lengthOf(rows, 1)
+    assert.deepEqual(rows[0].metadata?.contentIds, [f.c1.id, f.c2.id, f.c3.id, f.c4.id].sort(byId))
+  })
+
+  test('collaborators restore but cannot delete or empty; admins can', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    await trash(f.course.id, [], [f.c4.id], f.owner.id)
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+    const editor = await createUser({ roles: ['teacher'] })
+    const manager = await createUser({ roles: ['teacher'] })
+    const admin = await createUser({ roles: ['admin'] })
+    await grantPermission(f.course, editor, 'edit')
+    await grantPermission(f.course, manager, 'manage')
+    const deleteUrl = route('courses.trash.delete', { id: f.course.id })
+    const emptyUrl = route('courses.trash.empty', { id: f.course.id })
+
+    for (const user of [editor, manager]) {
+      const del = await postHtml(client, deleteUrl, user, { kind: 'section', id: f.s1.id })
+      del.assertStatus(403)
+      const emptied = await postHtml(client, emptyUrl, user, {})
+      emptied.assertStatus(403)
+    }
+    assert.equal(await trashedCount(f.course.id), 6)
+
+    const restoreUrl = route('courses.trash.restore', { id: f.course.id })
+    const restored = await postHtml(client, restoreUrl, editor, { kind: 'content', id: f.c4.id })
+    restored.assertStatus(302)
+    assert.equal(restored.flashMessage('success'), '« c4 » a été restauré.')
+
+    const byAdmin = await postHtml(client, deleteUrl, admin, { kind: 'section', id: f.s1.id })
+    byAdmin.assertStatus(302)
+    assert.equal(byAdmin.flashMessage('success'), '« S1 » a été supprimé définitivement.')
+    assert.equal(await trashedCount(f.course.id), 0)
+  })
+
+  test('ids of another course, live, unknown or purged ids are not in the trash', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const f = await fixture()
+    const other = await fixture()
+    await trash(other.course.id, [other.s1.id], [], other.owner.id)
+    await trash(f.course.id, [], [f.c1.id], f.owner.id)
+    const restoreUrl = route('courses.trash.restore', { id: f.course.id })
+    const deleteUrl = route('courses.trash.delete', { id: f.course.id })
+
+    const foreign = { kind: 'section', id: other.s1.id }
+    const restored = await postHtml(client, restoreUrl, f.owner, foreign)
+    assert.equal(restored.flashMessage('error'), GONE)
+
+    await postHtml(client, deleteUrl, f.owner, { kind: 'content', id: f.c1.id })
+    for (const item of [
+      foreign,
+      { kind: 'section', id: f.s2.id },
+      { kind: 'content', id: 999999 },
+    ]) {
+      const response = await postHtml(client, deleteUrl, f.owner, item)
+      assert.equal(response.flashMessage('error'), GONE)
+    }
+    const json = await postJson(client, deleteUrl, f.owner, { kind: 'content', id: f.c1.id })
+    json.assertStatus(404)
+    assert.equal(json.body().code, 'E_NOT_IN_TRASH')
+
+    assert.isNotNull(await field('course_modules', other.s1.id, 'deleted_at'))
+    assert.isNull(await field('course_modules', f.s2.id, 'deleted_at'))
+    assert.lengthOf(await audits('course.trash.delete'), 1)
+  })
+
+  test('delete-impact counts learners on trashed contents', async ({ client, route, assert }) => {
+    const f = await fixture()
+    await trash(f.course.id, [f.s1.id], [], f.owner.id)
+    const url = route('courses.builder.deleteImpact', { id: f.course.id })
+    const response = await postJson(client, url, f.owner, { contentIds: [f.c3.id] })
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), { learners: 1 })
   })
 })

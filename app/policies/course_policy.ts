@@ -78,6 +78,13 @@ export default class CoursePolicy extends BasePolicy {
   }
 
   /**
+   * Permanent delete and empty trash: owner only, admins via before (D-10).
+   */
+  emptyTrash(user: User, course: Course): AuthorizerResponse {
+    return course.instructorId === user.id
+  }
+
+  /**
    * Admin-only actions. Admins pass via `before`; everyone else is denied.
    */
   administer(_user: User): AuthorizerResponse {

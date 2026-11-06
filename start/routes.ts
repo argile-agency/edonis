@@ -27,6 +27,7 @@ const CategoriesController = () => import('#controllers/categories_controller')
 const EvaluationsController = () => import('#controllers/evaluations_controller')
 const CourseContentsController = () => import('#controllers/course_contents_controller')
 const CourseBulkActionsController = () => import('#controllers/course_bulk_actions_controller')
+const TrashController = () => import('#controllers/trash_controller')
 const PagesController = () => import('#controllers/pages_controller')
 const GradesController = () => import('#controllers/grades_controller')
 const ProfileController = () => import('#controllers/profile_controller')
@@ -425,6 +426,19 @@ router
     router
       .post('/courses/:id/builder/delete-impact', [CourseBulkActionsController, 'deleteImpact'])
       .as('courses.builder.deleteImpact')
+
+    // Course trash (delete and empty: owner and admins, see CoursePolicy.emptyTrash)
+    router.get('/courses/:id/trash', [TrashController, 'index']).as('courses.trash')
+    router
+      .post('/courses/:id/trash/restore', [TrashController, 'restore'])
+      .as('courses.trash.restore')
+    router
+      .post('/courses/:id/trash/restore-batch', [TrashController, 'restoreBatch'])
+      .as('courses.trash.restoreBatch')
+    router
+      .post('/courses/:id/trash/delete', [TrashController, 'destroy'])
+      .as('courses.trash.delete')
+    router.post('/courses/:id/trash/empty', [TrashController, 'empty']).as('courses.trash.empty')
   })
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
