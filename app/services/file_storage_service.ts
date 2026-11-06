@@ -221,6 +221,15 @@ export default class FileStorageService {
   }
 
   /**
+   * Remove a stored blob by its relative path. Never throws: a path outside
+   * the storage root is ignored, and a missing or locked file is left alone.
+   */
+  async deleteBlob(storagePath: string): Promise<void> {
+    const path = this.resolvePath(storagePath)
+    if (path) await unlink(path).catch(() => {})
+  }
+
+  /**
    * Compute a SHA-256 checksum by streaming (constant memory for large files).
    */
   computeChecksum(filePath: string): Promise<string> {

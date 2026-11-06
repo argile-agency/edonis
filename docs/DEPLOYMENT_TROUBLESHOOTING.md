@@ -103,6 +103,18 @@ ls node_modules/mysql2 build/node_modules/mysql2
 grep -E '^(NODE_ENV|APP_KEY|HOST|PORT|DB_CONNECTION|DB_HOST|DB_USER|DB_DATABASE)=' build/.env
 ```
 
+## Nightly trash purge (optional)
+
+Deleted sections and contents stay in the course trash for the retention set in `/admin/settings` → « Corbeille » (default 30 days). Expired items are physically deleted, with their files when no other content uses them.
+
+- **Cron (optional):** if the hosting offers scheduled tasks (not verified on the managed Node.js offer), run once a night:
+  ```bash
+  cd build && node ace trash:purge
+  ```
+  It exits non-zero if a course failed; each purged course writes a `course.trash.purge` audit row.
+- **Without cron:** opening a course's trash page purges that course's expired items, so nothing is required.
+- **Preview:** `cd build && node ace trash:purge --dry-run` lists what would be purged without deleting.
+
 ## Support ticket template (MariaDB host blocked)
 
 > Bonjour,
