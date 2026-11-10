@@ -401,6 +401,29 @@ Plans:
 
 - [ ] 05.2-10-PLAN.md — Full gate, migration check, validation sign-off, French walkthrough (checkpoint, not autonomous) [TRASH-01..TRASH-10]
 
+### Phase 05.3: Header user zone and site administration hub (INSERTED)
+
+**Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-10 by the owner, modelled on the Moodle header so users moving from Moodle keep their habits. Not in the v0.1 capacity figures yet: size it at planning (owner estimate ~1-2 🟡 A days).
+**Goal:** The header's user zone works like Moodle's (admin shortcut, course search, notification and message entry points, avatar menu with a caret, edit-mode switch inside a course), and admins reach every platform setting from one site administration page
+**Requirements**: TBD (to define at discuss/plan)
+**Depends on:** Phase 5.2
+**Plans:** 0 plans
+
+**Scope from the owner (2026-11-10):**
+
+- User zone, left to right: admin icon (wrench/screwdriver, admins only, opens the site administration page), course search field with a magnifier icon, notification bell, message button, avatar with a caret showing it opens a menu, then the « Mode d'édition » switch
+- Bell and message button are placeholders: visible, disabled, « bientôt disponible » tooltip. Notifications and messaging become their own later phases (none exist in the codebase today)
+- Search covers the courses the user can see (title and description), not a global search
+- « Mode d'édition » shows only inside a course, for users who can edit it: on opens the builder, off returns to the learner view; the choice is remembered per user
+- Avatar menu gives access to every site setting and administration page, as in Moodle
+- New site administration page: tabs by area (e.g. Général, Utilisateurs, Cours, Notes, Rapports) listing links to the existing admin pages (platform settings, users, categories, course approval queue, audit logs)
+- Excluded: the third-party portfolio icon from the reference screenshot
+- Keeps the « header on every page » rule (no page loses the navigation header)
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 05.3 to break down)
+
 ### Phase 6: Page Content
 
 **Milestone**: v0.1 MVP (2026-12-20). **Editor decided by the owner on 2026-10-31 (RECONCILIATION C1):** a WYSIWYG editor of the Tiptap class ("better than TinyMCE"), with a source mode to edit raw HTML and code blocks inside a sanitized field — allow-list sanitizer on save and on render, no script, event handler or `javascript:` URL ever executes (PAGE-06, PAGE-08). Typed JSON blocks and revisions stay in v1.1 (EDITOR-V11-01). 🟡 ~10-20 d (the vault's figure for Tiptap + blocks; the editor alone sits at the low end). Plan 06-01 "TipTap editor integration" stands.
@@ -555,7 +578,7 @@ Plans:
 ## Progress
 
 **Execution Order (realigned 2026-10-31):**
-v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
+v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 5.3 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -566,6 +589,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 6 -> 3 · v1.0 (option (
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
 | 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
 | 5.2. Trash and soft delete | 9/10 | In Progress|  |
+| 5.3. Header user zone and site administration hub | 0/0 | Not started | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |

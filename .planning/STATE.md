@@ -201,6 +201,8 @@ Recent decisions affecting current work:
 
 - Phase 12 (ex-9, Permissions) now depends on the Phase 2 policy layer
 
+- Phase 05.3 inserted after Phase 5.2 (2026-11-10): Header user zone and site administration hub, Moodle-style header (admin shortcut, course search, placeholder bell and messages, avatar caret, edit-mode switch) and a site administration hub
+
 ### Pending Todos
 
 - ~~`docs/DEPLOYMENT_TROUBLESHOOTING.md` untracked~~ — reviewed for secrets
