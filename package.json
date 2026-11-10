@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "overrides": {
+    "jsonschema": "1.4.1"
+  },
   "license": "Apache-2.0",
   "scripts": {
     "start": "node bin/server.js",

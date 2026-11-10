@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Pin Node: with the runner default (20.x) ace rejects every command at load; dev runs 22
+      # Pin Node 22 for reproducible runs (ace commands also need the jsonschema override in package.json on Node 24)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -48,7 +48,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Pin Node: with the runner default (20.x) ace rejects every command at load; dev runs 22
+      # Pin Node 22 for reproducible runs (ace commands also need the jsonschema override in package.json on Node 24)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -80,7 +80,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Pin Node: with the runner default (20.x) ace rejects every command at load; dev runs 22
+      # Pin Node 22 for reproducible runs (ace commands also need the jsonschema override in package.json on Node 24)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -177,7 +177,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Pin Node: with the runner default (20.x) ace rejects every command at load; dev runs 22
+      # Pin Node 22 for reproducible runs (ace commands also need the jsonschema override in package.json on Node 24)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
