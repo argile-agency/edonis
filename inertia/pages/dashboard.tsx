@@ -5,6 +5,7 @@ import { Badge } from '~/components/ui/badge'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Users, BookOpen, ClipboardList, Award, Info } from 'lucide-react'
 import AppHeader from '~/components/layout/app-header'
+import AppFooter from '~/components/layout/app-footer'
 
 interface Role {
   id: number
@@ -60,13 +61,13 @@ export default function Dashboard({ user, auth, appSettings, menus }: Props) {
     <>
       <Head title="Dashboard" />
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
 
         {/* User Info Section */}
         <div className="border-b bg-card">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-primary text-primary-foreground text-xl">
@@ -82,7 +83,7 @@ export default function Dashboard({ user, auth, appSettings, menus }: Props) {
         </div>
 
         {/* Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main id="main-content" className="flex-1 w-full container mx-auto px-4 py-8">
           {/* Info Box */}
           <Card className="border-primary/50 bg-primary/5 mb-8">
             <CardHeader>
@@ -288,6 +289,7 @@ export default function Dashboard({ user, auth, appSettings, menus }: Props) {
             </div>
           </div>
         </main>
+        <AppFooter appSettings={appSettings} menus={menus} />
       </div>
     </>
   )

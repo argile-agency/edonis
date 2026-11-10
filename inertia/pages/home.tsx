@@ -3,6 +3,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Badge } from '~/components/ui/badge'
 import AppHeader from '~/components/layout/app-header'
+import AppFooter from '~/components/layout/app-footer'
 import {
   BookOpen,
   GraduationCap,
@@ -15,13 +16,8 @@ import {
   FileText,
   LayoutDashboard,
   PlusCircle,
-  Mail,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Github,
 } from 'lucide-react'
-import { isExternalUrl, isSafeImageSrc, isSafeLink } from '~/lib/safe_url'
+import { isSafeImageSrc } from '~/lib/safe_url'
 
 interface Role {
   id: number
@@ -51,13 +47,6 @@ interface AppSettings {
   supportUrl?: string | null
   socialLinks?: Record<string, string | null> | null
 }
-
-const SOCIAL_LINKS = [
-  { key: 'facebook', label: 'Facebook', Icon: Facebook },
-  { key: 'twitter', label: 'X', Icon: Twitter },
-  { key: 'linkedin', label: 'LinkedIn', Icon: Linkedin },
-  { key: 'github', label: 'GitHub', Icon: Github },
-] as const
 
 // Plain text only; the contact email (first occurrence) becomes a mailto link.
 function AnnouncementText({ text, email }: { text: string; email: string | null | undefined }) {
@@ -162,14 +151,6 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
   const registrationOpen = !appSettings || Boolean(appSettings.allowRegistration)
   const announcement = settings.announcementText?.trim()
   const contactEmail = settings.contactEmail?.trim()
-  const supportUrl = isSafeLink(settings.supportUrl) ? settings.supportUrl : null
-  // Defence in depth: the model consume parses socialLinks, but never iterate a raw JSON string.
-  const socialSource = typeof settings.socialLinks === 'object' ? settings.socialLinks : null
-  const socials = SOCIAL_LINKS.flatMap((s) => {
-    const url = socialSource?.[s.key]
-    return isSafeLink(url) && url.startsWith('http') ? [{ ...s, url }] : []
-  })
-  const hasContact = Boolean(contactEmail || supportUrl || socials.length)
 
   // Déterminer le rôle principal de l'utilisateur
   const isStudent = user?.roles?.some((r) => r.slug === 'student')
@@ -200,67 +181,7 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
           {user && isAdmin && !isStudent && !isInstructor && <AdminHomePage user={user} />}
         </main>
 
-        {/* Footer avec menu dynamique */}
-        <footer className="border-t bg-muted/50 mt-20">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex gap-6">
-                {menus.footer.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.url}
-                    className="text-sm text-muted-foreground hover:text-foreground transition"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-              {hasContact && (
-                <div className="flex items-center gap-4">
-                  {contactEmail && (
-                    <span className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <a
-                        href={'mailto:' + contactEmail}
-                        className="text-sm text-muted-foreground hover:text-foreground transition"
-                      >
-                        {contactEmail}
-                      </a>
-                    </span>
-                  )}
-                  {/* Plain anchor: a path may be a static file, which an Inertia visit cannot open. */}
-                  {supportUrl && (
-                    <a
-                      href={supportUrl}
-                      {...(isExternalUrl(supportUrl) && {
-                        target: '_blank',
-                        rel: 'noopener noreferrer',
-                      })}
-                      className="text-sm text-muted-foreground hover:text-foreground transition"
-                    >
-                      Aide et support
-                    </a>
-                  )}
-                  {socials.map(({ key, label, Icon, url }) => (
-                    <a
-                      key={key}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${settings.appName} sur ${label}`}
-                      className="p-2 -m-2 text-muted-foreground hover:text-foreground transition"
-                    >
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </a>
-                  ))}
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                © {new Date().getFullYear()} {settings.appName}. Tous droits réservés.
-              </p>
-            </div>
-          </div>
-        </footer>
+        <AppFooter appSettings={settings} menus={menus} />
       </div>
     </>
   )
