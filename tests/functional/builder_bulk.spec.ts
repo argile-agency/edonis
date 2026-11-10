@@ -76,7 +76,7 @@ async function postBulk(client: ApiClient, url: string, user: User, body: Record
 
 async function bulkAudits(courseId: number) {
   return AuditLog.query()
-    .whereLike('action', 'course.bulk.%')
+    .where('action', 'like', 'course.bulk.%')
     .where('resource_id', String(courseId))
 }
 

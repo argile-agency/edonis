@@ -220,7 +220,7 @@ test.group('Course builder - bulk actions', (group) => {
     assert.isTrue(after.every((c) => !c.isPublished))
 
     const audits = await AuditLog.query()
-      .whereLike('action', 'course.bulk.%')
+      .where('action', 'like', 'course.bulk.%')
       .where('resource_id', String(f.course.id))
     assert.lengthOf(audits, 2)
   })
