@@ -16,6 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { ArrowLeft, Trash2, Upload, ShieldCheck } from 'lucide-react'
+import AppHeader from '~/components/layout/app-header'
 
 interface User {
   id: number
@@ -43,6 +44,9 @@ interface User {
 
 interface Props {
   user: User
+  auth: { user: any }
+  appSettings: any
+  menus: any
 }
 
 const TIMEZONES = [
@@ -116,7 +120,7 @@ function getInitials(user: User): string {
   return user.email[0].toUpperCase()
 }
 
-export default function ProfileEdit({ user }: Props) {
+export default function ProfileEdit({ user, auth, appSettings, menus }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
@@ -202,8 +206,9 @@ export default function ProfileEdit({ user }: Props) {
     <>
       <Head title="Mon profil" />
       <FlashMessages />
+      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
 
-      <div className="min-h-screen bg-background py-8">
+      <div className="bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">

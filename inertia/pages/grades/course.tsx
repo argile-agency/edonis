@@ -22,6 +22,7 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react'
+import AppHeader from '~/components/layout/app-header'
 
 interface Course {
   id: number
@@ -112,6 +113,9 @@ interface Props {
   // Instructor props
   assignments?: Assignment[]
   gradebook?: StudentGradebook[]
+  auth: { user: any }
+  appSettings: any
+  menus: any
 }
 
 export default function GradesCourse({
@@ -125,6 +129,9 @@ export default function GradesCourse({
   gradedCount,
   assignments,
   gradebook,
+  auth,
+  appSettings,
+  menus,
 }: Props) {
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'text-muted-foreground'
@@ -194,6 +201,7 @@ export default function GradesCourse({
   return (
     <>
       <Head title={`Notes - ${course.code}`} />
+      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
 
       <div className="container mx-auto py-8 px-4">
         {/* Header */}

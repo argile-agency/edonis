@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import { Badge } from '~/components/ui/badge'
 import { Progress } from '~/components/ui/progress'
 import { BookOpen, Award, TrendingUp, Clock } from 'lucide-react'
+import AppHeader from '~/components/layout/app-header'
 
 interface Course {
   id: number
@@ -26,9 +27,12 @@ interface GradeData {
 
 interface Props {
   grades: GradeData[]
+  auth: { user: any }
+  appSettings: any
+  menus: any
 }
 
-export default function GradesIndex({ grades }: Props) {
+export default function GradesIndex({ grades, auth, appSettings, menus }: Props) {
   // Calculate overall statistics
   const totalAssignments = grades.reduce((sum, g) => sum + g.assignmentCount, 0)
   const totalSubmitted = grades.reduce((sum, g) => sum + g.submittedCount, 0)
@@ -66,6 +70,7 @@ export default function GradesIndex({ grades }: Props) {
   return (
     <>
       <Head title="Mes Notes" />
+      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
 
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">

@@ -24,6 +24,7 @@ import {
   Link2,
   Unlink,
 } from 'lucide-react'
+import AppHeader from '~/components/layout/app-header'
 
 interface User {
   id: number
@@ -43,6 +44,9 @@ interface SocialAccountData {
 interface Props {
   user: User
   socialAccounts?: SocialAccountData[]
+  auth: { user: any }
+  appSettings: any
+  menus: any
 }
 
 const TIMEZONES = [
@@ -99,7 +103,13 @@ const PROVIDERS: Record<string, string> = {
   github: 'GitHub',
 }
 
-export default function SettingsIndex({ user, socialAccounts = [] }: Props) {
+export default function SettingsIndex({
+  user,
+  socialAccounts = [],
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const { data, setData, put, processing } = useForm({
     locale: user.locale || 'fr',
     timezone: user.timezone || 'Europe/Paris',
@@ -115,8 +125,9 @@ export default function SettingsIndex({ user, socialAccounts = [] }: Props) {
     <>
       <Head title="Paramètres" />
       <FlashMessages />
+      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
 
-      <div className="min-h-screen bg-background py-8">
+      <div className="bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
