@@ -35,7 +35,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Instructor {
   id: number
@@ -237,9 +237,7 @@ export default function ShowCourse({
     <>
       <Head title={course.title} />
 
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="mb-6">
           <Link href="/courses">
             <Button variant="ghost" size="sm">
@@ -517,7 +515,7 @@ export default function ShowCourse({
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+      </AppLayout>
     </>
   )
 }

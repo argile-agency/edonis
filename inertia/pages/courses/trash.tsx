@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 import { MoveTargetList } from '~/components/builder/move-target-list'
 import { dayCount, LearnerImpact } from '~/components/builder/learner-impact'
 import { elements } from '~/components/builder/bulk-action-bar'
@@ -206,9 +207,7 @@ export default function CourseTrash({
     <>
       <Head title={`Corbeille - ${course.title}`} />
 
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <main id="main-content" className="container mx-auto px-4 py-8">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
           <div>
             <Link href={`/courses/${course.id}/builder`}>
@@ -357,104 +356,148 @@ export default function CourseTrash({
             </CardContent>
           </Card>
         )}
-      </main>
 
-      {/* R1 — D-05: the content's section is in the trash too. */}
-      <Dialog open={open && restoreDialog !== null} onOpenChange={setOpen}>
-        {restoreDialog && restoreDialog.row.sectionTrashed && (
-          <DialogContent onCloseAutoFocus={closeAutoFocus}>
-            <DialogHeader>
-              <DialogTitle>Restaurer « {restoreDialog.row.title} »</DialogTitle>
-              <DialogDescription>
-                {restoreDialog.step === 1
-                  ? `Sa section « ${restoreDialog.row.sectionTrashed.title} » est aussi dans la corbeille.`
-                  : 'Choisissez la section de destination. Le contenu sera placé à la fin.'}
-              </DialogDescription>
-            </DialogHeader>
-            {restoreDialog.step === 1 ? (
-              <div className="flex flex-col gap-2">
-                <Button
+        {/* R1 — D-05: the content's section is in the trash too. */}
+        <Dialog open={open && restoreDialog !== null} onOpenChange={setOpen}>
+          {restoreDialog && restoreDialog.row.sectionTrashed && (
+            <DialogContent onCloseAutoFocus={closeAutoFocus}>
+              <DialogHeader>
+                <DialogTitle>Restaurer « {restoreDialog.row.title} »</DialogTitle>
+                <DialogDescription>
+                  {restoreDialog.step === 1
+                    ? `Sa section « ${restoreDialog.row.sectionTrashed.title} » est aussi dans la corbeille.`
+                    : 'Choisissez la section de destination. Le contenu sera placé à la fin.'}
+                </DialogDescription>
+              </DialogHeader>
+              {restoreDialog.step === 1 ? (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={() => {
+                      const { row, index } = restoreDialog
+                      submitConfirmed()
+                      post(
+                        'restore',
+                        { kind: row.kind, id: row.id, withSection: true },
+                        restoreId(row),
+                        index
+                      )
+                    }}
+                  >
+                    Restaurer aussi la section « {restoreDialog.row.sectionTrashed.title} »
+                  </Button>
+                  <Button
+                    id="trash-restore-other"
+                    variant="outline"
+                    onClick={() => {
+                      setDialog({ ...restoreDialog, step: 2 })
+                      requestAnimationFrame(() =>
+                        document
+                          .querySelector<HTMLButtonElement>(`#trash-restore-targets button`)
+                          ?.focus()
+                      )
+                    }}
+                  >
+                    Restaurer dans une autre section…
+                  </Button>
+                </div>
+              ) : (
+                <div id="trash-restore-targets" className="space-y-2">
+                  <MoveTargetList
+                    idBase={`trash-${restoreDialog.row.id}`}
+                    targets={moveTargets}
+                    onChoose={(moduleId) => {
+                      const { row, index } = restoreDialog
+                      submitConfirmed()
+                      post(
+                        'restore',
+                        { kind: row.kind, id: row.id, moduleId },
+                        restoreId(row),
+                        index
+                      )
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDialog({ ...restoreDialog, step: 1 })
+                      requestAnimationFrame(() =>
+                        document.getElementById('trash-restore-other')?.focus()
+                      )
+                    }}
+                  >
+                    Retour aux options
+                  </Button>
+                </div>
+              )}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Annuler</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          )}
+        </Dialog>
+
+        {/* P1 — permanent delete of one row. */}
+        <AlertDialog open={open && deleteDialog !== null} onOpenChange={setOpen}>
+          {deleteDialog && (
+            <AlertDialogContent onCloseAutoFocus={closeAutoFocus}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Supprimer définitivement « {deleteDialog.row.title} »
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deleteDialog.row.kind === 'section'
+                    ? 'Cette section sera supprimée définitivement avec ses sous-sections et contenus, y compris ceux mis à la corbeille séparément. Cette action est irréversible.'
+                    : 'Ce contenu sera supprimé définitivement. Cette action est irréversible.'}
+                </AlertDialogDescription>
+                {deleteDialog.row.contentIds.length > 0 && (
+                  <LearnerImpact
+                    open={open}
+                    variant="permanent"
+                    load={() => learnerImpact(deleteDialog.row.contentIds)}
+                    subject={deleteDialog.row.kind === 'section' ? 'cette section' : 'ce contenu'}
+                  />
+                )}
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={() => {
-                    const { row, index } = restoreDialog
+                    const { row, index } = deleteDialog
                     submitConfirmed()
                     post(
-                      'restore',
-                      { kind: row.kind, id: row.id, withSection: true },
-                      restoreId(row),
+                      'delete',
+                      { kind: row.kind, id: row.id },
+                      `trash-delete-${rowKey(row)}`,
                       index
                     )
                   }}
                 >
-                  Restaurer aussi la section « {restoreDialog.row.sectionTrashed.title} »
-                </Button>
-                <Button
-                  id="trash-restore-other"
-                  variant="outline"
-                  onClick={() => {
-                    setDialog({ ...restoreDialog, step: 2 })
-                    requestAnimationFrame(() =>
-                      document
-                        .querySelector<HTMLButtonElement>(`#trash-restore-targets button`)
-                        ?.focus()
-                    )
-                  }}
-                >
-                  Restaurer dans une autre section…
-                </Button>
-              </div>
-            ) : (
-              <div id="trash-restore-targets" className="space-y-2">
-                <MoveTargetList
-                  idBase={`trash-${restoreDialog.row.id}`}
-                  targets={moveTargets}
-                  onChoose={(moduleId) => {
-                    const { row, index } = restoreDialog
-                    submitConfirmed()
-                    post('restore', { kind: row.kind, id: row.id, moduleId }, restoreId(row), index)
-                  }}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDialog({ ...restoreDialog, step: 1 })
-                    requestAnimationFrame(() =>
-                      document.getElementById('trash-restore-other')?.focus()
-                    )
-                  }}
-                >
-                  Retour aux options
-                </Button>
-              </div>
-            )}
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Annuler</Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        )}
-      </Dialog>
+                  Supprimer définitivement
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          )}
+        </AlertDialog>
 
-      {/* P1 — permanent delete of one row. */}
-      <AlertDialog open={open && deleteDialog !== null} onOpenChange={setOpen}>
-        {deleteDialog && (
+        {/* P2 — empty the trash. */}
+        <AlertDialog open={open && dialog?.type === 'empty'} onOpenChange={setOpen}>
           <AlertDialogContent onCloseAutoFocus={closeAutoFocus}>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                Supprimer définitivement « {deleteDialog.row.title} »
-              </AlertDialogTitle>
+              <AlertDialogTitle>Vider la corbeille</AlertDialogTitle>
               <AlertDialogDescription>
-                {deleteDialog.row.kind === 'section'
-                  ? 'Cette section sera supprimée définitivement avec ses sous-sections et contenus, y compris ceux mis à la corbeille séparément. Cette action est irréversible.'
-                  : 'Ce contenu sera supprimé définitivement. Cette action est irréversible.'}
+                Les {elements(rows.length)} de la corbeille seront supprimés définitivement, avec
+                leurs sous-sections et contenus. Cette action est irréversible.
               </AlertDialogDescription>
-              {deleteDialog.row.contentIds.length > 0 && (
+              {allContentIds.length > 0 && (
                 <LearnerImpact
-                  open={open}
+                  open={open && dialog?.type === 'empty'}
                   variant="permanent"
-                  load={() => learnerImpact(deleteDialog.row.contentIds)}
-                  subject={deleteDialog.row.kind === 'section' ? 'cette section' : 'ce contenu'}
+                  load={() => learnerImpact(allContentIds)}
+                  subject="les éléments de la corbeille"
                 />
               )}
             </AlertDialogHeader>
@@ -463,55 +506,16 @@ export default function CourseTrash({
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={() => {
-                  const { row, index } = deleteDialog
                   submitConfirmed()
-                  post(
-                    'delete',
-                    { kind: row.kind, id: row.id },
-                    `trash-delete-${rowKey(row)}`,
-                    index
-                  )
+                  post('empty', {}, 'empty', 0)
                 }}
               >
-                Supprimer définitivement
+                Vider la corbeille
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        )}
-      </AlertDialog>
-
-      {/* P2 — empty the trash. */}
-      <AlertDialog open={open && dialog?.type === 'empty'} onOpenChange={setOpen}>
-        <AlertDialogContent onCloseAutoFocus={closeAutoFocus}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Vider la corbeille</AlertDialogTitle>
-            <AlertDialogDescription>
-              Les {elements(rows.length)} de la corbeille seront supprimés définitivement, avec
-              leurs sous-sections et contenus. Cette action est irréversible.
-            </AlertDialogDescription>
-            {allContentIds.length > 0 && (
-              <LearnerImpact
-                open={open && dialog?.type === 'empty'}
-                variant="permanent"
-                load={() => learnerImpact(allContentIds)}
-                subject="les éléments de la corbeille"
-              />
-            )}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                submitConfirmed()
-                post('empty', {}, 'empty', 0)
-              }}
-            >
-              Vider la corbeille
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </AlertDialog>
+      </AppLayout>
     </>
   )
 }

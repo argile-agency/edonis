@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Book, Calendar, Users, Search, Plus } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Instructor {
   id: number
@@ -150,9 +150,7 @@ export default function CoursesIndex({
     <>
       <Head title="Cours" />
 
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Cours</h1>
@@ -292,7 +290,7 @@ export default function CoursesIndex({
             ))}
           </div>
         )}
-      </div>
+      </AppLayout>
     </>
   )
 }

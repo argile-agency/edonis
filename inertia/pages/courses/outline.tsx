@@ -16,7 +16,7 @@ import {
   BookOpen,
   Target,
 } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -227,9 +227,7 @@ export default function CourseOutline({
     <>
       <Head title={`Plan du cours - ${course.title}`} />
 
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4 max-w-5xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-8">
           <Link href={`/courses/${course.id}/learn`}>
             <Button variant="ghost" size="sm" className="mb-4">
@@ -326,7 +324,7 @@ export default function CourseOutline({
             <div>{modules.map((module) => renderModule(module))}</div>
           )}
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

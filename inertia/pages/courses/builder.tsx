@@ -46,6 +46,7 @@ import {
 import { Label } from '~/components/ui/label'
 import { Switch } from '~/components/ui/switch'
 import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 import { BuilderRow, type BuilderRowProps } from '~/components/builder/builder-row'
 import type { DetailsValues } from '~/components/builder/details-panel'
 import { SaveStatus } from '~/components/builder/save-status'
@@ -854,9 +855,7 @@ export default function CourseBuilder(props: Props) {
     <>
       <Head title={`Éditeur - ${course.title}`} />
 
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="flex justify-between items-center mb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -975,163 +974,173 @@ export default function CourseBuilder(props: Props) {
             </DndContext>
           </>
         )}
-      </div>
 
-      {/* Create Module Dialog */}
-      <Dialog open={isModuleDialogOpen} onOpenChange={setIsModuleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau module</DialogTitle>
-            <DialogDescription>
-              Créez un nouveau module pour organiser votre contenu de cours
-            </DialogDescription>
-          </DialogHeader>
+        {/* Create Module Dialog */}
+        <Dialog open={isModuleDialogOpen} onOpenChange={setIsModuleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nouveau module</DialogTitle>
+              <DialogDescription>
+                Créez un nouveau module pour organiser votre contenu de cours
+              </DialogDescription>
+            </DialogHeader>
 
-          <form onSubmit={submitModule}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titre *</Label>
-                <Input
-                  id="title"
-                  value={moduleForm.data.title}
-                  onChange={(e) => moduleForm.setData('title', e.target.value)}
-                  required
-                />
-                {moduleForm.errors.title && (
-                  <p className="text-sm text-red-500">{moduleForm.errors.title}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={moduleForm.data.description}
-                  onChange={(e) => moduleForm.setData('description', e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isPublished"
-                  checked={moduleForm.data.isPublished}
-                  onCheckedChange={(checked) => moduleForm.setData('isPublished', checked)}
-                />
-                <Label htmlFor="isPublished">Publier immédiatement</Label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsModuleDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={moduleForm.processing}>
-                Créer
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Content Dialog */}
-      <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Nouveau contenu</DialogTitle>
-            <DialogDescription>Ajoutez du contenu à votre module</DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={submitContent}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="contentType">Type de contenu *</Label>
-                <Select
-                  value={contentForm.data.contentType}
-                  onValueChange={(value: ContentType) => contentForm.setData('contentType', value)}
-                >
-                  <SelectTrigger id="contentType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="page">Page de texte</SelectItem>
-                    <SelectItem value="video">Vidéo</SelectItem>
-                    <SelectItem value="file">Fichier</SelectItem>
-                    <SelectItem value="link">Lien externe</SelectItem>
-                    <SelectItem value="assignment">Devoir</SelectItem>
-                    <SelectItem value="quiz">Quiz</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contentTitle">Titre *</Label>
-                <Input
-                  id="contentTitle"
-                  value={contentForm.data.title}
-                  onChange={(e) => contentForm.setData('title', e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contentDescription">Description</Label>
-                <Textarea
-                  id="contentDescription"
-                  value={contentForm.data.description}
-                  onChange={(e) => contentForm.setData('description', e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              {contentForm.data.contentType === 'page' && (
+            <form onSubmit={submitModule}>
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="content">Contenu</Label>
-                  <Textarea
-                    id="content"
-                    value={contentForm.data.content}
-                    onChange={(e) => contentForm.setData('content', e.target.value)}
-                    rows={6}
-                    placeholder="Contenu HTML ou texte..."
-                  />
-                </div>
-              )}
-
-              {(contentForm.data.contentType === 'video' ||
-                contentForm.data.contentType === 'link') && (
-                <div className="space-y-2">
-                  <Label htmlFor="externalUrl">URL *</Label>
+                  <Label htmlFor="title">Titre *</Label>
                   <Input
-                    id="externalUrl"
-                    type="url"
-                    value={contentForm.data.externalUrl}
-                    onChange={(e) => contentForm.setData('externalUrl', e.target.value)}
-                    placeholder="https://..."
+                    id="title"
+                    value={moduleForm.data.title}
+                    onChange={(e) => moduleForm.setData('title', e.target.value)}
+                    required
+                  />
+                  {moduleForm.errors.title && (
+                    <p className="text-sm text-red-500">{moduleForm.errors.title}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={moduleForm.data.description}
+                    onChange={(e) => moduleForm.setData('description', e.target.value)}
+                    rows={3}
                   />
                 </div>
-              )}
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="contentIsPublished"
-                  checked={contentForm.data.isPublished}
-                  onCheckedChange={(checked) => contentForm.setData('isPublished', checked)}
-                />
-                <Label htmlFor="contentIsPublished">Publier immédiatement</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isPublished"
+                    checked={moduleForm.data.isPublished}
+                    onCheckedChange={(checked) => moduleForm.setData('isPublished', checked)}
+                  />
+                  <Label htmlFor="isPublished">Publier immédiatement</Label>
+                </div>
               </div>
-            </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsContentDialogOpen(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={contentForm.processing}>
-                Créer
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsModuleDialogOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={moduleForm.processing}>
+                  Créer
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Content Dialog */}
+        <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Nouveau contenu</DialogTitle>
+              <DialogDescription>Ajoutez du contenu à votre module</DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={submitContent}>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contentType">Type de contenu *</Label>
+                  <Select
+                    value={contentForm.data.contentType}
+                    onValueChange={(value: ContentType) =>
+                      contentForm.setData('contentType', value)
+                    }
+                  >
+                    <SelectTrigger id="contentType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="page">Page de texte</SelectItem>
+                      <SelectItem value="video">Vidéo</SelectItem>
+                      <SelectItem value="file">Fichier</SelectItem>
+                      <SelectItem value="link">Lien externe</SelectItem>
+                      <SelectItem value="assignment">Devoir</SelectItem>
+                      <SelectItem value="quiz">Quiz</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contentTitle">Titre *</Label>
+                  <Input
+                    id="contentTitle"
+                    value={contentForm.data.title}
+                    onChange={(e) => contentForm.setData('title', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contentDescription">Description</Label>
+                  <Textarea
+                    id="contentDescription"
+                    value={contentForm.data.description}
+                    onChange={(e) => contentForm.setData('description', e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                {contentForm.data.contentType === 'page' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="content">Contenu</Label>
+                    <Textarea
+                      id="content"
+                      value={contentForm.data.content}
+                      onChange={(e) => contentForm.setData('content', e.target.value)}
+                      rows={6}
+                      placeholder="Contenu HTML ou texte..."
+                    />
+                  </div>
+                )}
+
+                {(contentForm.data.contentType === 'video' ||
+                  contentForm.data.contentType === 'link') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="externalUrl">URL *</Label>
+                    <Input
+                      id="externalUrl"
+                      type="url"
+                      value={contentForm.data.externalUrl}
+                      onChange={(e) => contentForm.setData('externalUrl', e.target.value)}
+                      placeholder="https://..."
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="contentIsPublished"
+                    checked={contentForm.data.isPublished}
+                    onCheckedChange={(checked) => contentForm.setData('isPublished', checked)}
+                  />
+                  <Label htmlFor="contentIsPublished">Publier immédiatement</Label>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsContentDialogOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={contentForm.processing}>
+                  Créer
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </AppLayout>
     </>
   )
 }
