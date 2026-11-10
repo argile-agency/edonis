@@ -15,7 +15,7 @@ import {
   Download,
 } from 'lucide-react'
 import { Link } from '@inertiajs/react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Props {
   twoFactorEnabled: boolean
@@ -89,9 +89,7 @@ export default function TwoFactorSetup({ twoFactorEnabled, auth, appSettings, me
   return (
     <>
       <Head title="Double authentification" />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container max-w-2xl py-8">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link
             href="/user/settings"
@@ -255,7 +253,7 @@ export default function TwoFactorSetup({ twoFactorEnabled, auth, appSettings, me
             </Card>
           </>
         )}
-      </div>
+      </AppLayout>
     </>
   )
 }

@@ -22,7 +22,7 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -201,9 +201,7 @@ export default function GradesCourse({
   return (
     <>
       <Head title={`Notes - ${course.code}`} />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Header */}
         <div className="mb-6">
           <Link
@@ -577,7 +575,7 @@ export default function GradesCourse({
             </TabsContent>
           </Tabs>
         )}
-      </div>
+      </AppLayout>
     </>
   )
 }

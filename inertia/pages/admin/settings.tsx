@@ -2,7 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react'
 import { FormEvent, ReactNode, useState } from 'react'
 import { toast } from 'sonner'
 import { House, KeyRound, LifeBuoy, Palette, Trash2 } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
@@ -213,9 +213,7 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
   return (
     <>
       <Head title="Réglages de la plateforme" />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <main id="main-content" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Réglages de la plateforme</h1>
           <p className="text-muted-foreground mt-1">
@@ -659,7 +657,7 @@ export default function AdminSettings({ settings, activeTab, auth, appSettings, 
             </form>
           </TabsContent>
         </Tabs>
-      </main>
+      </AppLayout>
     </>
   )
 }

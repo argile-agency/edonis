@@ -17,7 +17,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Download, Trash2, ArrowLeft, Info, ChevronDown } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Props {
   user: any
@@ -46,9 +46,7 @@ export default function AccountIndex({ auth, appSettings, menus }: Props) {
   return (
     <>
       <Head title="Mon compte" />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container max-w-2xl py-8">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link
             href="/user/settings"
@@ -190,7 +188,7 @@ export default function AccountIndex({ auth, appSettings, menus }: Props) {
             )}
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }

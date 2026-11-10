@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import { Badge } from '~/components/ui/badge'
 import { Progress } from '~/components/ui/progress'
 import { BookOpen, Award, TrendingUp, Clock } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -70,9 +70,7 @@ export default function GradesIndex({ grades, auth, appSettings, menus }: Props)
   return (
     <>
       <Head title="Mes Notes" />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container mx-auto py-8 px-4">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Mes Notes</h1>
           <p className="text-muted-foreground mt-2">Vue d'ensemble de vos résultats académiques</p>
@@ -229,7 +227,7 @@ export default function GradesIndex({ grades, auth, appSettings, menus }: Props)
             ))
           )}
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

@@ -21,7 +21,7 @@ import {
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { ArrowLeft, Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import AppHeader from '~/components/layout/app-header'
+import AppLayout from '~/components/layout/app-layout'
 
 interface AuditLogEntry {
   id: number
@@ -126,9 +126,7 @@ export default function AuditLogs({
   return (
     <>
       <Head title="Audit Logs" />
-      <AppHeader user={auth.user} appSettings={appSettings} menus={menus} />
-
-      <div className="container py-8">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         <div className="mb-6">
           <Link
             href="/dashboard"
@@ -345,7 +343,7 @@ export default function AuditLogs({
             )}
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }
