@@ -180,7 +180,7 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
     <>
       <Head title="Accueil" />
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         {/* Header avec menu dynamique */}
         <AppHeader user={user} appSettings={appSettings} menus={menus} />
 
@@ -192,11 +192,13 @@ export default function Home({ auth, appSettings, menus, dashboardData }: Props)
           </div>
         )}
 
-        {/* Contenu principal basé sur le rôle */}
-        {!user && <PublicHomePage settings={settings} registrationOpen={registrationOpen} />}
-        {user && isStudent && <StudentHomePage user={user} data={dashboardData} />}
-        {user && isInstructor && <InstructorHomePage user={user} data={dashboardData} />}
-        {user && isAdmin && !isStudent && !isInstructor && <AdminHomePage user={user} />}
+        {/* Contenu principal basé sur le rôle; flex-1 keeps the footer at the bottom on short pages */}
+        <main className="flex-1">
+          {!user && <PublicHomePage settings={settings} registrationOpen={registrationOpen} />}
+          {user && isStudent && <StudentHomePage user={user} data={dashboardData} />}
+          {user && isInstructor && <InstructorHomePage user={user} data={dashboardData} />}
+          {user && isAdmin && !isStudent && !isInstructor && <AdminHomePage user={user} />}
+        </main>
 
         {/* Footer avec menu dynamique */}
         <footer className="border-t bg-muted/50 mt-20">
