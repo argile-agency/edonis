@@ -1,16 +1,22 @@
-import { Head, Link, usePage } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { ChevronLeft, Heart, Users, Target, Lightbulb } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
-export default function About() {
-  const { appSettings } = usePage<{ appSettings: { allowRegistration?: boolean } | null }>().props
+interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
+}
+
+export default function About({ auth, appSettings, menus }: Props) {
   const registrationOpen = !appSettings || Boolean(appSettings.allowRegistration)
   return (
     <>
       <Head title="À propos" />
 
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link href="/">
             <Button variant="ghost" size="sm">
@@ -183,7 +189,7 @@ export default function About() {
             </div>
           </div>
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

@@ -2,13 +2,20 @@ import { Head, Link } from '@inertiajs/react'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { ChevronLeft, Shield, Lock, Eye, Database, UserCheck, Globe } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
-export default function Privacy() {
+interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
+}
+
+export default function Privacy({ auth, appSettings, menus }: Props) {
   return (
     <>
       <Head title="Politique de confidentialité" />
 
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link href="/">
             <Button variant="ghost" size="sm">
@@ -289,7 +296,7 @@ export default function Privacy() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { Calendar, Edit, Key, Lock, Plus, Settings, Trash2, UserPlus, Users } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface EnrollmentMethod {
   id: number
@@ -73,12 +74,22 @@ interface Group {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   enrollmentMethods: EnrollmentMethod[]
   groups: Group[]
 }
 
-export default function EnrollmentMethodsManage({ course, enrollmentMethods, groups }: Props) {
+export default function EnrollmentMethodsManage({
+  course,
+  enrollmentMethods,
+  groups,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingMethod, setEditingMethod] = useState<EnrollmentMethod | null>(null)
 
@@ -182,7 +193,7 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
     <>
       <Head title={`Gestion des inscriptions - ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -660,7 +671,7 @@ export default function EnrollmentMethodsManage({ course, enrollmentMethods, gro
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+      </AppLayout>
     </>
   )
 }

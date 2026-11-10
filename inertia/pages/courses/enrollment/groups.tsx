@@ -36,6 +36,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Edit, Folder, MessageSquare, Plus, Trash2, Users, Eye, EyeOff } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Grouping {
   id: number
@@ -68,12 +69,22 @@ interface Course {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   groupings: Grouping[]
   groups: Group[]
 }
 
-export default function GroupsManage({ course, groupings, groups }: Props) {
+export default function GroupsManage({
+  course,
+  groupings,
+  groups,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const [isCreateGroupingDialogOpen, setIsCreateGroupingDialogOpen] = useState(false)
   const [isCreateGroupDialogOpen, setIsCreateGroupDialogOpen] = useState(false)
 
@@ -129,7 +140,7 @@ export default function GroupsManage({ course, groupings, groups }: Props) {
     <>
       <Head title={`Gestion des groupes - ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -472,7 +483,7 @@ export default function GroupsManage({ course, groupings, groups }: Props) {
             </TabsContent>
           ))}
         </Tabs>
-      </div>
+      </AppLayout>
     </>
   )
 }

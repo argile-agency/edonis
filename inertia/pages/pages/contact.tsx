@@ -6,8 +6,15 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { ChevronLeft, Mail, MapPin, Phone, Send } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
-export default function Contact() {
+interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
+}
+
+export default function Contact({ auth, appSettings, menus }: Props) {
   const { data, setData, post, processing, errors, reset } = useForm({
     name: '',
     email: '',
@@ -28,7 +35,7 @@ export default function Contact() {
     <>
       <Head title="Contact" />
 
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link href="/">
             <Button variant="ghost" size="sm">
@@ -178,7 +185,7 @@ export default function Contact() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

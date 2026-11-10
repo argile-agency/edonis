@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { ChevronLeft, Archive, Trash2, AlertTriangle, ArchiveRestore } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -50,11 +51,14 @@ interface Category {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   categories: Category[]
 }
 
-export default function EditCourse({ course, categories = [] }: Props) {
+export default function EditCourse({ course, categories = [], auth, appSettings, menus }: Props) {
   const { data, setData, put, transform, processing, errors } = useForm({
     code: course.code || '',
     title: course.title || '',
@@ -97,7 +101,7 @@ export default function EditCourse({ course, categories = [] }: Props) {
     <>
       <Head title={`Modifier ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link href={`/courses/${course.id}`}>
             <Button variant="ghost" size="sm">
@@ -494,7 +498,7 @@ export default function EditCourse({ course, categories = [] }: Props) {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }

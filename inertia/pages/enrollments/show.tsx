@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface EnrollmentMethod {
   id: number
@@ -63,6 +64,9 @@ interface Course {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   enrollmentMethods: EnrollmentMethod[]
   isEnrolled: boolean
@@ -78,6 +82,9 @@ export default function EnrollmentShow({
   enrollmentMethods,
   isEnrolled,
   userEnrollment,
+  auth,
+  appSettings,
+  menus,
 }: Props) {
   const [selectedMethod, setSelectedMethod] = useState<EnrollmentMethod | null>(null)
 
@@ -162,7 +169,7 @@ export default function EnrollmentShow({
     <>
       <Head title={`Inscription - ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-5xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         {/* Course Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
@@ -431,7 +438,7 @@ export default function EnrollmentShow({
             Retour
           </Button>
         </div>
-      </div>
+      </AppLayout>
     </>
   )
 }

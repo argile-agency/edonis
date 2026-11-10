@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { ChevronLeft } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Category {
   id: number
@@ -20,10 +21,13 @@ interface Category {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   categories: Category[]
 }
 
-export default function CreateCourse({ categories = [] }: Props) {
+export default function CreateCourse({ categories = [], auth, appSettings, menus }: Props) {
   const { data, setData, post, transform, processing, errors } = useForm({
     code: '',
     title: '',
@@ -66,7 +70,7 @@ export default function CreateCourse({ categories = [] }: Props) {
     <>
       <Head title="Créer un cours" />
 
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         <div className="mb-6">
           <Link href="/courses">
             <Button variant="ghost" size="sm">
@@ -321,7 +325,7 @@ export default function CreateCourse({ categories = [] }: Props) {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }
