@@ -41,6 +41,7 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { UserPlus, Trash2, Search, ArrowLeft, Mail, Pencil } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Enrollment {
   id: number
@@ -71,6 +72,9 @@ interface User {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   enrollments: Enrollment[]
   availableUsers: User[]
@@ -82,7 +86,15 @@ interface Props {
   }
 }
 
-export default function CourseParticipants({ course, enrollments, availableUsers, stats }: Props) {
+export default function CourseParticipants({
+  course,
+  enrollments,
+  availableUsers,
+  stats,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -175,7 +187,7 @@ export default function CourseParticipants({ course, enrollments, availableUsers
     <>
       <Head title={`Participants - ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -547,7 +559,7 @@ export default function CourseParticipants({ course, enrollments, availableUsers
             )}
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }

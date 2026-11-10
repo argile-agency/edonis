@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from '~/components/ui/alert-dialog'
 import { Edit, Eye, EyeOff, FolderPlus, Trash2, ChevronRight, Plus, ArrowLeft } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Category {
   id: number
@@ -33,10 +34,13 @@ interface Category {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   categories: Category[]
 }
 
-export default function CategoriesIndex({ categories }: Props) {
+export default function CategoriesIndex({ categories, auth, appSettings, menus }: Props) {
   const handleDelete = (id: number) => {
     router.delete(`/admin/categories/${id}`)
   }
@@ -152,7 +156,7 @@ export default function CategoriesIndex({ categories }: Props) {
     <>
       <Head title="Gestion des catégories" />
 
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Back Button */}
         <Link
           href="/admin/courses"
@@ -216,7 +220,7 @@ export default function CategoriesIndex({ categories }: Props) {
             <p>• L'ordre d'affichage est déterminé par le champ "Ordre de tri".</p>
           </CardContent>
         </Card>
-      </div>
+      </AppLayout>
     </>
   )
 }

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Category {
   id: number
@@ -23,12 +24,22 @@ interface Category {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   categories: Category[]
   parentId?: number
   parentCategory?: Category
 }
 
-export default function CategoriesCreate({ categories, parentId, parentCategory }: Props) {
+export default function CategoriesCreate({
+  categories,
+  parentId,
+  parentCategory,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const form = useForm({
     name: '',
     slug: '',
@@ -67,7 +78,7 @@ export default function CategoriesCreate({ categories, parentId, parentCategory 
     <>
       <Head title="Créer une catégorie" />
 
-      <div className="container mx-auto py-8 px-4 max-w-3xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         {/* Header */}
         <div className="mb-8">
           <Link href="/admin/categories" className="text-sm text-muted-foreground hover:underline">
@@ -288,7 +299,7 @@ export default function CategoriesCreate({ categories, parentId, parentCategory 
             </Button>
           </div>
         </form>
-      </div>
+      </AppLayout>
     </>
   )
 }

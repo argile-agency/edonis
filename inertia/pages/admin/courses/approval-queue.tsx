@@ -36,6 +36,7 @@ import {
   AlertCircle,
   ArrowLeft,
 } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -66,12 +67,22 @@ interface Course {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   pendingCourses: Course[]
   approvedCourses: Course[]
   rejectedCourses: Course[]
 }
 
-export default function ApprovalQueue({ pendingCourses, approvedCourses, rejectedCourses }: Props) {
+export default function ApprovalQueue({
+  pendingCourses,
+  approvedCourses,
+  rejectedCourses,
+  auth,
+  appSettings,
+  menus,
+}: Props) {
   const [rejectingCourse, setRejectingCourse] = useState<Course | null>(null)
 
   const rejectForm = useForm({
@@ -125,7 +136,7 @@ export default function ApprovalQueue({ pendingCourses, approvedCourses, rejecte
     <>
       <Head title="File d'attente d'approbation" />
 
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -294,7 +305,7 @@ export default function ApprovalQueue({ pendingCourses, approvedCourses, rejecte
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </AppLayout>
     </>
   )
 }

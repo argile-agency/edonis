@@ -33,6 +33,7 @@ import {
   ArrowLeft,
   Plus,
 } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -57,6 +58,9 @@ interface Course {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   courses: Course[]
   stats: {
     total: number
@@ -66,7 +70,7 @@ interface Props {
   }
 }
 
-export default function AdminCoursesIndex({ courses, stats }: Props) {
+export default function AdminCoursesIndex({ courses, stats, auth, appSettings, menus }: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [approvalFilter, setApprovalFilter] = useState<string>('all')
@@ -113,7 +117,7 @@ export default function AdminCoursesIndex({ courses, stats }: Props) {
     <>
       <Head title="Gestion des cours" />
 
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus}>
         {/* Back Button */}
         <Link
           href="/dashboard"
@@ -306,7 +310,7 @@ export default function AdminCoursesIndex({ courses, stats }: Props) {
             ))}
           </div>
         )}
-      </div>
+      </AppLayout>
     </>
   )
 }

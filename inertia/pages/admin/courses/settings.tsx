@@ -16,6 +16,7 @@ import {
 } from '~/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { ArrowLeft, Save, Settings as SettingsIcon, Users, Calendar } from 'lucide-react'
+import AppLayout from '~/components/layout/app-layout'
 
 interface Course {
   id: number
@@ -43,11 +44,14 @@ interface Category {
 }
 
 interface Props {
+  auth: { user: any }
+  appSettings: any
+  menus: any
   course: Course
   categories: Category[]
 }
 
-export default function CourseSettings({ course, categories }: Props) {
+export default function CourseSettings({ course, categories, auth, appSettings, menus }: Props) {
   const form = useForm({
     code: course.code,
     title: course.title,
@@ -85,7 +89,7 @@ export default function CourseSettings({ course, categories }: Props) {
     <>
       <Head title={`Paramètres - ${course.title}`} />
 
-      <div className="container mx-auto py-8 px-4 max-w-5xl">
+      <AppLayout user={auth.user} appSettings={appSettings} menus={menus} width="narrow">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -413,7 +417,7 @@ export default function CourseSettings({ course, categories }: Props) {
             </Button>
           </div>
         </form>
-      </div>
+      </AppLayout>
     </>
   )
 }
