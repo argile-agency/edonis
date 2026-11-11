@@ -6,29 +6,30 @@
 [![CodeQL](https://github.com/argile-agency/edonis/actions/workflows/code-quality.yml/badge.svg?event=schedule)](https://github.com/argile-agency/edonis/security/code-scanning)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A modern, open-source Learning Management System built with AdonisJS, React, and PostgreSQL.
+An open-source alternative to the dominant Learning Management Systems, built with AdonisJS, React and TypeScript.
 
-**Edonis LMS** combines modern architecture, mobile-first design, and native AI integration to deliver a superior learning experience for educational institutions. Built with TypeScript and featuring comprehensive educational standards compliance (SCORM, xAPI, LTI 1.3, QTI 2.1).
+> **Status: in active development.** See the [public roadmap](https://edonis.org/changelog) · [Website](https://edonis.org) · [Live demo](https://demo.edonis.org)
 
 ## Key Features
 
-- **Complete LMS Functionality**: Course management, assignments, gradebook, and assessments
-- **Security**: MFA/2FA (TOTP), CSP headers, rate limiting, PII encryption
-- **OAuth 2.0**: Social login with Google and GitHub
-- **GDPR Compliance**: Audit logs, terms consent versioning, data export, account deletion (right to be forgotten)
-- **Progressive Web App**: Offline support, install prompt, connectivity detection
-- **Accessibility**: ESLint jsx-a11y, axe-core automated tests, skip links, aria-live regions
-- **Enterprise-Ready**: Multi-tenancy, RBAC, role-based access control
-- **Standards Compliant**: SCORM 2004, xAPI, LTI 1.3, QTI 2.1 (planned)
+Available today:
+
+- **Course builder**: drag-and-drop sections and content, inline editing with autosave, bulk actions (publish, move, duplicate, shift dates)
+- **Assignments, rubrics and grades**: text, file, online text and offline assignments; points, percentage, letter or pass/fail grading; late submissions, multiple attempts, weighted gradebook
+- **Roles and enrollment**: four roles (admin, manager, teacher, student); self, manual, key, on-request and bulk enrollment; cohorts and groups
+- **Security**: MFA/2FA (TOTP), Google and GitHub login, CSP headers, rate limiting, PII encryption, uniform authorization policies
+- **Data sovereignty and GDPR**: self-hosted on PostgreSQL, MySQL, MariaDB or SQLite; audit log, terms consent versioning, data export, account anonymization
+- **Accessibility and sobriety**: installable PWA with offline fallback, self-hosted fonts, automated accessibility checks (axe-core, jsx-a11y). No accessibility certification is claimed.
+
+Planned work (page editor, AI governance, interoperability) is listed in the [Roadmap](#roadmap).
 
 ## 🛠️ Tech Stack
 
 - **Backend**: AdonisJS 6 (TypeScript, MVC Framework)
 - **Frontend**: React 19 + Inertia.js + shadcn/ui
-- **Database**: PostgreSQL (with Supabase optional)
+- **Database**: PostgreSQL (recommended, Supabase optional), MySQL, MariaDB or SQLite via Lucid ORM
 - **Styling**: Tailwind CSS v4
 - **Package Manager**: Bun (preferred) / pnpm / npm
-- **Real-time**: WebSocket + SSE for live collaboration
 
 ## Getting Started
 
@@ -58,9 +59,11 @@ cp .env.example .env
 
 ## Database Setup Options
 
-You have **two options** for running PostgreSQL in development:
+Edonis runs on **PostgreSQL** (recommended), **MySQL**, **MariaDB** or **SQLite**. Pick the engine with `DB_CONNECTION` in `.env`. See [docs/MULTI_DATABASE.md](docs/MULTI_DATABASE.md) for MySQL, MariaDB and SQLite setup.
 
-### Option 1: Supabase Local Dev (Recommended) ✨
+For PostgreSQL in development you have **two options**:
+
+### Option 1: Supabase Local Dev (PostgreSQL) ✨
 
 **Advantages:**
 
@@ -121,6 +124,8 @@ supabase db reset    # Reset database to fresh state
 
 ### Option 2: Docker PostgreSQL (Simple) 🐳
 
+`docker-compose.yml` also provides `mysql` and `mariadb` services.
+
 **Advantages:**
 
 - Simpler, fewer dependencies
@@ -132,7 +137,7 @@ supabase db reset    # Reset database to fresh state
 1. Start PostgreSQL with Docker Compose:
 
 ```bash
-docker-compose up -d
+docker-compose up -d postgres
 ```
 
 2. Update your `.env`:
@@ -148,7 +153,7 @@ DB_DATABASE=edonis_lms
 **Useful Commands:**
 
 ```bash
-docker-compose up -d      # Start PostgreSQL
+docker-compose up -d postgres  # Start PostgreSQL
 docker-compose down       # Stop PostgreSQL
 docker-compose down -v    # Stop and remove data
 docker logs edonis_postgres  # View logs
@@ -262,7 +267,7 @@ node ace test browser    # Run E2E browser tests
 
 ## Production Deployment
 
-When deploying to production with Supabase:
+Run `node ace migration:run --force` against any supported engine. When deploying to production with Supabase (PostgreSQL):
 
 1. Create a project at [supabase.com](https://supabase.com)
 2. Update `.env` with production credentials:
@@ -323,7 +328,7 @@ Edonis LMS takes security seriously, especially given that LMS platforms handle 
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do not** open a public issue
-2. Email security concerns to the maintainers
+2. Report it privately through [GitHub Security Advisories](https://github.com/argile-agency/edonis/security/advisories/new) or email contact@edonis.org
 3. Allow time for a fix before public disclosure
 
 See [GitHub Security Advisories](https://github.com/argile-agency/edonis/security/advisories) for known issues.
@@ -360,75 +365,43 @@ This project uses Apache 2.0 for:
 
 See [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details.
 
-## 🌟 Why Edonis?
+## 🌟 How Edonis Compares
 
-Compared to existing LMS solutions:
-
-| Feature                  | Edonis              | Moodle     | Canvas     | Blackboard  |
-| ------------------------ | ------------------- | ---------- | ---------- | ----------- |
-| **Modern Stack**         | ✅ TypeScript/React | ❌ PHP     | ❌ Ruby    | ❌ Java     |
-| **AI Integration**       | ✅ Native           | ⚠️ Plugins | ⚠️ Limited | ⚠️ Limited  |
-| **Mobile-First**         | ✅ PWA              | ❌         | ⚠️         | ⚠️          |
-| **License**              | Apache 2.0          | GPL        | AGPL       | Proprietary |
-| **Developer Experience** | ✅ Excellent        | ❌         | ⚠️         | ❌          |
-| **Plugin System**        | ✅ Type-safe        | ✅         | ⚠️         | ❌          |
+| Fact                 | Edonis                       | Moodle            | Canvas LMS (open source) | Blackboard Learn  |
+| -------------------- | ---------------------------- | ----------------- | ------------------------ | ----------------- |
+| **Main language**    | TypeScript (AdonisJS, React) | PHP               | Ruby on Rails            | Java              |
+| **License**          | Apache 2.0                   | GPL v3            | AGPL v3                  | Proprietary       |
+| **Source available** | Yes                          | Yes               | Yes                      | No                |
+| **Mobile access**    | Installable PWA              | Native mobile app | Native mobile apps       | Native mobile app |
 
 ## Roadmap
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture and feature roadmap.
+Edonis is in active development. The public roadmap lives at [edonis.org/changelog](https://edonis.org/changelog).
 
-### Phase 1 (MVP) - Q1 2026
+### Delivered
 
-- [x] User management with RBAC
-- [x] Authentication & authorization
-- [x] Dynamic homepage system with role-based content
-- [x] Theme system (light/dark/system)
-- [x] Course management system
-- [x] Course enrollment workflows
-- [x] Assignment workflow & evaluations
-- [x] Gradebook & progress tracking
-- [x] MFA/2FA with TOTP and recovery codes
-- [x] OAuth 2.0 social login (Google, GitHub)
-- [x] CSP headers and rate limiting
-- [x] PII encryption (phone, address, identification)
-- [x] Audit logging system with admin page
-- [x] GDPR: terms consent versioning and re-consent flow
-- [x] GDPR: data export and account deletion (right to be forgotten)
-- [x] PWA: service worker, offline page, install prompt, connectivity indicator
-- [x] Accessibility: jsx-a11y linting, axe-core tests, skip links, aria-live
-- [x] Profile management with avatar upload
-- [x] User settings with linked social accounts
-- [x] Custom error pages (404, 429, 500)
+- **January 2026: LMS foundation**: courses, sections and content; multi-method enrollment, cohorts and groups; assignments, rubrics and gradebook; 2FA, Google and GitHub login; GDPR (audit log, data export, anonymization); installable PWA and automated accessibility tests
+- **May 2026: Multi-database**: PostgreSQL, MySQL, MariaDB and SQLite
+- **October 2026: Reliability and security**: green CI on all three engines, uniform authorization and input validation, transactional enrollments with reliable counters, course files stored outside the web root with authorized download
+- **November 2026: Course builder**: drag-and-drop sections and content, inline editing with autosave, bulk actions (publish, move, duplicate, shift dates), accessible drag-and-drop announcements
 
-### Phase 2 (Communication & AI) - Q2-Q3 2026
+### Planned
 
-- [ ] Communication tools (forums, messaging)
-- [ ] Discussion forums with threading
-- [ ] Direct messaging system
-- [ ] Push notifications
-- [ ] AI content generation (quizzes, summaries, objectives)
-- [ ] Personalized learning paths
-- [ ] Automated assessment & essay scoring
-- [ ] AI tutoring chatbot
-- [ ] Video conferencing integration (Zoom, Google Meet)
+- **End of 2026 (target): Page editor**: rich editor with a sanitized HTML source mode; full teacher → learner path, internal use first
+- **Q1 2027 (target): AI governance and first pilots**: AI off by default, policy-routed, budgeted and traceable; designed to support compliance with articles 5 and 50 of the EU AI Act; learner accommodation profile; installation, backup and admin documentation; unified rubric and per-question marking; files, external links and progress tracking
+- **Spring 2027 (target): Gradual launch** to about fifty early adopters
 
-### Phase 3 (Enterprise & Scale) - Q4 2026 - Q1 2027
+### Under consideration (no date)
 
-- [ ] Plugin marketplace & ecosystem
-- [ ] Advanced learning analytics
-- [ ] Gamification features (badges, leaderboards)
-- [ ] Real-time collaboration tools
-- [ ] Multi-language support (i18n)
-- [ ] SSO integration (SAML 2.0)
-- [ ] Full standards compliance (SCORM 2004, xAPI, LTI 1.3, QTI 2.1)
-- [ ] Performance optimization for 10k+ users
-- [ ] Enterprise support & SLA options
+- **Interoperability**: SCORM, xAPI, H5P, LTI and an extension system, in the order the first institutions need them
+- **Course import**: Moodle backups (`.mbz`) and spreadsheet-based course designs
 
 ## 💬 Support
 
 - **Documentation**: [CLAUDE.md](CLAUDE.md)
 - **Issues**: [GitHub Issues](https://github.com/argile-agency/edonis/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/argile-agency/edonis/discussions)
+- **Pilot institutions**: [contact@edonis.org](mailto:contact@edonis.org)
 
 ## 🙏 Acknowledgments
 
@@ -442,4 +415,4 @@ Built with amazing open-source projects:
 
 ---
 
-Made with ❤️ by [argile agency](https://argile.agency) | [Website](https://edonis.dev) | [Documentation](./CLAUDE.md)
+Made with ❤️ by [argile agency](https://argile.agency) | [Website](https://edonis.org) | [Demo](https://demo.edonis.org) | [Documentation](./CLAUDE.md)
