@@ -37,6 +37,7 @@ const AccountController = () => import('#controllers/account_controller')
 const AuditLogsController = () => import('#controllers/audit_logs_controller')
 const AppSettingsController = () => import('#controllers/app_settings_controller')
 const FilesController = () => import('#controllers/files_controller')
+const EditModeController = () => import('#controllers/edit_mode_controller')
 
 /*
 |--------------------------------------------------------------------------
@@ -440,6 +441,13 @@ router
       .as('courses.trash.delete')
     router.post('/courses/:id/trash/empty', [TrashController, 'empty']).as('courses.trash.empty')
   })
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
+
+// « Mode d'édition » toggle (view preference; CoursePolicy.edit re-checked in the controller)
+router
+  .post('/edit-mode', [EditModeController, 'update'])
+  .as('edit-mode.update')
   .use(middleware.auth())
   .use(middleware.role({ roles: ['admin', 'manager', 'teacher'] }))
 

@@ -11,6 +11,7 @@ import {
   TWO_FACTOR_PENDING_KEY,
   createPending,
 } from '../helpers/two_factor_pending.js'
+import { EDIT_MODE_KEY } from '../helpers/edit_mode.js'
 
 export default class AuthController {
   /**
@@ -154,6 +155,7 @@ export default class AuthController {
     })
 
     await auth.use('web').logout()
+    session.forget(EDIT_MODE_KEY)
     session.flash('success', 'Vous avez été déconnecté avec succès')
     return response.redirect().toRoute('login')
   }
