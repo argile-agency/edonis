@@ -4,8 +4,8 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5.2 UI-SPEC approved
-last_updated: "2026-11-12T13:13:11.653Z"
-last_activity: 2026-11-12 -- Phase 05.3 planning complete
+last_updated: "2026-11-12T13:16:23.595Z"
+last_activity: 2026-11-12 -- Phase 05.3 execution started
 progress:
   total_phases: 21
   completed_phases: 6
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Easy course creation with demonstrable AI governance (renamed 2026-10-31; Moodle import moved to v2)
-**Current focus:** Milestone v0.1 MVP (2026-12-20) — Phase 5 Builder UI first (vault "Course editor", 2026-11-30), then Phase 6 Page Content (Tiptap-class editor with a sanitized HTML/code mode, decided 2026-10-31), then Phase 3 — owner chose option (iii) on 2026-10-31 on the human-day figure (26-39 🟡 H); the same evening the plan was re-measured in attended AI-assisted days: ≈ 5-6.5 🟡 A for the MVP, which fits the ~10 days first announced (RECONCILIATION §9) — option (iii) to be reconsidered by the owner
+**Current focus:** Phase 05.3 — header-user-zone-and-site-administration-hub
 
 ## Milestones (realigned 2026-10-31, see `RECONCILIATION-2026-10-31.md`)
 
@@ -34,10 +34,10 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 05.3
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-11-12 -- Phase 05.3 planning complete
+Phase: 05.3 (header-user-zone-and-site-administration-hub) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 05.3
+Last activity: 2026-11-12 -- Phase 05.3 execution started
 
 Next recommended run: `/gsd-execute-phase 5.3` (header user zone and admin hub: 6 plans in 4 waves, plan check passed 2026-11-12; 05.3-06 ends with a French walkthrough). Still open: 05.2-10 owner walkthrough (`/gsd-execute-phase 5.2` resumes at the checkpoint). Then 5.4 (editable course page) needs discuss + UI-SPEC. 5.2 post-deploy: run the migrations, set a nightly cron for `node ace trash:purge` if Infomaniak allows it (lazy purge on trash open covers it otherwise).
 
