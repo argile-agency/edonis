@@ -4,13 +4,13 @@ milestone: v0.1
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5.2 UI-SPEC approved
-last_updated: "2026-11-12T13:16:23.595Z"
-last_activity: 2026-11-12 -- Phase 05.3 execution started
+last_updated: "2026-11-12T13:22:08.827Z"
+last_activity: 2026-11-12
 progress:
   total_phases: 21
   completed_phases: 6
   total_plans: 60
-  completed_plans: 48
+  completed_plans: 50
   percent: 29
 ---
 
@@ -35,9 +35,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 05.3 (header-user-zone-and-site-administration-hub) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 05.3
-Last activity: 2026-11-12 -- Phase 05.3 execution started
+Plan: 3 of 6
+Status: Ready to execute
+Last activity: 2026-11-12
 
 Next recommended run: `/gsd-execute-phase 5.3` (header user zone and admin hub: 6 plans in 4 waves, plan check passed 2026-11-12; 05.3-06 ends with a French walkthrough). Still open: 05.2-10 owner walkthrough (`/gsd-execute-phase 5.2` resumes at the checkpoint). Then 5.4 (editable course page) needs discuss + UI-SPEC. 5.2 post-deploy: run the migrations, set a nightly cron for `node ace trash:purge` if Infomaniak allows it (lazy purge on trash open covers it otherwise).
 
