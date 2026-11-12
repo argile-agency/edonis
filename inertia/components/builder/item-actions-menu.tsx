@@ -89,7 +89,8 @@ export function ItemActionsMenu({
 
   return (
     <>
-      <DropdownMenu>
+      {/* Non-modal: a modal menu aria-hides the page while its focusable controls stay reachable (axe aria-hidden-focus) */}
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             ref={triggerRef}
@@ -103,6 +104,8 @@ export function ItemActionsMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
+          // Non-modal menus close when focus moves away; builder refocus after a save must not close it.
+          onFocusOutside={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => {
             if (openingDialog.current) {
               openingDialog.current = false

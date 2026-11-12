@@ -490,9 +490,13 @@ export default function ProfileEdit({ user, auth, appSettings, menus }: Props) {
                   <AvatarFallback>{getInitials(user)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
+                  <Label htmlFor="avatar" className="sr-only">
+                    Choisir une photo de profil
+                  </Label>
                   <Input
                     ref={fileInputRef}
                     type="file"
+                    id="avatar"
                     name="avatar"
                     accept="image/jpeg,image/png,image/gif,image/webp"
                     onChange={handleFileChange}

@@ -120,6 +120,9 @@ export default function Login() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                      }
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     >
                       {showPassword ? (

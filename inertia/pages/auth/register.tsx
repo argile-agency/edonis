@@ -134,6 +134,9 @@ export default function Register() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                      }
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     >
                       {showPassword ? (
@@ -165,6 +168,11 @@ export default function Register() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                      aria-label={
+                        showPasswordConfirmation
+                          ? 'Masquer la confirmation du mot de passe'
+                          : 'Afficher la confirmation du mot de passe'
+                      }
                       className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     >
                       {showPasswordConfirmation ? (

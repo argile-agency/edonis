@@ -184,7 +184,7 @@ export default function CoursesIndex({
                 </div>
               </div>
               <Select value={status} onValueChange={(value) => handleFilterChange('status', value)}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px]" aria-label="Filtrer par statut">
                   <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent>
@@ -200,7 +200,7 @@ export default function CoursesIndex({
                   handleFilterChange('category', value === 'all' ? '' : value)
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px]" aria-label="Filtrer par catégorie">
                   <SelectValue placeholder="Catégorie" />
                 </SelectTrigger>
                 <SelectContent>
