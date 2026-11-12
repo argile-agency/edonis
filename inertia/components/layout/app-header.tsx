@@ -156,7 +156,8 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
   useEffect(() => {
     if (!menuOpen) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
+      // An open Radix menu or tooltip handles Escape first (capture phase) and marks it handled.
+      if (e.key !== 'Escape' || e.defaultPrevented) return
       setMenuOpen(false)
       menuButtonRef.current?.focus()
     }
