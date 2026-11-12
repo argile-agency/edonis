@@ -407,7 +407,7 @@ Plans:
 **Goal:** The header's user zone works like Moodle's (admin shortcut, course search, notification and message entry points, avatar menu with a caret, edit-mode switch inside a course), and admins reach every platform setting from one site administration page
 **Requirements**: HEADER-01, HEADER-02, HEADER-03, HEADER-04, HEADER-05, HEADER-06, HEADER-07, HEADER-08, ADMINHUB-01, ADMINHUB-02
 **Depends on:** Phase 5.2
-**Plans:** 2/6 plans executed
+**Plans:** 4/6 plans executed
 
 **Scope from the owner (2026-11-10):**
 
@@ -429,8 +429,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 05.3-03-PLAN.md — Site administration hub: `GET /admin` (role + policy), three-tab page, menu seeder fix, functional spec [ADMINHUB-01, ADMINHUB-02, HEADER-05]
-- [ ] 05.3-04-PLAN.md — Header rebuild: one desktop row and user zone, placeholders, avatar caret and menu, edit-mode switch, ☰ mobile panel [HEADER-01, HEADER-02, HEADER-04, HEADER-05, HEADER-06]
+- [x] 05.3-03-PLAN.md — Site administration hub: `GET /admin` (role + policy), three-tab page, menu seeder fix, functional spec [ADMINHUB-01, ADMINHUB-02, HEADER-05]
+- [x] 05.3-04-PLAN.md — Header rebuild: one desktop row and user zone, placeholders, avatar caret and menu, edit-mode switch, ☰ mobile panel [HEADER-01, HEADER-02, HEADER-04, HEADER-05, HEADER-06]
 
 **Wave 3** *(blocked on Waves 1-2)*
 
@@ -625,7 +625,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 5.3 -> 5.4 -> 6 -> 3 · 
 | 5. Builder UI | 10/10 | Complete    | 2026-11-03 |
 | 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
 | 5.2. Trash and soft delete | 9/10 | In Progress|  |
-| 5.3. Header user zone and site administration hub | 2/6 | In Progress|  |
+| 5.3. Header user zone and site administration hub | 4/6 | In Progress|  |
 | 5.4. Editable course page in edit mode | 0/0 | Not started | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
