@@ -1,4 +1,7 @@
 import { test } from '@japa/runner'
+import type { Assert } from '@japa/assert'
+import type { Page } from 'playwright'
+import limiter from '@adonisjs/limiter/services/main'
 import { AxeBuilder } from '@axe-core/playwright'
 import User from '#models/user'
 import Course from '#models/course'
@@ -11,7 +14,38 @@ import { createCourse } from '#tests/functional/helpers/factories'
  * Accessibility tests using axe-core.
  * Checks critical and serious WCAG violations on key pages.
  */
-test.group('Accessibility', () => {
+const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+
+async function loginAs(page: Page, email: string) {
+  await page.goto('/login')
+  await page.locator('input[type="email"]').fill(email)
+  await page.locator('input[type="password"]').fill('password')
+  await Promise.all([
+    page.waitForURL('**/dashboard', { timeout: 5000 }),
+    page.locator('button[type="submit"]').click(),
+  ])
+  // Reload drops the « Connexion réussie » toast, which sits over the header controls
+  await page.reload()
+}
+
+async function assertNoSeriousViolations(page: Page, assert: Assert, state: string) {
+  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze()
+  const critical = results.violations.filter(
+    (v) => v.impact === 'critical' || v.impact === 'serious'
+  )
+  if (critical.length > 0) {
+    console.log(
+      `${state} a11y violations:`,
+      critical.map((v) => `${v.id}: ${v.description} (${v.impact})`)
+    )
+  }
+  assert.equal(critical.length, 0, `${state}: ${critical.length} critical/serious a11y violations`)
+}
+
+test.group('Accessibility', (group) => {
+  // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
+  group.each.setup(() => limiter.clear())
+
   test('login page has no critical a11y violations', async ({ visit, assert }) => {
     const page = await visit('/login')
     const results = await new AxeBuilder({ page })
@@ -323,5 +357,68 @@ test.group('Accessibility', () => {
     await page.getByRole('tab', { name: 'Corbeille' }).click()
     await page.getByRole('tab', { name: 'Corbeille', selected: true }).waitFor()
     check('Corbeille', await new AxeBuilder({ page }).withTags(wcag).analyze())
+  })
+
+  test('site administration hub has no critical a11y violations', async ({ visit, assert }) => {
+    const page = await visit('/')
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await loginAs(page, 'admin@edonis.test')
+    await page.goto('/admin')
+    await page.getByRole('heading', { name: 'Administration du site', level: 1 }).waitFor()
+
+    await assertNoSeriousViolations(page, assert, 'Hub (Général)')
+    for (const tab of ['Utilisateurs', 'Cours']) {
+      await page.getByRole('tab', { name: tab }).click()
+      await page.getByRole('tab', { name: tab, selected: true }).waitFor()
+      await assertNoSeriousViolations(page, assert, `Hub (${tab})`)
+    }
+  })
+
+  test('course page with the edit-mode switch has no critical a11y violations', async ({
+    visit,
+    assert,
+  }) => {
+    const teacher = await User.findByOrFail('email', 'teacher@edonis.test')
+    const course = await createCourse(teacher)
+    try {
+      const page = await visit('/')
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await loginAs(page, 'admin@edonis.test')
+      await page.goto(`/courses/${course.id}`)
+      await page.getByRole('switch', { name: "Mode d'édition" }).waitFor()
+      await assertNoSeriousViolations(page, assert, 'Course page with switch')
+    } finally {
+      await course.delete()
+    }
+  })
+
+  test('header with the search open has no critical a11y violations', async ({ visit, assert }) => {
+    const page = await visit('/')
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await loginAs(page, 'admin@edonis.test')
+    await page.locator('header').getByRole('button', { name: 'Rechercher des cours' }).click()
+    await page.locator('header').getByRole('searchbox', { name: 'Rechercher des cours' }).waitFor()
+    await assertNoSeriousViolations(page, assert, 'Search open')
+  })
+
+  test('375px header panel on a course page has no critical a11y violations', async ({
+    visit,
+    assert,
+  }) => {
+    const teacher = await User.findByOrFail('email', 'teacher@edonis.test')
+    const course = await createCourse(teacher)
+    try {
+      const page = await visit('/')
+      await page.setViewportSize({ width: 375, height: 800 })
+      await loginAs(page, 'admin@edonis.test')
+      await page.goto(`/courses/${course.id}`)
+      await page.getByRole('button', { name: 'Ouvrir le menu' }).click()
+      const panel = page.locator('#mobile-menu')
+      await panel.getByRole('link', { name: 'Administration du site' }).waitFor()
+      await panel.getByRole('switch', { name: "Mode d'édition" }).waitFor()
+      await assertNoSeriousViolations(page, assert, 'Mobile panel open')
+    } finally {
+      await course.delete()
+    }
   })
 })

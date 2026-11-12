@@ -62,9 +62,9 @@ test.group('Authentication', () => {
       page.locator('button[type="submit"]').click(),
     ])
 
-    // Then logout - use .first() since there might be multiple logout buttons
-    const logoutButton = page.locator('button:has-text("Déconnexion")').first()
-    await logoutButton.click()
+    // Logout lives in the avatar menu
+    await page.getByRole('button', { name: 'Menu du compte' }).click()
+    await page.getByRole('menuitem', { name: 'Déconnexion' }).click()
     await page.waitForURL('**/login', { timeout: 5000 })
 
     await page.assertPath('/login')
