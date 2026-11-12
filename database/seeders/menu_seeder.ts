@@ -177,9 +177,9 @@ export default class extends BaseSeeder {
       { menuId: userMenu.id, url: '/admin' },
       {
         menuId: userMenu.id,
-        label: 'Administration',
+        label: 'Administration du site',
         url: '/admin',
-        icon: 'Shield',
+        icon: 'Wrench',
         order: 3,
         visibility: 'admin',
         isActive: true,
@@ -187,18 +187,7 @@ export default class extends BaseSeeder {
       }
     )
 
-    await MenuItem.updateOrCreate(
-      { menuId: userMenu.id, url: '/admin/settings' },
-      {
-        menuId: userMenu.id,
-        label: 'Réglages de la plateforme',
-        url: '/admin/settings',
-        icon: 'SlidersHorizontal',
-        order: 4,
-        visibility: 'admin',
-        isActive: true,
-        target: '_self',
-      }
-    )
+    // Remplacé par le hub /admin (Phase 5.3)
+    await MenuItem.query().where('menuId', userMenu.id).where('url', '/admin/settings').delete()
   }
 }
