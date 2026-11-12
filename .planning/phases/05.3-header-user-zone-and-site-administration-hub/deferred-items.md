@@ -26,7 +26,7 @@ Because of this, the four new 05.3-05 axe cases (hub, course page with switch, s
 - login/register: password visibility toggle `button` without accessible name (`button-name`, critical). Fixed with French `aria-label`s that follow the state: « Afficher / Masquer le mot de passe » and « … la confirmation du mot de passe ».
 - profile: avatar `input[type=file]` without label (`label`, critical). Fixed with `id="avatar"` and an sr-only `Label`, « Choisir une photo de profil ».
 - /courses: filter `combobox` triggers without name (`button-name`, critical). Fixed with `aria-label` « Filtrer par statut » and « Filtrer par catégorie ».
-- builder "actions menu open": `aria-hidden-focus` (Radix hides siblings while the modal menu is open). Fixed with `DropdownMenu modal={false}`, plus `onFocusOutside` prevented, because builder refocus after a save otherwise closed the non-modal menu. That closing broke `builder.spec` « deletes go to the trash… ». Tab is still kept inside the menu by Radix, and Escape and clicking outside still close it.
+- builder "actions menu open": `aria-hidden-focus` (Radix hides siblings while the modal menu is open). Fixed with `DropdownMenu modal={false}`, plus `onFocusOutside` prevented, because builder refocus after a save otherwise closed the non-modal menu. That closing broke `builder.spec` « deletes go to the trash… ». Escape and clicking outside still close the menu. Per Radix, Tab stays inside the menu; this was not checked here.
 
 ## 3. Login throttle across browser specs — RESOLVED (626d008, eb02016)
 
@@ -46,3 +46,12 @@ Two `builder_bulk.spec.ts` cases fail on SQLite only:
 - « a rename queued after a bulk publish… »
 
 Both fail with `expected 0 to be false` / `expected 1 to be true`. `CourseContent.isPublished` has no boolean `consume`, so SQLite returns 0/1. `AppSetting` already uses `booleanColumn = { consume: Boolean }`. CI runs these specs on PostgreSQL, which returns real booleans. The fix belongs in the model (cross-engine), not in this accessibility pass.
+
+## 5. Follow-ups found in this pass (open, outside the axe cases)
+
+- **Builder menu focus trade-off.** Preventing `onFocusOutside` keeps the menu open but does not return focus to it. If the builder refocuses a row after a save while the menu is open, keyboard focus sits on the row until Escape. This only happens after a save-triggered refocus, and the keyboard specs pass. The proper fix is to skip the builder's post-save refocus while an actions menu is open.
+- **Raw green fills with white text, not covered by axe cases:**
+  - `bg-green-600` publish buttons in `courses/show.tsx` and `courses/edit.tsx`: 3.22:1
+  - `text-green-600` grade figures on the grades pages: about the same ratio
+  - Moving them to the `success` token (5.52:1) fixes both.
+- **UI-SPEC drift.** The colour table in `05.3-UI-SPEC.md` still shows the old `--primary` and `--muted-foreground` hex values.
