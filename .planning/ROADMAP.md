@@ -407,7 +407,7 @@ Plans:
 **Goal:** The header's user zone works like Moodle's (admin shortcut, course search, notification and message entry points, avatar menu with a caret, edit-mode switch inside a course), and admins reach every platform setting from one site administration page
 **Requirements**: HEADER-01, HEADER-02, HEADER-03, HEADER-04, HEADER-05, HEADER-06, HEADER-07, HEADER-08, ADMINHUB-01, ADMINHUB-02
 **Depends on:** Phase 5.2
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 **Scope from the owner (2026-11-10):**
 
@@ -422,7 +422,23 @@ Plans:
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 05.3 to break down)
+**Wave 1**
+
+- [ ] 05.3-01-PLAN.md — Edit-mode server side: user-bound session flag, `POST /edit-mode` (VineJS, CoursePolicy.edit, enum redirects), `editMode` shared prop, `courseEditing` on show/learn/builder, logout cleanup, functional spec [HEADER-06, HEADER-07]
+- [ ] 05.3-02-PLAN.md — Client building blocks: `@radix-ui/react-tooltip` + hand-written `ui/tooltip.tsx`, `HeaderSearch`, `EditModeSwitch` [HEADER-03, HEADER-04, HEADER-06]
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 05.3-03-PLAN.md — Site administration hub: `GET /admin` (role + policy), three-tab page, menu seeder fix, functional spec [ADMINHUB-01, ADMINHUB-02, HEADER-05]
+- [ ] 05.3-04-PLAN.md — Header rebuild: one desktop row and user zone, placeholders, avatar caret and menu, edit-mode switch, ☰ mobile panel [HEADER-01, HEADER-02, HEADER-04, HEADER-05, HEADER-06]
+
+**Wave 3** *(blocked on Waves 1-2)*
+
+- [ ] 05.3-05-PLAN.md — Browser coverage: `header.spec.ts`, four axe cases, existing-spec selector audit [HEADER-01..06, HEADER-08, ADMINHUB-02]
+
+**Wave 4** *(blocked on Waves 1-3)*
+
+- [ ] 05.3-06-PLAN.md — Full gate, no-migration check, validation sign-off, French walkthrough (checkpoint, not autonomous) [HEADER-01..08, ADMINHUB-01..02]
 
 ### Phase 05.4: Editable course page in edit mode (INSERTED)
 
