@@ -87,6 +87,7 @@ export default class CourseContentsController {
         count: await TrashService.countRoots(course.id, db.connection()),
         retentionDays: Number(settings.trashRetentionDays),
       },
+      courseEditing: { courseId: course.id, canEdit: true },
     })
   }
 
@@ -177,6 +178,10 @@ export default class CourseContentsController {
       currentContent: currentContent?.serialize(),
       progress: progress?.serialize(),
       progressMap: Object.fromEntries(progressMap.entries()),
+      courseEditing: {
+        courseId: course.id,
+        canEdit: await bouncer.with('CoursePolicy').allows('edit', course),
+      },
     })
   }
 

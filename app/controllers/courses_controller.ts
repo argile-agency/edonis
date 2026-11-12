@@ -187,6 +187,7 @@ export default class CoursesController {
         canManage,
       },
       isEnrolled: !!enrollment,
+      courseEditing: { courseId: course.id, canEdit },
     })
   }
 

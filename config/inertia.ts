@@ -4,6 +4,7 @@ import AppSetting from '#models/app_setting'
 import MenuLocation from '#models/menu_location'
 import logger from '@adonisjs/core/services/logger'
 import env from '#start/env'
+import { isEditModeOn } from '../app/helpers/edit_mode.js'
 
 const inertiaConfig = defineConfig({
   /**
@@ -30,6 +31,15 @@ const inertiaConfig = defineConfig({
         } catch (error) {
           logger.warn('Failed to load auth shared data: %s', (error as Error).message)
           return { user: null }
+        }
+      }),
+
+    editMode: (ctx) =>
+      ctx.inertia.always(() => {
+        try {
+          return isEditModeOn(ctx)
+        } catch {
+          return false
         }
       }),
 
