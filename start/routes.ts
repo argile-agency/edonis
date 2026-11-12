@@ -38,6 +38,7 @@ const AuditLogsController = () => import('#controllers/audit_logs_controller')
 const AppSettingsController = () => import('#controllers/app_settings_controller')
 const FilesController = () => import('#controllers/files_controller')
 const EditModeController = () => import('#controllers/edit_mode_controller')
+const AdminHubController = () => import('#controllers/admin_hub_controller')
 
 /*
 |--------------------------------------------------------------------------
@@ -211,6 +212,11 @@ router
 | Routes d'administration — Réglages de la plateforme
 |--------------------------------------------------------------------------
 */
+router
+  .get('/admin', [AdminHubController, 'index'])
+  .as('admin.index')
+  .use(middleware.auth())
+  .use(middleware.role({ roles: ['admin'] }))
 router
   .get('/admin/settings', [AppSettingsController, 'show'])
   .as('admin.settings')
