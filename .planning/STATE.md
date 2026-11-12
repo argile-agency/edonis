@@ -203,6 +203,8 @@ Recent decisions affecting current work:
 
 - Phase 05.3 inserted after Phase 5.2 (2026-11-10): Header user zone and site administration hub, Moodle-style header (admin shortcut, course search, placeholder bell and messages, avatar caret, edit-mode switch) and a site administration hub
 
+- Phase 05.4 inserted after Phase 5.3 (2026-11-12): Editable course page in edit mode, Moodle-style in-place editing merging the course page and the builder; 5.3 cross-course redirect dropped
+
 ### Pending Todos
 
 - ~~`docs/DEPLOYMENT_TROUBLESHOOTING.md` untracked~~ — reviewed for secrets

@@ -71,7 +71,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 *Source: owner brief `.planning/todos/completed/2026-11-03-admin-platform-settings-page.md` and `05.1-CONTEXT.md` D-01..D-16.*
 
-- [x] **SETTINGS-01**: An administrator opens `/admin/settings` from an admin-only item of the user menu and edits the singleton `AppSetting` row in four tabs (Apparence, Page d'accueil, Accès, Contact et support), each saved independently, with a French success toast; the active tab survives the save round-trip
+- [x] **SETTINGS-01**: An administrator opens `/admin/settings` from the site administration page (`/admin`, admin-only item « Administration du site » of the user menu since Phase 5.3) and edits the singleton `AppSetting` row in four tabs (Apparence, Page d'accueil, Accès, Contact et support), each saved independently, with a French success toast; the active tab survives the save round-trip
 - [x] **SETTINGS-02**: Only admins can read or write the settings: route middleware (auth + role admin) plus a controller-level policy check; teacher, manager and student get 403, anonymous visitors are redirected to `/login`
 - [x] **SETTINGS-03**: Invalid input is rejected field by field in French and nothing is persisted: required name/colour/hero title, max lengths, `#RRGGBB` colour (stored uppercase), valid email, `http(s)`-only links (support URL may also be a root-relative path), image URLs root-relative or same-origin only (CSP `imgSrc` unchanged), `socialLinks` limited to facebook/twitter/linkedin/github; `headerHtml`, `footerHtml`, `isActive` and the unexposed fields cannot be written through the page
 - [x] **SETTINGS-04**: Each save that changes something writes exactly one audit row (`admin.settings.update`) holding only the changed keys with their old and new values, in the same transaction as the change; a save with no change writes none and says « Aucune modification à enregistrer. »
@@ -80,6 +80,19 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SETTINGS-07**: A plain-text announcement banner (`announcementText`, max 280) is shown at the top of the home page when set, never rendered as HTML, the contact email inside it rendered as a `mailto:` link; it replaces the hard-coded demo banner
 - [x] **SETTINGS-08**: When registration is off, `GET /register`, `POST /register` and a first Google/GitHub login (account creation) are refused with « Les inscriptions sont fermées sur cette plateforme. Contactez un administrateur pour obtenir un compte. » on `/login`, and every « Inscription » / « Créer un compte » link is hidden; existing accounts still sign in, including through OAuth
 - [x] **SETTINGS-09**: The settings page is accessible: every control labelled, help and errors tied with `aria-describedby`, `aria-invalid` on errors, keyboard-navigable tabs, a `#main-content` landmark, and an axe-core browser test (critical/serious) on the four tabs
+
+### Header User Zone and Site Administration (Phase 5.3 — milestone v0.1; added 2026-11-12)
+
+- [ ] **HEADER-01**: At ≥ `lg` the shared header is one row: brand, nav (with the filled « Tableau de bord » button for signed-in users), then the user zone in the order wrench → search → theme → bell → messages → avatar+caret → « Mode d'édition »; the theme toggle sits in the user zone for everyone; the header app name is a `<span>`, not an `<h1>`
+- [ ] **HEADER-02**: Below `lg` a ☰ disclosure (`aria-expanded`, `aria-controls`, closed by Escape and by navigation) holds the nav links, search, « Tableau de bord », the admin link and the edit-mode switch; logo, theme, bell, messages and avatar stay in the bar; visitors get nav and « Inscription » in the panel
+- [ ] **HEADER-03**: Signed-in users open a course search from a magnifier button; Enter submits a non-empty trimmed query (max 100 characters) to `/courses?search=`, which lists only the courses they can see (title, description, code); visitors do not see it
+- [ ] **HEADER-04**: Bell and messages are focusable `aria-disabled` buttons named « Notifications (bientôt disponible) » / « Messages (bientôt disponible) », with a « Bientôt disponible » tooltip on hover and focus and no click action; no notification or message data, no portfolio icon
+- [ ] **HEADER-05**: The avatar trigger shows a caret and is named « Menu du compte »; the menu keeps its groups; admins get « Administration du site » (→ `/admin`), replacing « Réglages de la plateforme »; « Messages personnels » reads « Messages personnels (bientôt disponible) »; the user-menu seed holds one `/admin` row and no `/admin/settings` row
+- [ ] **HEADER-06**: The « Mode d'édition » switch shows on `/courses/:id`, `/learn` and `/builder` only for users passing `CoursePolicy.edit`; on → builder, off in the builder → learner view, off elsewhere → same page; `POST /edit-mode` validates its body with VineJS, re-checks `CoursePolicy.edit`, redirects only to named routes from a `from` enum, and refuses with « Vous ne pouvez pas modifier ce cours. Contactez son responsable. »
+- [ ] **HEADER-07**: Edit mode is kept in the session tied to the user id; the switch stays on from one course page to the next until turned off; no automatic redirect to the builder when opening a course (dropped 2026-11-12: Phase 5.4 makes the course page itself editable); cleared on logout and never inherited by another account on the same browser; no migration, no new personal data
+- [ ] **HEADER-08**: The header passes axe-core critical/serious checks with an admin on a course page with the switch, the search open, and the mobile panel open at 375px; every icon-only control has a French accessible name
+- [ ] **ADMINHUB-01**: `GET /admin` is admin-only on both layers (auth + role admin middleware, `PlatformSettingsPolicy.manage` in the controller); teacher, manager and student get 403, visitors are redirected to `/login`
+- [ ] **ADMINHUB-02**: « Administration du site » shows tabs Général / Utilisateurs / Cours with Moodle-style heading + link sections; every link resolves for an admin and no tab is empty; admins reach it from the wrench and the avatar menu; the page passes axe on all three tabs
 
 ### Trash and Soft Delete (Phase 5.2 — milestone v0.1; added 2026-11-05)
 
@@ -331,6 +344,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRASH-08 | Phase 5.2 | Pending |
 | TRASH-09 | Phase 5.2 | Pending |
 | TRASH-10 | Phase 5.2 | Pending |
+| HEADER-01 | Phase 5.3 | Pending |
+| HEADER-02 | Phase 5.3 | Pending |
+| HEADER-03 | Phase 5.3 | Pending |
+| HEADER-04 | Phase 5.3 | Pending |
+| HEADER-05 | Phase 5.3 | Pending |
+| HEADER-06 | Phase 5.3 | Pending |
+| HEADER-07 | Phase 5.3 | Pending |
+| HEADER-08 | Phase 5.3 | Pending |
+| ADMINHUB-01 | Phase 5.3 | Pending |
+| ADMINHUB-02 | Phase 5.3 | Pending |
 | PAGE-01 | Phase 6 | Pending |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |
@@ -411,5 +434,5 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 *Requirements defined: 2026-02-03*
 *Last updated: 2026-10-09 — technical debt requirements added, traceability renumbered for the 12-phase roadmap*
-*Last updated: 2026-11-03 — SETTINGS-01..09 added for Phase 5.1 (admin platform settings)*
+*Last updated: 2026-11-12 — HEADER-01..08 and ADMINHUB-01..02 added for Phase 5.3; SETTINGS-01 wording amended (entry through /admin). Previous: 2026-11-03 — SETTINGS-01..09 added for Phase 5.1 (admin platform settings)*
 *Last updated: 2026-11-05 — TRASH-01..10 added for Phase 5.2 (trash and soft delete)*

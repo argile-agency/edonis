@@ -405,7 +405,7 @@ Plans:
 
 **Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-10 by the owner, modelled on the Moodle header so users moving from Moodle keep their habits. Not in the v0.1 capacity figures yet: size it at planning (owner estimate ~1-2 🟡 A days).
 **Goal:** The header's user zone works like Moodle's (admin shortcut, course search, notification and message entry points, avatar menu with a caret, edit-mode switch inside a course), and admins reach every platform setting from one site administration page
-**Requirements**: TBD (to define at discuss/plan)
+**Requirements**: HEADER-01, HEADER-02, HEADER-03, HEADER-04, HEADER-05, HEADER-06, HEADER-07, HEADER-08, ADMINHUB-01, ADMINHUB-02
 **Depends on:** Phase 5.2
 **Plans:** 0 plans
 
@@ -414,7 +414,7 @@ Plans:
 - User zone, left to right: admin icon (wrench/screwdriver, admins only, opens the site administration page), course search field with a magnifier icon, notification bell, message button, avatar with a caret showing it opens a menu, then the « Mode d'édition » switch
 - Bell and message button are placeholders: visible, disabled, « bientôt disponible » tooltip. Notifications and messaging become their own later phases (none exist in the codebase today)
 - Search covers the courses the user can see (title and description), not a global search
-- « Mode d'édition » shows only inside a course, for users who can edit it: on opens the builder, off returns to the learner view; the choice is remembered per user
+- « Mode d'édition » shows only inside a course, for users who can edit it: on opens the builder, off returns to the learner view; the choice is remembered per user (session). Interim behaviour: Phase 5.4 replaces the navigation with in-place editing on the course page (owner, 2026-11-12)
 - Avatar menu gives access to every site setting and administration page, as in Moodle
 - New site administration page: tabs by area (e.g. Général, Utilisateurs, Cours, Notes, Rapports) listing links to the existing admin pages (platform settings, users, categories, course approval queue, audit logs)
 - Excluded: the third-party portfolio icon from the reference screenshot
@@ -423,6 +423,26 @@ Plans:
 Plans:
 
 - [ ] TBD (run /gsd:plan-phase 05.3 to break down)
+
+### Phase 05.4: Editable course page in edit mode (INSERTED)
+
+**Milestone**: v0.1 MVP (2026-12-20). Inserted on 2026-11-12 by the owner while planning 5.3: « comme Moodle, l'activation du mode édition ne renvoie pas vers une autre page, mais transforme la page en rendant les éléments du cours éditables, déplaçables ». Not in the v0.1 capacity figures yet: size it at planning (first estimate +1-2 🟡 A days).
+**Goal:** Turning on « Mode d'édition » makes the course page itself editable in place (drag and drop, inline titles, details panel, bulk actions, add content) instead of navigating to a separate builder; turning it off returns the same page to reading mode
+**Requirements**: TBD (to define at discuss/plan)
+**Depends on:** Phase 5.3
+**Plans:** 0 plans
+
+**Scope from the owner (2026-11-12):**
+
+- Merge of the course page (`/courses/:id`, `show.tsx`) and the Phase 5 builder (`builder.tsx`, `inertia/components/builder/`): the builder components render in the « Contenu du cours » area when edit mode is on; no rewrite of the builder logic
+- `/courses/:id/builder` redirects to `/courses/:id` with edit mode on, so existing links keep working; one page to maintain
+- Edit mode stays on from course to course (Moodle behaviour): any course the user can edit opens editable while it is on
+- Builder tests (keyboard drag, axe, bulk, conflict detection) move to the merged page
+- Needs its own discuss-phase and UI-SPEC
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 05.4 to break down)
 
 ### Phase 6: Page Content
 
@@ -578,7 +598,7 @@ Plans:
 ## Progress
 
 **Execution Order (realigned 2026-10-31):**
-v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 5.3 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
+v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 5.3 -> 5.4 -> 6 -> 3 · v1.0 (option (a), owner 2026-10-31): governance 17 -> 15 -> 16 -> 13 -> 14, then content 7 -> 8 -> 10 -> 12 -> 9 · v2: 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -590,6 +610,7 @@ v0.1: 1 ✓ -> 2 ✓ -> 4 ✓ -> 5 ✓ -> 5.1 -> 5.2 -> 5.3 -> 6 -> 3 · v1.0 (o
 | 5.1. Admin platform settings | 6/6 | Complete    | 2026-11-04 |
 | 5.2. Trash and soft delete | 9/10 | In Progress|  |
 | 5.3. Header user zone and site administration hub | 0/0 | Not started | - |
+| 5.4. Editable course page in edit mode | 0/0 | Not started | - |
 | 6. Page Content | 0/3 | Not started | - |
 | 7. File Content | 0/3 | Not started | - |
 | 8. URL Content | 0/1 | Not started | - |
