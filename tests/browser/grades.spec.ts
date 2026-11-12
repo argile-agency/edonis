@@ -8,6 +8,12 @@ import GradeCategory from '#models/grade_category'
 import CourseEnrollment from '#models/course_enrollment'
 import { DateTime } from 'luxon'
 
+const GRADES_EMAILS = [
+  'grades-student@edonis.test',
+  'grades-instructor@edonis.test',
+  'grades-student2@edonis.test',
+]
+
 test.group('Grades - Browser Tests', (group) => {
   // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
   group.each.setup(() => limiter.clear())
@@ -18,20 +24,20 @@ test.group('Grades - Browser Tests', (group) => {
   group.each.setup(async () => {
     // Create test users
     student = await User.create({
-      email: 'student@edonis.test',
+      email: 'grades-student@edonis.test',
       password: 'password',
       fullName: 'Test Student',
     })
 
     instructor = await User.create({
-      email: 'instructor@edonis.test',
+      email: 'grades-instructor@edonis.test',
       password: 'password',
       fullName: 'Dr. Jane Smith',
     })
 
     // Create a course
     course = await Course.create({
-      code: 'CS101',
+      code: 'GRADES-E2E',
       title: 'Introduction to Computer Science',
       description: 'Learn the fundamentals of computer science',
       instructorId: instructor.id,
@@ -54,24 +60,25 @@ test.group('Grades - Browser Tests', (group) => {
   })
 
   group.each.teardown(async () => {
-    // Clean up
-    await Submission.query().delete()
-    await Assignment.query().delete()
-    await GradeCategory.query().delete()
-    await CourseEnrollment.query().delete()
-    await Course.query().delete()
-    await User.query().delete()
+    // Clean up only this group's rows: the seeded data must survive for the later specs.
+    const assignmentIds = Assignment.query().where('course_id', course.id).select('id')
+    await Submission.query().whereIn('assignment_id', assignmentIds).delete()
+    await Assignment.query().where('course_id', course.id).delete()
+    await GradeCategory.query().where('course_id', course.id).delete()
+    await CourseEnrollment.query().where('course_id', course.id).delete()
+    await course.delete()
+    await User.query().whereIn('email', GRADES_EMAILS).delete()
   })
 
   test('student can navigate to grades page from navigation', async ({ visit }) => {
     const page = await visit('/login')
 
     // Login as student
-    await page.locator('input[name="email"]').fill('student@edonis.test')
-    await page.locator('input[name="password"]').fill('password')
+    await page.locator('input[type="email"]').fill('grades-student@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    await page.waitForURL('**/dashboard')
 
     // Navigate to grades (if there's a link in navigation)
     await page.goto('/grades')
@@ -114,22 +121,22 @@ test.group('Grades - Browser Tests', (group) => {
 
     const page = await visit('/login')
 
-    await page.locator('input[name="email"]').fill('student@edonis.test')
-    await page.locator('input[name="password"]').fill('password')
+    await page.locator('input[type="email"]').fill('grades-student@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    await page.waitForURL('**/dashboard')
     await page.goto('/grades')
     await page.waitForLoadState('networkidle')
 
     // Check statistics cards
-    await page.locator('text=Moyenne Générale').isVisible()
-    await page.locator('text=Cours Actifs').isVisible()
-    await page.locator('text=Devoirs Soumis').isVisible()
+    await page.locator('text=Moyenne Générale').first().isVisible()
+    await page.locator('text=Cours Actifs').first().isVisible()
+    await page.locator('text=Devoirs Soumis').first().isVisible()
 
     // Check course is listed
-    await page.locator(`text=${course.code}`).isVisible()
-    await page.locator(`text=${course.title}`).isVisible()
+    await page.locator(`text=${course.code}`).first().isVisible()
+    await page.locator(`text=${course.title}`).first().isVisible()
   })
 
   test('student can view course gradebook details', async ({ visit }) => {
@@ -179,44 +186,45 @@ test.group('Grades - Browser Tests', (group) => {
 
     const page = await visit('/login')
 
-    await page.locator('input[name="email"]').fill('student@edonis.test')
-    await page.locator('input[name="password"]').fill('password')
+    await page.locator('input[type="email"]').fill('grades-student@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    await page.waitForURL('**/dashboard')
     await page.goto(`/grades/courses/${course.id}`)
     await page.waitForLoadState('networkidle')
 
     // Check course header
-    await page.locator(`text=${course.code}`).isVisible()
-    await page.locator(`text=${course.title}`).isVisible()
-    await page.locator('text=Dr. Jane Smith').isVisible()
+    await page.locator(`text=${course.code}`).first().isVisible()
+    await page.locator(`text=${course.title}`).first().isVisible()
+    await page.locator('text=Dr. Jane Smith').first().isVisible()
 
     // Check grade display
-    await page.locator('text=92.0%').isVisible()
+    await page.locator('text=92.0%').first().isVisible()
 
     // Check assignment list
-    await page.locator('text=Final Project').isVisible()
-    await page.locator('text=92.0 / 100').isVisible()
+    await page.locator('text=Final Project').first().isVisible()
+    await page.locator('text=92.0 / 100').first().isVisible()
     await page
       .locator('text=Outstanding project! Great attention to detail and clean code.')
+      .first()
       .isVisible()
 
     // Check tabs
-    await page.locator('text=Devoirs').isVisible()
-    await page.locator('text=Par Catégorie').isVisible()
+    await page.locator('text=Devoirs').first().isVisible()
+    await page.locator('text=Par Catégorie').first().isVisible()
 
     // Switch to category view
     await page.locator('text=Par Catégorie').click()
     await page.waitForTimeout(500)
-    await page.locator('text=Assignments').isVisible()
-    await page.locator('text=Pondération: 60%').isVisible()
+    await page.locator('text=Assignments').first().isVisible()
+    await page.locator('text=Pondération: 60%').first().isVisible()
   })
 
   test('instructor can view gradebook matrix', async ({ visit }) => {
     // Create another student
     const student2 = await User.create({
-      email: 'student2@edonis.test',
+      email: 'grades-student2@edonis.test',
       password: 'password',
       fullName: 'Alice Johnson',
     })
@@ -302,25 +310,25 @@ test.group('Grades - Browser Tests', (group) => {
 
     const page = await visit('/login')
 
-    await page.locator('input[name="email"]').fill('instructor@edonis.test')
-    await page.locator('input[name="password"]').fill('password')
+    await page.locator('input[type="email"]').fill('grades-instructor@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    await page.waitForURL('**/dashboard')
     await page.goto(`/grades/courses/${course.id}`)
     await page.waitForLoadState('networkidle')
 
     // Check gradebook table header
-    await page.locator('text=Tableau des Notes').isVisible()
-    await page.locator('text=Exporter (CSV)').isVisible()
+    await page.locator('text=Tableau des Notes').first().isVisible()
+    await page.locator('text=Exporter (CSV)').first().isVisible()
 
     // Check student names in table
-    await page.locator('text=Test Student').isVisible()
-    await page.locator('text=Alice Johnson').isVisible()
+    await page.locator('text=Test Student').first().isVisible()
+    await page.locator('text=Alice Johnson').first().isVisible()
 
     // Check assignment headers
-    await page.locator('text=Quiz 1').isVisible()
-    await page.locator('text=Quiz 2').isVisible()
+    await page.locator('text=Quiz 1').first().isVisible()
+    await page.locator('text=Quiz 2').first().isVisible()
 
     // Check grades are displayed
     await page.locator('text=45.0').first().isVisible() // Student 1, Quiz 1
@@ -363,21 +371,21 @@ test.group('Grades - Browser Tests', (group) => {
 
     const page = await visit('/login')
 
-    await page.locator('input[name="email"]').fill('student@edonis.test')
-    await page.locator('input[name="password"]').fill('password')
+    await page.locator('input[type="email"]').fill('grades-student@edonis.test')
+    await page.locator('input[type="password"]').fill('password')
     await page.locator('button[type="submit"]').click()
 
-    await page.waitForURL('/dashboard')
+    await page.waitForURL('**/dashboard')
     await page.goto(`/grades/courses/${course.id}`)
     await page.waitForLoadState('networkidle')
 
     // Check for late badge
-    await page.locator('text=En retard').isVisible()
+    await page.locator('text=En retard').first().isVisible()
   })
 
   test('unauthenticated user redirected to login', async ({ visit }) => {
     const page = await visit('/grades')
-    await page.waitForURL('/login')
-    await page.locator('text=Connexion').isVisible()
+    await page.waitForURL('**/login')
+    await page.locator('text=Connexion').first().isVisible()
   })
 })
