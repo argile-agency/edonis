@@ -2,20 +2,19 @@ import { test } from '@japa/runner'
 import type { Assert } from '@japa/assert'
 import type { Page } from 'playwright'
 import limiter from '@adonisjs/limiter/services/main'
-import { AxeBuilder } from '@axe-core/playwright'
+import type { AxeBuilder } from '@axe-core/playwright'
 import User from '#models/user'
 import Course from '#models/course'
 import CourseEnrollment from '#models/course_enrollment'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import { createCourse } from '#tests/functional/helpers/factories'
+import { analyze } from '#tests/browser/helpers/axe'
 
 /**
  * Accessibility tests using axe-core.
  * Checks critical and serious WCAG violations on key pages.
  */
-const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
-
 async function loginAs(page: Page, email: string) {
   await page.goto('/login')
   await page.locator('input[type="email"]').fill(email)
@@ -29,7 +28,7 @@ async function loginAs(page: Page, email: string) {
 }
 
 async function assertNoSeriousViolations(page: Page, assert: Assert, state: string) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze()
+  const results = await analyze(page)
   const critical = results.violations.filter(
     (v) => v.impact === 'critical' || v.impact === 'serious'
   )
@@ -48,9 +47,7 @@ test.group('Accessibility', (group) => {
 
   test('login page has no critical a11y violations', async ({ visit, assert }) => {
     const page = await visit('/login')
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -68,9 +65,7 @@ test.group('Accessibility', (group) => {
 
   test('register page has no critical a11y violations', async ({ visit, assert }) => {
     const page = await visit('/register')
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -96,9 +91,7 @@ test.group('Accessibility', (group) => {
       page.locator('button[type="submit"]').click(),
     ])
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -127,9 +120,7 @@ test.group('Accessibility', (group) => {
     await page.goto('/user/profile')
     await page.waitForLoadState('networkidle')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -158,9 +149,7 @@ test.group('Accessibility', (group) => {
     await page.goto('/courses')
     await page.waitForLoadState('networkidle')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -212,9 +201,7 @@ test.group('Accessibility', (group) => {
     // Proves the Inertia errors/forbidden page rendered, not the Edge fallback
     assert.include(bodyText, 'Accès refusé')
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const results = await analyze(page)
 
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -284,27 +271,27 @@ test.group('Accessibility', (group) => {
         )
       }
 
-      check('at rest', await new AxeBuilder({ page }).withTags(wcag).analyze())
+      check('at rest', await analyze(page, wcag))
 
       await page
         .locator(`[data-row-key="c-${content.id}"]`)
         .getByRole('button', { name: 'Détails', exact: true })
         .click()
-      check('details panel open', await new AxeBuilder({ page }).withTags(wcag).analyze())
+      check('details panel open', await analyze(page, wcag))
 
       await page.getByRole('button', { name: 'Actions pour « Contenu A11y »' }).click()
       await page.getByRole('menuitem', { name: 'Déplacer vers…' }).waitFor()
-      check('actions menu open', await new AxeBuilder({ page }).withTags(wcag).analyze())
+      check('actions menu open', await analyze(page, wcag))
 
       await page.getByRole('menuitem', { name: 'Déplacer vers…' }).click()
       await page.getByRole('dialog').waitFor()
-      check('move dialog open', await new AxeBuilder({ page }).withTags(wcag).analyze())
+      check('move dialog open', await analyze(page, wcag))
 
       await page.keyboard.press('Escape')
       await page.getByRole('dialog').waitFor({ state: 'hidden' })
       await page.getByRole('checkbox', { name: 'Tout sélectionner', exact: true }).click()
       await page.getByRole('group', { name: 'Actions sur la sélection' }).waitFor()
-      check('selection with bulk bar', await new AxeBuilder({ page }).withTags(wcag).analyze())
+      check('selection with bulk bar', await analyze(page, wcag))
     } finally {
       await course.delete()
     }
@@ -340,23 +327,23 @@ test.group('Accessibility', (group) => {
       )
     }
 
-    check('Apparence', await new AxeBuilder({ page }).withTags(wcag).analyze())
+    check('Apparence', await analyze(page, wcag))
 
     await page.getByRole('tab', { name: "Page d'accueil" }).click()
     await page.getByRole('tab', { name: "Page d'accueil", selected: true }).waitFor()
-    check("Page d'accueil", await new AxeBuilder({ page }).withTags(wcag).analyze())
+    check("Page d'accueil", await analyze(page, wcag))
 
     await page.getByRole('tab', { name: 'Accès' }).click()
     await page.getByRole('tab', { name: 'Accès', selected: true }).waitFor()
-    check('Accès', await new AxeBuilder({ page }).withTags(wcag).analyze())
+    check('Accès', await analyze(page, wcag))
 
     await page.getByRole('tab', { name: 'Contact et support' }).click()
     await page.getByRole('tab', { name: 'Contact et support', selected: true }).waitFor()
-    check('Contact et support', await new AxeBuilder({ page }).withTags(wcag).analyze())
+    check('Contact et support', await analyze(page, wcag))
 
     await page.getByRole('tab', { name: 'Corbeille' }).click()
     await page.getByRole('tab', { name: 'Corbeille', selected: true }).waitFor()
-    check('Corbeille', await new AxeBuilder({ page }).withTags(wcag).analyze())
+    check('Corbeille', await analyze(page, wcag))
   })
 
   test('site administration hub has no critical a11y violations', async ({ visit, assert }) => {

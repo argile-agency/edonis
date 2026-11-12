@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import limiter from '@adonisjs/limiter/services/main'
-import { AxeBuilder } from '@axe-core/playwright'
+import type { AxeBuilder } from '@axe-core/playwright'
 import { DateTime } from 'luxon'
 import type { Page } from 'playwright'
 import db from '@adonisjs/lucid/services/db'
@@ -12,6 +12,7 @@ import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import TrashService from '#services/trash_service'
 import { createCourse, createUser, grantPermission } from '#tests/functional/helpers/factories'
+import { analyze } from '#tests/browser/helpers/axe'
 
 /**
  * Course trash page (phase 05.2, plan 08): list, restore (incl. the D-05 dialog),
@@ -118,8 +119,6 @@ async function activeId(page: Page): Promise<string> {
   return String(await page.evaluate('document.activeElement?.id ?? ""'))
 }
 
-const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
-
 type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>
 
 function assertNoSerious(results: AxeResults, state: string, assert: { equal: Function }) {
@@ -159,7 +158,7 @@ test.group('Course trash page', (group) => {
     assert.include((await badge.getAttribute('class')) ?? '', 'bg-warning/10')
     assert.isTrue(await page.getByRole('button', { name: 'Vider la corbeille' }).isVisible())
 
-    assertNoSerious(await new AxeBuilder({ page }).withTags(WCAG).analyze(), 'loaded', assert)
+    assertNoSerious(await analyze(page), 'loaded', assert)
   })
 
   test('« Restaurer » restores a row in one click and moves focus on (TRASH-04)', async ({
@@ -250,7 +249,7 @@ test.group('Course trash page', (group) => {
     assert.isTrue(await until(async () => (await activeId(page)) === 'trash-heading', 2000))
     assert.isNull(await db.from('course_modules').where('id', f.s1.id).first())
 
-    assertNoSerious(await new AxeBuilder({ page }).withTags(WCAG).analyze(), 'empty', assert)
+    assertNoSerious(await analyze(page), 'empty', assert)
   })
 
   test('a collaborator restores but sees no purge action (TRASH-07)', async ({ visit, assert }) => {

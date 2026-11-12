@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import limiter from '@adonisjs/limiter/services/main'
-import { AxeBuilder } from '@axe-core/playwright'
+import type { AxeBuilder } from '@axe-core/playwright'
 import { DateTime } from 'luxon'
 import type { Page } from 'playwright'
 import db from '@adonisjs/lucid/services/db'
@@ -10,6 +10,7 @@ import type Course from '#models/course'
 import CourseModule from '#models/course_module'
 import CourseContent from '#models/course_content'
 import { createCourse } from '#tests/functional/helpers/factories'
+import { analyze } from '#tests/browser/helpers/axe'
 
 /**
  * Course builder bulk actions (phase 05, plan 10): selection, the bulk bar and
@@ -137,8 +138,6 @@ function bulkRequests(page: Page) {
   })
   return urls
 }
-
-const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
 type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>
 
@@ -467,20 +466,16 @@ test.group('Course builder - bulk actions', (group) => {
     const page = await openBuilder(visit, f)
 
     await tick(page, 'Contenu A', 'Contenu C')
-    assertNoSerious(await new AxeBuilder({ page }).withTags(WCAG).analyze(), 'bar visible', assert)
+    assertNoSerious(await analyze(page), 'bar visible', assert)
 
     await barButton(page, 'Décaler les dates…').click()
     await page.getByRole('dialog').waitFor()
-    assertNoSerious(
-      await new AxeBuilder({ page }).withTags(WCAG).analyze(),
-      'date shift dialog',
-      assert
-    )
+    assertNoSerious(await analyze(page), 'date shift dialog', assert)
     await page.keyboard.press('Escape')
     await page.getByRole('dialog').waitFor({ state: 'hidden' })
 
     await barButton(page, 'Déplacer vers…').click()
     await page.getByRole('dialog').waitFor()
-    assertNoSerious(await new AxeBuilder({ page }).withTags(WCAG).analyze(), 'move dialog', assert)
+    assertNoSerious(await analyze(page), 'move dialog', assert)
   })
 })
