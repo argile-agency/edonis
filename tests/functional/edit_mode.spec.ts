@@ -1,6 +1,6 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
-import type { ApiClient } from '@japa/api-client'
+import type { ApiClient, ApiRequest } from '@japa/api-client'
 import type User from '#models/user'
 import {
   assertNotCsrfRejected,
@@ -25,7 +25,7 @@ async function fixture() {
 function toggle(
   client: ApiClient,
   body: Record<string, unknown>,
-  opts: { as?: User; session?: Record<string, unknown> } = {}
+  opts: { as?: User; session?: Parameters<ApiRequest['withSession']>[0] } = {}
 ) {
   let req = client.post('/edit-mode').withCsrfToken()
   if (opts.session) req = req.withSession(opts.session)
@@ -175,10 +175,7 @@ test.group('edit mode | endpoint', (group) => {
     assert.equal(asVisitor.header('location'), '/login')
   })
 
-  test('invalid bodies are rejected without touching the session', async ({
-    client,
-    assert,
-  }) => {
+  test('invalid bodies are rejected without touching the session', async ({ client, assert }) => {
     const { owner, course } = await fixture()
     const bodies: Record<string, unknown>[] = [
       { enabled: true, courseId: course.id, from: 'evil' },
