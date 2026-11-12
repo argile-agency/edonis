@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v0.1
-milestone_name: MVP (2026-12-20)
+milestone_name: milestone
 status: executing
 stopped_at: Phase 5.2 UI-SPEC approved
-last_updated: "2026-11-05T12:47:04.653Z"
-last_activity: 2026-11-05 -- Phase 05.2 planning complete
+last_updated: "2026-11-12T13:13:11.653Z"
+last_activity: 2026-11-12 -- Phase 05.3 planning complete
 progress:
-  total_phases: 19
-  completed_phases: 5
-  total_plans: 54
-  completed_plans: 38
-  percent: 26
+  total_phases: 21
+  completed_phases: 6
+  total_plans: 60
+  completed_plans: 48
+  percent: 29
 ---
 
 # Project State
@@ -34,12 +34,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 05.2
+Phase: 05.3
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-11-05 -- Phase 05.2 planning complete
+Last activity: 2026-11-12 -- Phase 05.3 planning complete
 
-Next recommended run: `/gsd-execute-phase 5.2` (trash and soft delete: 10 plans in 5 waves, plan check passed 2026-11-05 after one revision; 05.2-10 ends with a French walkthrough). Post-deploy: run the migrations, set a nightly cron for `node ace trash:purge` if Infomaniak allows it (lazy purge on trash open covers it otherwise).
+Next recommended run: `/gsd-execute-phase 5.3` (header user zone and admin hub: 6 plans in 4 waves, plan check passed 2026-11-12; 05.3-06 ends with a French walkthrough). Still open: 05.2-10 owner walkthrough (`/gsd-execute-phase 5.2` resumes at the checkpoint). Then 5.4 (editable course page) needs discuss + UI-SPEC. 5.2 post-deploy: run the migrations, set a nightly cron for `node ace trash:purge` if Infomaniak allows it (lazy purge on trash open covers it otherwise).
 
 Open items from Phase 2: `02-HUMAN-UAT.md` (4 pending) — CI on postgres/mysql, DEBT-08 production
 gate (sql_mode, phone-length query, `pii:scan`; `PII_DECRYPT_STRICT` stays off until clean), browser
