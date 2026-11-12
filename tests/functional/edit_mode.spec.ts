@@ -220,3 +220,110 @@ test.group('edit mode | endpoint', (group) => {
     response.assertSessionMissing('editMode')
   })
 })
+
+test.group('edit mode | props and session', (group) => {
+  group.each.setup(() => testUtils.db().withGlobalTransaction())
+
+  function showAs(client: ApiClient, path: string, user: User, editMode?: unknown) {
+    let req = client.get(path).withInertia()
+    if (editMode !== undefined) {
+      req = req.withSession({ editMode } as Parameters<ApiRequest['withSession']>[0])
+    }
+    return req.loginAs(user).redirects(0)
+  }
+
+  test('the course page never redirects and shares editMode and courseEditing (D-19)', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { owner, course } = await fixture()
+    const response = await showAs(client, route('courses.show', { id: course.id }), owner, {
+      userId: owner.id,
+    })
+
+    response.assertStatus(200)
+    response.assertInertiaComponent('courses/show')
+    assert.isTrue(response.inertiaProps.editMode)
+    assert.deepEqual(response.inertiaProps.courseEditing, { courseId: course.id, canEdit: true })
+  })
+
+  test('editMode is false without a flag, for another user, or for a malformed flag', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { owner, course, outsider } = await fixture()
+    const url = route('courses.show', { id: course.id })
+
+    for (const flag of [
+      undefined,
+      { userId: outsider.id },
+      true,
+      {},
+      { userId: String(owner.id) },
+    ]) {
+      const response = await showAs(client, url, owner, flag)
+      response.assertStatus(200)
+      assert.isFalse(response.inertiaProps.editMode, JSON.stringify(flag))
+    }
+  })
+
+  test('an enrolled student gets canEdit false on show and learn', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { course, student } = await fixture()
+
+    const show = await showAs(client, route('courses.show', { id: course.id }), student)
+    show.assertStatus(200)
+    assert.deepEqual(show.inertiaProps.courseEditing, { courseId: course.id, canEdit: false })
+
+    const learn = await showAs(client, route('courses.learn', { id: course.id }), student)
+    learn.assertStatus(200)
+    assert.deepEqual(learn.inertiaProps.courseEditing, { courseId: course.id, canEdit: false })
+  })
+
+  test('the owner gets canEdit true on learn and builder, learn stays put with the flag on', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { owner, course } = await fixture()
+
+    const learn = await showAs(client, route('courses.learn', { id: course.id }), owner, {
+      userId: owner.id,
+    })
+    learn.assertStatus(200)
+    learn.assertInertiaComponent('courses/learn')
+    assert.deepEqual(learn.inertiaProps.courseEditing, { courseId: course.id, canEdit: true })
+
+    const builder = await showAs(client, route('courses.builder', { id: course.id }), owner)
+    builder.assertStatus(200)
+    assert.deepEqual(builder.inertiaProps.courseEditing, { courseId: course.id, canEdit: true })
+  })
+
+  test('other pages carry editMode but no courseEditing', async ({ client, route, assert }) => {
+    const { owner } = await fixture()
+    const response = await showAs(client, route('dashboard'), owner, { userId: owner.id })
+
+    response.assertStatus(200)
+    assert.isTrue(response.inertiaProps.editMode)
+    assert.notProperty(response.inertiaProps, 'courseEditing')
+  })
+
+  test('logout forgets the flag', async ({ client, route, assert }) => {
+    const { owner } = await fixture()
+    const response = await client
+      .post(route('logout'))
+      .withCsrfToken()
+      .withSession({ editMode: { userId: owner.id } })
+      .loginAs(owner)
+      .redirects(0)
+
+    response.assertStatus(302)
+    assertNotCsrfRejected(assert, response)
+    response.assertSessionMissing('editMode')
+  })
+})
