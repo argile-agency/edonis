@@ -129,16 +129,17 @@ export default function CoursesIndex({
     router.get('/courses', newFilters, { preserveState: true })
   }
 
-  const getStatusColor = (status: string) => {
+  // Theme badge variants: the raw green/yellow fills failed WCAG AA with white text
+  const getStatusVariant = (status: string) => {
     switch (status) {
       case 'published':
-        return 'bg-green-500'
+        return 'success'
       case 'draft':
-        return 'bg-yellow-500'
+        return 'warning'
       case 'archived':
-        return 'bg-gray-500'
+        return 'secondary'
       default:
-        return 'bg-blue-500'
+        return 'outline'
     }
   }
 
@@ -235,7 +236,7 @@ export default function CoursesIndex({
               <Card key={course.id} className="flex flex-col hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
-                    <Badge className={getStatusColor(course.status)}>{course.status}</Badge>
+                    <Badge variant={getStatusVariant(course.status)}>{course.status}</Badge>
                     <span className="text-sm text-muted-foreground">{course.code}</span>
                   </div>
                   <CardTitle className="line-clamp-2">{course.title}</CardTitle>

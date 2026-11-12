@@ -326,7 +326,7 @@ export default function LearnCourse({
                     </Button>
                   )}
                   {progress?.status === 'completed' && (
-                    <Badge variant="default" className="bg-green-500">
+                    <Badge variant="success">
                       <CheckCircle className="mr-1 h-3 w-3" />
                       Terminé
                     </Badge>

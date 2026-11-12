@@ -23,7 +23,7 @@
   --popover-foreground: 20 20% 14%;
 
   /* Primary - Deep teal for trust and focus */
-  --primary: 174 58% 32%;
+  --primary: 174 58% 28%;
   --primary-foreground: 0 0% 100%;
 
   /* Secondary - Warm sand for supporting elements */
@@ -32,14 +32,14 @@
 
   /* Muted - Subtle backgrounds */
   --muted: 40 20% 94%;
-  --muted-foreground: 20 10% 45%;
+  --muted-foreground: 20 10% 40%;
 
   /* Accent - Coral warmth for highlights */
   --accent: 15 80% 60%;
   --accent-foreground: 0 0% 100%;
 
   /* Success - Encouraging green */
-  --success: 152 55% 40%;
+  --success: 152 55% 30%;
   --success-foreground: 0 0% 100%;
 
   /* Warning - Attention amber */
@@ -47,7 +47,7 @@
   --warning-foreground: 20 20% 14%;
 
   /* Destructive - Clear but not alarming */
-  --destructive: 0 65% 55%;
+  --destructive: 0 65% 48%;
   --destructive-foreground: 0 0% 100%;
 
   /* Info - Calm blue for guidance */
@@ -80,7 +80,8 @@
 
   /* Primary - Brighter teal for dark backgrounds */
   --primary: 174 60% 45%;
-  --primary-foreground: 0 0% 100%;
+  /* Dark text: white on this bright teal is 2.47:1, below WCAG AA */
+  --primary-foreground: 20 15% 10%;
 
   /* Secondary - Muted warm tones */
   --secondary: 20 15% 18%;
@@ -95,7 +96,7 @@
 
   /* Status colors adjusted for dark mode */
   --success: 152 50% 45%;
-  --success-foreground: 0 0% 100%;
+  --success-foreground: 20 15% 10%;
 
   --warning: 38 90% 55%;
   --warning-foreground: 20 20% 10%;
@@ -109,6 +110,15 @@
   --border: 20 12% 20%;
   --input: 20 12% 20%;
   --ring: 174 60% 45%;
+}
+
+/* Sonner richColors (light): its default status texts are 3.1-4.4:1 on their tints, below WCAG AA.
+   Unlayered and more specific than the styles sonner injects, so these win. */
+html [data-sonner-toaster][data-sonner-theme='light'] {
+  --success-text: hsl(140, 100%, 24%);
+  --info-text: hsl(210, 92%, 40%);
+  --warning-text: hsl(31, 92%, 33%);
+  --error-text: hsl(360, 100%, 40%);
 }
 
 /*

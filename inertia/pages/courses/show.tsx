@@ -126,16 +126,17 @@ export default function ShowCourse({
 }: Props) {
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
 
-  const getStatusColor = (status: string) => {
+  // Theme badge variants: the raw green/yellow fills failed WCAG AA with white text
+  const getStatusVariant = (status: string) => {
     switch (status) {
       case 'published':
-        return 'bg-green-500'
+        return 'success'
       case 'draft':
-        return 'bg-yellow-500'
+        return 'warning'
       case 'archived':
-        return 'bg-gray-500'
+        return 'secondary'
       default:
-        return 'bg-blue-500'
+        return 'outline'
     }
   }
 
@@ -251,7 +252,7 @@ export default function ShowCourse({
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <Badge className={getStatusColor(course.status)}>{course.status}</Badge>
+                <Badge variant={getStatusVariant(course.status)}>{course.status}</Badge>
                 <span className="text-sm text-muted-foreground">{course.code}</span>
               </div>
               <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
