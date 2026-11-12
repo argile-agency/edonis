@@ -261,10 +261,11 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      aria-label="Menu du compte"
                       className="group flex items-center gap-1 rounded-full p-1 pr-2 hover:bg-[hsl(var(--muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <Avatar size="sm">
+                      {/* Name from sr-only text, initials hidden: an aria-label not containing the visible initials fails label-content-name-mismatch */}
+                      <span className="sr-only">Menu du compte</span>
+                      <Avatar size="sm" aria-hidden="true">
                         {user.avatarUrl && (
                           <AvatarImage src={user.avatarUrl} alt={getDisplayName(user)} />
                         )}
