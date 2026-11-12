@@ -1,6 +1,9 @@
 import { test } from '@japa/runner'
+import limiter from '@adonisjs/limiter/services/main'
 
-test.group('User Management', () => {
+test.group('User Management', (group) => {
+  // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
+  group.each.setup(() => limiter.clear())
   test('admin can access users list', async ({ visit }) => {
     // Login as admin first
     const page = await visit('/login')

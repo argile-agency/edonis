@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import limiter from '@adonisjs/limiter/services/main'
 import type { Page } from 'playwright'
 import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
@@ -160,6 +161,8 @@ async function contentOrder(moduleId: number): Promise<number[]> {
 }
 
 test.group('Course builder', (group) => {
+  // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
+  group.each.setup(() => limiter.clear())
   group.each.teardown(async () => {
     // Sections, contents and progress cascade with the course.
     await fixture?.course.delete()

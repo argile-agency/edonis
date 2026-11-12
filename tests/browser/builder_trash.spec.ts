@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import limiter from '@adonisjs/limiter/services/main'
 import { AxeBuilder } from '@axe-core/playwright'
 import { DateTime } from 'luxon'
 import type { Page } from 'playwright'
@@ -130,6 +131,8 @@ function assertNoSerious(results: AxeResults, state: string, assert: { equal: Fu
 }
 
 test.group('Course trash page', (group) => {
+  // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
+  group.each.setup(() => limiter.clear())
   group.each.teardown(async () => {
     // Sections, contents and progress cascade with the course.
     await fixture?.course.delete()

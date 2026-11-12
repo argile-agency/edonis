@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import limiter from '@adonisjs/limiter/services/main'
 import User from '#models/user'
 import Course from '#models/course'
 import Assignment from '#models/assignment'
@@ -8,6 +9,8 @@ import CourseEnrollment from '#models/course_enrollment'
 import { DateTime } from 'luxon'
 
 test.group('Grades - Browser Tests', (group) => {
+  // The server runs in this process: reset the per-IP loginThrottle (5/min) between tests.
+  group.each.setup(() => limiter.clear())
   let student: User
   let instructor: User
   let course: Course
