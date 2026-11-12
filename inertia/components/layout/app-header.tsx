@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, router, usePage } from '@inertiajs/react'
 import { FlashMessages } from '~/components/flash-toaster'
 import { Button } from '~/components/ui/button'
@@ -34,6 +34,8 @@ import {
   Wrench,
   Bell,
   ChevronDown,
+  Menu,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { ThemeToggle } from '~/components/theme-toggle'
@@ -139,6 +141,28 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
   const isAdmin = !!user && user.roles.some((r) => r.slug === 'admin')
   const allowRegistration = !appSettings || Boolean(appSettings.allowRegistration)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(
+    () =>
+      router.on('navigate', () => {
+        setMenuOpen(false)
+        setSearchOpen(false)
+      }),
+    []
+  )
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setMenuOpen(false)
+      menuButtonRef.current?.focus()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [menuOpen])
 
   const handleLogout = () => {
     router.post('/logout')
@@ -170,7 +194,12 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
               />
             )}
             {/* sr-only rather than hidden so the link keeps its accessible name */}
-            <span className={cn('text-lg font-bold', user && 'sr-only xl:not-sr-only')}>
+            <span
+              className={cn(
+                'text-lg font-bold',
+                user && 'sr-only sm:not-sr-only lg:sr-only xl:not-sr-only'
+              )}
+            >
               {settings.appName}
             </span>
           </Link>
@@ -363,11 +392,77 @@ export default function AppHeader({ user, appSettings, menus }: Props) {
                 </Button>
                 {/* SQLite/MySQL may send 0/1; null settings keep the link. */}
                 {allowRegistration && (
-                  <Button size="sm" asChild className="font-bold">
+                  <Button size="sm" asChild className="hidden lg:inline-flex font-bold">
                     <Link href="/register">Inscription</Link>
                   </Button>
                 )}
               </>
+            )}
+            <Button
+              ref={menuButtonRef}
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full lg:hidden"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? (
+                <X className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div
+          id="mobile-menu"
+          className="lg:hidden border-t bg-[hsl(var(--background))]"
+          hidden={!menuOpen}
+        >
+          <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
+            {user && <HeaderSearch variant="panel" />}
+            <nav aria-label="Navigation principale (mobile)" className="flex flex-col">
+              {menus.header.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.url}
+                  className="py-2 text-sm font-normal hover:text-primary transition"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            {user ? (
+              <>
+                <Button size="sm" asChild className="w-full sm:w-auto font-bold">
+                  <Link href="/dashboard" className="flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Tableau de bord
+                  </Link>
+                </Button>
+                {(isAdmin || canEditCourse) && <Separator />}
+                {isAdmin && (
+                  <Link href="/admin" className="flex items-center gap-2 py-2 text-sm font-normal">
+                    <Wrench className="h-4 w-4" aria-hidden="true" />
+                    Administration du site
+                  </Link>
+                )}
+                {canEditCourse && (
+                  <div className="flex items-center justify-between py-2">
+                    <EditModeSwitch id="edit-mode-switch-mobile" />
+                  </div>
+                )}
+              </>
+            ) : (
+              allowRegistration && (
+                <Button size="sm" asChild className="w-full font-bold">
+                  <Link href="/register">Inscription</Link>
+                </Button>
+              )
             )}
           </div>
         </div>
