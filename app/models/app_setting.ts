@@ -2,9 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import type { QueryClientContract } from '@adonisjs/lucid/types/database'
 import { jsonColumnConfig } from '../helpers/json_column.js'
-
-// SQLite and MySQL/MariaDB return 0/1 for boolean columns; PostgreSQL returns booleans.
-const booleanColumn = { consume: (value: unknown) => Boolean(value) }
+import { booleanColumn } from '../helpers/boolean_column.js'
 
 /**
  * Single-instance in v1 (D-14): app_settings is an is_active singleton without

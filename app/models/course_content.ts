@@ -15,6 +15,7 @@ import CourseModule from '#models/course_module'
 import ContentProgress from '#models/content_progress'
 import ContentFile from '#models/content_file'
 import { jsonColumnConfig } from '../helpers/json_column.js'
+import { booleanColumn } from '../helpers/boolean_column.js'
 
 export type ContentType = 'page' | 'file' | 'video' | 'link' | 'assignment' | 'quiz'
 export type CompletionType = 'manual' | 'view' | 'submit' | 'grade'
@@ -62,7 +63,7 @@ export default class CourseContent extends BaseModel {
   @column()
   declare order: number
 
-  @column()
+  @column(booleanColumn)
   declare isPublished: boolean
 
   @column.dateTime()
@@ -71,7 +72,7 @@ export default class CourseContent extends BaseModel {
   @column.dateTime()
   declare availableUntil: DateTime | null
 
-  @column()
+  @column(booleanColumn)
   declare completionRequired: boolean
 
   @column()
@@ -86,7 +87,7 @@ export default class CourseContent extends BaseModel {
   @column.dateTime()
   declare dueDate: DateTime | null
 
-  @column()
+  @column(booleanColumn)
   declare allowLateSubmissions: boolean
 
   @column()
