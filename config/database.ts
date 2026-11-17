@@ -1,5 +1,10 @@
 import env from '#start/env'
 import { defineConfig } from '@adonisjs/lucid'
+// @ts-expect-error pg ships no type declarations and @types/pg is not installed
+import pg from 'pg'
+
+// pg returns NUMERIC/DECIMAL as strings (SQLite returns numbers); columns are at most decimal(10,2).
+pg.types.setTypeParser(pg.types.builtins.NUMERIC, Number)
 
 const dbConfig = defineConfig({
   connection: env.get('DB_CONNECTION', 'postgres'),
@@ -29,6 +34,8 @@ const dbConfig = defineConfig({
         user: env.get('DB_USER', 'edonis'),
         password: env.get('DB_PASSWORD'),
         database: env.get('DB_DATABASE', 'edonis_lms'),
+        // Same as the pg NUMERIC parser above: mysql2 returns DECIMAL as strings by default.
+        decimalNumbers: true,
       },
       migrations: {
         naturalSort: true,
