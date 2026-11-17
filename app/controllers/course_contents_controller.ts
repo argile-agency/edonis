@@ -30,6 +30,7 @@ import CourseStructureService, {
 import { depthOf } from '../helpers/category_tree.js'
 import { loadBuilderStructure } from '../helpers/builder_props.js'
 import { inclusiveEnd } from '../helpers/date_shift.js'
+import { sanitizeRichText } from '../helpers/sanitize_html.js'
 
 const DATE_ORDER_ERROR = 'La date de fin doit être postérieure à la date de début.'
 const DATE_ORDER_BODY = { errors: [{ field: 'availableUntil', message: DATE_ORDER_ERROR }] }
@@ -172,10 +173,16 @@ export default class CourseContentsController {
 
     const progressMap = new Map(allProgress.map((p) => [p.contentId, p]))
 
+    // The page injects this HTML as-is: sanitize at render so rows saved before this guard are covered too
+    const shownContent = currentContent?.serialize()
+    if (shownContent?.contentType === 'page' && shownContent.content) {
+      shownContent.content = sanitizeRichText(shownContent.content)
+    }
+
     return inertia.render('courses/learn', {
       course: course.serialize(),
       modules: course.modules.map((m) => m.serialize()),
-      currentContent: currentContent?.serialize(),
+      currentContent: shownContent,
       progress: progress?.serialize(),
       progressMap: Object.fromEntries(progressMap.entries()),
       courseEditing: {

@@ -14,7 +14,8 @@ const shieldConfig = defineConfig({
       imgSrc: ["'self'", 'data:', 'blob:'],
       fontSrc: ["'self'"],
       connectSrc: ["'self'", 'ws:', 'wss:'],
-      frameSrc: ["'none'"],
+      // Only frames the app renders: YouTube players in privacy-enhanced mode (inertia/lib/safe_url.ts)
+      frameSrc: ['https://www.youtube-nocookie.com'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'", 'https://accounts.google.com', 'https://github.com'],

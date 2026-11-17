@@ -22,6 +22,7 @@ import {
   Play,
 } from 'lucide-react'
 import AppHeader from '~/components/layout/app-header'
+import { youtubeEmbedUrl } from '~/lib/safe_url'
 
 interface Course {
   id: number
@@ -361,10 +362,9 @@ export default function LearnCourse({
 
                 {currentContent.contentType === 'video' && currentContent.externalUrl && (
                   <div className="aspect-video">
-                    {currentContent.externalUrl.includes('youtube.com') ||
-                    currentContent.externalUrl.includes('youtu.be') ? (
+                    {youtubeEmbedUrl(currentContent.externalUrl) ? (
                       <iframe
-                        src={currentContent.externalUrl.replace('watch?v=', 'embed/')}
+                        src={youtubeEmbedUrl(currentContent.externalUrl)!}
                         title={currentContent.title}
                         className="w-full h-full rounded-lg"
                         allowFullScreen

@@ -578,6 +578,30 @@ test.group('builder_tree - selection and bulk', () => {
     assert.equal(c2.updatedAt, 'fresh')
   })
 
+  test('mergeBulkResult cannot pollute Object.prototype from a server row (CodeQL #13)', ({
+    assert,
+  }) => {
+    // JSON.parse gives the row an own "__proto__" key, as a hostile response body would.
+    const hostile = JSON.parse(
+      `{"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}}}`
+    )
+    const result: BulkResult = {
+      sections: bSections,
+      contents: bContents.map((x) => (x.id === C2 ? { ...x, ...hostile, updatedAt: 'fresh' } : x)),
+      affected: { sectionIds: [], contentIds: [C2] },
+      deleted: { sectionIds: [], contentIds: [] },
+    }
+    const local = { sections: bSections, contents: bContents }
+    const merged = mergeBulkResult(local, result, undefined, local)
+
+    assert.equal(merged.contents.find((x) => x.id === C2)!.updatedAt, 'fresh')
+    assert.isUndefined(({} as Record<string, unknown>).polluted)
+    assert.strictEqual(
+      Object.getPrototypeOf(merged.contents.find((x) => x.id === C2)),
+      Object.prototype
+    )
+  })
+
   test('applyBulkPatch changes exactly the given items', ({ assert }) => {
     const result = applyBulkPatch(
       bSections,

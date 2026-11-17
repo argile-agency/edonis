@@ -1,5 +1,10 @@
 import { test } from '@japa/runner'
-import { isExternalUrl, isSafeImageSrc, isSafeLink } from '../../inertia/lib/safe_url.js'
+import {
+  isExternalUrl,
+  isSafeImageSrc,
+  isSafeLink,
+  youtubeEmbedUrl,
+} from '../../inertia/lib/safe_url.js'
 
 test.group('safe_url', () => {
   test('isSafeLink accepts http(s) and root-relative paths', ({ assert }) => {
@@ -33,5 +38,35 @@ test.group('safe_url', () => {
   test('isExternalUrl is true only for absolute http(s)', ({ assert }) => {
     assert.isTrue(isExternalUrl('https://x.org'))
     assert.isFalse(isExternalUrl('/aide'))
+  })
+
+  test('youtubeEmbedUrl maps every YouTube link shape to the embed URL', ({ assert }) => {
+    for (const url of [
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtube.com/watch?v=dQw4w9WgXcQ&t=42',
+      'https://m.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+      'https://youtu.be/dQw4w9WgXcQ',
+    ]) {
+      assert.equal(youtubeEmbedUrl(url), 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', url)
+    }
+  })
+
+  test('youtubeEmbedUrl rejects hosts that only contain a YouTube name', ({ assert }) => {
+    for (const url of [
+      'https://evil.example/youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ',
+      'https://evil.example/?u=youtu.be/dQw4w9WgXcQ',
+      'https://notyoutube.com/watch?v=dQw4w9WgXcQ',
+      'javascript:alert(1)//youtube.com',
+      'https://www.youtube.com/watch?v="><script>',
+      'https://www.youtube.com/',
+      '',
+      null,
+    ]) {
+      assert.isNull(youtubeEmbedUrl(url), String(url))
+    }
   })
 })
