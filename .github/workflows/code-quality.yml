@@ -5,6 +5,11 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch: # Re-run the CodeQL scan on demand
+
+# Least privilege for GITHUB_TOKEN; jobs that need more declare it themselves
+permissions:
+  contents: read
 
 jobs:
   codeql:
