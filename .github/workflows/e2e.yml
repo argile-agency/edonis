@@ -147,7 +147,6 @@ jobs:
       HOST: localhost
       LOG_LEVEL: info
       SESSION_DRIVER: cookie
-      BROWSER: ${{ matrix.browser }}
 
     steps:
       - name: Checkout code
@@ -176,8 +175,9 @@ jobs:
       - name: Seed test data
         run: node ace db:seed
 
+      # The Japa browser client only reads the --browser flag; a BROWSER env var is ignored
       - name: Run browser tests
-        run: node ace test browser
+        run: node ace test browser --browser=${{ matrix.browser }}
 
       - name: Upload test results (${{ matrix.browser }})
         if: always()

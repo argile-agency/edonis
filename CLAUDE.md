@@ -409,8 +409,8 @@ Uses **@japa/browser-client** (Playwright-based). Configuration in `tests/bootst
 ```bash
 node ace test browser                              # All browser tests
 node ace test browser tests/browser/auth.spec.ts   # Specific test file
-HEADLESS=false node ace test browser               # Headed mode
-BROWSER=firefox node ace test browser              # Specific browser
+node ace test browser --headed                     # Headed mode
+node ace test browser --browser=firefox            # Specific browser
 ```
 
 ### Adding a New Module/Feature
