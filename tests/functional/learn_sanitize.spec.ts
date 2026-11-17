@@ -58,6 +58,32 @@ test.group('Courses - learn page content sanitizing', (group) => {
     }
   })
 
+  test('inline formatting is kept, layout escapes and classes are dropped', async ({
+    client,
+    route,
+    assert,
+  }) => {
+    const { owner, course } = await learnWith(
+      'page',
+      '<h2 style="text-align: center; color: #c00; position: fixed; z-index: 99" class="fixed inset-0">A</h2>' +
+        '<p style="font-size: 1.25rem; margin-left: -500px; background: url(https://evil.example/x.png)">B</p>' +
+        '<a href="https://x.org" target="_blank" rel="noopener" style="display: none">C</a>'
+    )
+
+    const response = await client
+      .get(route('courses.learn', { id: course.id }))
+      .withInertia()
+      .loginAs(owner)
+
+    response.assertStatus(200)
+    assert.equal(
+      response.inertiaProps.currentContent.content,
+      '<h2 style="text-align:center;color:#c00">A</h2>' +
+        '<p style="font-size:1.25rem">B</p>' +
+        '<a href="https://x.org" target="_blank" rel="noopener">C</a>'
+    )
+  })
+
   test('content of other types is plain text and stays untouched', async ({
     client,
     route,
