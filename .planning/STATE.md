@@ -215,6 +215,11 @@ Recent decisions affecting current work:
 - ~~Lint quick win~~ — done, `af99ea1`.
 - Dedupe the 8 inline JSON column configs onto `jsonColumnConfig` (see Health
   signals). Fold into Phase 1 planning.
+- Rethink how HTML is authored and styled in course activities (authoring
+  model, theme vs inline styling, light/dark accessibility). Provisional
+  sanitizer allow-list shipped 2026-11-17 as a security patch. Fold into the
+  Phase 6 discussion. See
+  `todos/pending/2026-11-17-rethink-html-handling-in-course-activities.md`.
 
 ### GSD Tooling Notes (2026-10-09)
 

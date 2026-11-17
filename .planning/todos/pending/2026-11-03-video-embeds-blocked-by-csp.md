@@ -18,6 +18,10 @@ Two causes:
 
 The owner chose on 2026-11-03 to wait for Phase 8 rather than patch it now: « b. on attendra ».
 
+## Update 2026-11-17
+
+The YouTube half was done ahead of Phase 8, at the owner's request while fixing code-scanning alert #12 (`9f4e70c`): `youtubeEmbedUrl()` in `inertia/lib/safe_url.ts` converts YouTube links to `youtube-nocookie.com/embed/<id>` and `frameSrc` allows only that host. Still open: Vimeo, and a plain link instead of `<video src>` for any other URL.
+
 ## Solution
 
 Handle it in Phase 8 (URL content, embed preview):
